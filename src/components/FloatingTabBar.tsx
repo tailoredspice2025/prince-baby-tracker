@@ -73,28 +73,7 @@ export function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
             );
           })}
 
-          <Pressable
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              openQuickAdd();
-            }}
-            style={{
-              width: 52,
-              height: 52,
-              borderRadius: 26,
-              backgroundColor: theme.coral,
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginTop: -26,
-              shadowColor: 'rgba(233,136,98,1)',
-              shadowOpacity: 0.4,
-              shadowOffset: { width: 0, height: 6 },
-              shadowRadius: 16,
-              elevation: 6,
-            }}
-          >
-            <PlusIcon size={20} color="#fff" />
-          </Pressable>
+          <View style={{ width: 48 }} />
 
           {state.routes.slice(2, 4).map((route, idx) => {
             const i = idx + 2;
@@ -118,6 +97,32 @@ export function FloatingTabBar({ state, navigation }: BottomTabBarProps) {
           })}
         </BlurView>
       </View>
+
+      <Pressable
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          openQuickAdd();
+        }}
+        style={{
+          position: 'absolute',
+          top: -18,
+          left: '50%',
+          marginLeft: -22,
+          width: 44,
+          height: 44,
+          borderRadius: 22,
+          backgroundColor: theme.coral,
+          alignItems: 'center',
+          justifyContent: 'center',
+          shadowColor: 'rgba(233,136,98,1)',
+          shadowOpacity: 0.4,
+          shadowOffset: { width: 0, height: 6 },
+          shadowRadius: 16,
+          elevation: 6,
+        }}
+      >
+        <PlusIcon size={16} color="#fff" />
+      </Pressable>
     </View>
   );
 }
