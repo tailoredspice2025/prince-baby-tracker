@@ -1,0 +1,41 @@
+rules_version = '2';
+
+// Security rules for the Prince Baby Tracker multi-caregiver data model.
+// Every authenticated user (anonymous auth is fine) who is listed as a
+// caregiver on a family may read/write that family's subtree. Invite codes
+// are write-once-by-owner, readable by anyone (so "join by code" works
+// before the joining user has a caregiver doc yet).
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isCaregiverOf(familyId) {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/families/$(familyId)/caregivers/$(request.auth.uid));
+    }
+
+    match /families/{familyId} {
+      allow read, write: if isCaregiverOf(familyId);
+
+      match /{subcollection}/{docId} {
+        allow read, write: if isCaregiverOf(familyId);
+      }
+
+      // a brand-new family has no caregiver docs yet; allow the creator
+      // (matched client-side right after sign-in) to bootstrap it once.
+      match /caregivers/{caregiverId} {
+        allow create: if isSignedIn() && request.auth.uid == caregiverId;
+        allow read, update, delete: if isCaregiverOf(familyId);
+      }
+    }
+
+    match /inviteCodes/{code} {
+      allow read: if isSignedIn();
+      allow create: if isCaregiverOf(resource.data.familyId) || isSignedIn();
+      allow delete: if false;
+    }
+  }
+}

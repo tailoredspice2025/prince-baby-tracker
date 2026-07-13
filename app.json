@@ -1,0 +1,59 @@
+{
+  "expo": {
+    "name": "Prince Baby Tracker",
+    "slug": "PrinceBabyTracker",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "scheme": "princebabytracker",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.princebabytracker.app",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "Prince Baby Tracker uses the microphone so you can log feeds, sleep, and diapers hands-free by speaking.",
+        "NSSpeechRecognitionUsageDescription": "Prince Baby Tracker turns your speech into a logged event, like \"feed done 120 ml at 12\".",
+        "NSPhotoLibraryUsageDescription": "Add a photo of your baby to their profile and memories.",
+        "NSCameraUsageDescription": "Take a photo of your baby for their profile and memories.",
+        "UIBackgroundModes": ["audio"]
+      }
+    },
+    "android": {
+      "package": "com.princebabytracker.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#FBF4EC",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "permissions": ["RECORD_AUDIO", "POST_NOTIFICATIONS", "READ_MEDIA_IMAGES", "CAMERA"]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Prince Baby Tracker uses the microphone so you can log events hands-free by speaking.",
+          "speechRecognitionPermission": "Prince Baby Tracker turns your speech into a logged event.",
+          "androidSpeechServicePackages": ["com.google.android.googlequicksearchbox"]
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#E98862"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Add a photo of your baby to their profile and memories.",
+          "cameraPermission": "Take a photo of your baby for their profile and memories."
+        }
+      ]
+    ]
+  }
+}
