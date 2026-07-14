@@ -9,7 +9,6 @@ import { GrowthChart } from '../../components/GrowthChart';
 import { PlusIcon } from '../../components/icons';
 import { useStore } from '../../lib/store';
 import { useTheme } from '../../theme/ThemeProvider';
-import { computePercentile } from '../../lib/percentiles';
 import { radii } from '../../theme/tokens';
 import { clockTime } from '../../lib/time';
 
@@ -37,12 +36,9 @@ export function GrowthScreen() {
 
   const cfg = CONFIG[tab];
   const latestValue = latest ? cfg.valueOf(latest) : undefined;
-  const pct = latest && latestValue !== undefined ? computePercentile(tab, baby.sex, latestValue, baby.dob, latest.date) : null;
 
   const heightLatest = latest?.heightCm;
   const headLatest = latest?.headCm;
-  const heightPct = latest && heightLatest !== undefined ? computePercentile('height', baby.sex, heightLatest, baby.dob, latest.date) : null;
-  const headPct = latest && headLatest !== undefined ? computePercentile('head', baby.sex, headLatest, baby.dob, latest.date) : null;
 
   const deltaLabel = useMemo(() => {
     if (!latest || !previous || latestValue === undefined) return '';
@@ -76,26 +72,16 @@ export function GrowthScreen() {
         </View>
 
         <Card radius={radii.cardXl} padding={20} style={{ marginBottom: 14 }}>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-              <AppText weight={900} size={32} color={theme.ink}>
-                {latestValue ?? '—'}
-              </AppText>
-              <AppText weight={700} size={15} color={theme.textSecondary}> {cfg.unit}</AppText>
-            </View>
-            {pct && (
-              <View style={{ backgroundColor: '#DCE8CE', borderRadius: 999, paddingVertical: 4, paddingHorizontal: 12 }}>
-                <AppText weight={800} size={12} color="#43602A">
-                  {pct.percentile}
-                  {ordinalSuffix(pct.percentile)} percentile
-                </AppText>
-              </View>
-            )}
+          <View style={{ flexDirection: 'row', alignItems: 'baseline', marginBottom: 4 }}>
+            <AppText weight={900} size={32} color={theme.ink}>
+              {latestValue ?? '—'}
+            </AppText>
+            <AppText weight={700} size={15} color={theme.textSecondary}> {cfg.unit}</AppText>
           </View>
           <AppText weight={700} size={12.5} color={theme.textSecondary} style={{ marginBottom: 14 }}>
             {deltaLabel}
           </AppText>
-          <GrowthChart measure={tab} sex={baby.sex} dob={baby.dob} measurements={babyMeasurements} valueOf={cfg.valueOf} unit={cfg.unit} />
+          <GrowthChart measure={tab} sex={baby.sex} dob={baby.dob} measurements={babyMeasurements} valueOf={cfg.valueOf} unit={cfg.unit} showReference={false} />
         </Card>
 
         <View style={{ flexDirection: 'row', gap: 12, marginBottom: 14 }}>
@@ -106,12 +92,6 @@ export function GrowthScreen() {
             <AppText weight={900} size={20} color={theme.ink}>
               {heightLatest ?? '—'} cm
             </AppText>
-            {heightPct && (
-              <AppText weight={700} size={11.5} color={theme.successGreen}>
-                {heightPct.percentile}
-                {ordinalSuffix(heightPct.percentile)} pct
-              </AppText>
-            )}
           </Card>
           <Card radius={radii.cardXxl} padding={16} style={{ flex: 1 }}>
             <AppText weight={800} size={11} color={theme.textTertiary} letterSpacing={1} uppercase>
@@ -120,12 +100,6 @@ export function GrowthScreen() {
             <AppText weight={900} size={20} color={theme.ink}>
               {headLatest ?? '—'} cm
             </AppText>
-            {headPct && (
-              <AppText weight={700} size={11.5} color={theme.successGreen}>
-                {headPct.percentile}
-                {ordinalSuffix(headPct.percentile)} pct
-              </AppText>
-            )}
           </Card>
         </View>
 
@@ -141,16 +115,11 @@ export function GrowthScreen() {
             {latest ? `Last: ${new Date(latest.date).toLocaleDateString([], { month: 'short', day: 'numeric' })}` : 'No data yet'}
           </AppText>
         </Pressable>
+
+        <AppText weight={700} size={11} color={theme.textTertiary} center style={{ marginTop: 16, paddingHorizontal: 10 }}>
+          For your records only — not medical advice. Talk to your pediatrician about your baby's growth.
+        </AppText>
       </ScrollView>
     </SafeAreaView>
   );
-}
-
-function ordinalSuffix(n: number): string {
-  const j = n % 10;
-  const k = n % 100;
-  if (j === 1 && k !== 11) return 'st';
-  if (j === 2 && k !== 12) return 'nd';
-  if (j === 3 && k !== 13) return 'rd';
-  return 'th';
 }

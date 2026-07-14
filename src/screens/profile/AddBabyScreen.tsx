@@ -49,7 +49,7 @@ export function AddBabyScreen() {
           </View>
           <View style={{ backgroundColor: theme.surface, borderRadius: 18, padding: 14, paddingHorizontal: 18, ...theme.cardShadow }}>
             <AppText weight={800} size={11} color={theme.textTertiary} letterSpacing={1} uppercase style={{ marginBottom: 8 }}>
-              Sex — for growth percentiles
+              Sex
             </AppText>
             <View style={{ flexDirection: 'row', gap: 8 }}>
               {([

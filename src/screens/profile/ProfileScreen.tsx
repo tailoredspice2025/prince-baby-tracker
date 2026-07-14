@@ -3,13 +3,16 @@ import { Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { AppText } from '../../components/AppText';
-import { SmallPlusIcon, InviteIcon } from '../../components/icons';
+import { SmallPlusIcon } from '../../components/icons';
+
+// Multi-caregiver (list + invite/share-code flow) is phase 2 — hidden for
+// the v1 App Store release so review doesn't hit a dead-end demo flow.
+const SHOW_CAREGIVERS = false;
 import { Toggle } from '../../components/Toggle';
 import { useStore } from '../../lib/store';
 import { useTheme } from '../../theme/ThemeProvider';
 import { radii, pastels, PastelKey } from '../../theme/tokens';
 import { ageString } from '../../lib/time';
-import { createInviteCode } from '../../lib/firestoreSync';
 import { exportPediatricianPdf } from '../../lib/pdfExport';
 import { BabyAvatar } from '../../components/BabyAvatar';
 
@@ -29,15 +32,8 @@ export function ProfileScreen() {
   const setVoiceLoggingEnabled = useStore((s) => s.setVoiceLoggingEnabled);
   const setFeedReminder = useStore((s) => s.setFeedReminder);
   const pushToast = useStore((s) => s.pushToast);
-  const [shareCode, setShareCode] = useState<string | null>(null);
-
   const latest = measurements[measurements.length - 1];
   const otherBabies = babies.filter((b) => b.id !== baby.id);
-
-  const invite = async () => {
-    const code = await createInviteCode(baby.familyId);
-    setShareCode(code);
-  };
 
   const exportPdf = async () => {
     try {
@@ -165,6 +161,8 @@ export function ProfileScreen() {
           </View>
         </Pressable>
 
+        {SHOW_CAREGIVERS && (
+        <>
         <AppText weight={900} size={15} color={theme.ink} style={{ marginBottom: 10 }}>
           Caregivers
         </AppText>
@@ -210,19 +208,8 @@ export function ProfileScreen() {
             );
           })}
         </View>
-
-        <Pressable
-          onPress={invite}
-          style={{ backgroundColor: '#FFDCC2', borderRadius: radii.cardXxl, padding: 14, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 24 }}
-        >
-          <InviteIcon />
-          <AppText weight={800} size={14} color="#6E4429" style={{ flex: 1 }}>
-            Invite caregiver
-          </AppText>
-          <AppText weight={700} size={12} color="#B27B54">
-            {shareCode ?? 'Share code'}
-          </AppText>
-        </Pressable>
+        </>
+        )}
 
         <AppText weight={900} size={15} color={theme.ink} style={{ marginBottom: 10 }}>
           Settings

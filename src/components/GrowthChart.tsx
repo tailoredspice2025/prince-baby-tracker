@@ -35,6 +35,7 @@ export function GrowthChart({
   measurements,
   valueOf,
   unit,
+  showReference = true,
 }: {
   measure: Measure;
   sex: Sex;
@@ -42,6 +43,8 @@ export function GrowthChart({
   measurements: Measurement[];
   valueOf: (m: Measurement) => number | undefined;
   unit: string;
+  /** WHO percentile bands — disabled for v1, planned to return in phase 2. */
+  showReference?: boolean;
 }) {
   const now = new Date();
 
@@ -58,9 +61,9 @@ export function GrowthChart({
       return d.toISOString();
     };
 
-    const p15 = months.map((m) => valueAtPercentile(measure, sex, 15, dob, onDateFor(m)));
-    const p50 = months.map((m) => valueAtPercentile(measure, sex, 50, dob, onDateFor(m)));
-    const p85 = months.map((m) => valueAtPercentile(measure, sex, 85, dob, onDateFor(m)));
+    const p15 = showReference ? months.map((m) => valueAtPercentile(measure, sex, 15, dob, onDateFor(m))) : [];
+    const p50 = showReference ? months.map((m) => valueAtPercentile(measure, sex, 50, dob, onDateFor(m))) : [];
+    const p85 = showReference ? months.map((m) => valueAtPercentile(measure, sex, 85, dob, onDateFor(m))) : [];
 
     const babyPoints = measurements
       .map((m) => ({ month: ageInMonths(dob, m.date), value: valueOf(m) }))
@@ -68,20 +71,32 @@ export function GrowthChart({
       .sort((a, b) => a.month - b.month);
 
     const allValues = [...p15, ...p85, ...babyPoints.map((p) => p.value)];
-    const minV = Math.min(...allValues) * 0.96;
-    const maxV = Math.max(...allValues) * 1.04;
+    if (allValues.length === 0) allValues.push(0, 10); // no data yet — arbitrary sane range
+    let minV = Math.min(...allValues) * 0.96;
+    let maxV = Math.max(...allValues) * 1.04;
+    if (maxV - minV < 0.001) {
+      // single measurement without bands — pad so scaleY stays finite
+      minV -= 1;
+      maxV += 1;
+    }
 
     const scaleX = (m: number) => PAD_L + (m / maxMonth) * (VB_W - PAD_L - PAD_R);
     const scaleY = (v: number) => TOP + (1 - (v - minV) / (maxV - minV)) * (BOTTOM - TOP);
 
-    const pts15 = months.map((m, i) => ({ x: scaleX(m), y: scaleY(p15[i]) }));
-    const pts50 = months.map((m, i) => ({ x: scaleX(m), y: scaleY(p50[i]) }));
-    const pts85 = months.map((m, i) => ({ x: scaleX(m), y: scaleY(p85[i]) }));
+    const pts15 = p15.map((v, i) => ({ x: scaleX(months[i]), y: scaleY(v) }));
+    const pts50 = p50.map((v, i) => ({ x: scaleX(months[i]), y: scaleY(v) }));
+    const pts85 = p85.map((v, i) => ({ x: scaleX(months[i]), y: scaleY(v) }));
 
-    const bandOuterPath = `${smoothPath(pts85)} L${pts15[pts15.length - 1].x} ${pts15[pts15.length - 1].y} ${smoothPath([...pts15].reverse())
-      .replace(/^M/, 'L')} Z`;
-    const bandInnerTopPath = `${smoothPath(pts85)} L${pts50[pts50.length - 1].x} ${pts50[pts50.length - 1].y} ${smoothPath([...pts50].reverse()).replace(/^M/, 'L')} Z`;
-    const bandInnerBottomPath = `${smoothPath(pts50)} L${pts15[pts15.length - 1].x} ${pts15[pts15.length - 1].y} ${smoothPath([...pts15].reverse()).replace(/^M/, 'L')} Z`;
+    const bandOuterPath = showReference
+      ? `${smoothPath(pts85)} L${pts15[pts15.length - 1].x} ${pts15[pts15.length - 1].y} ${smoothPath([...pts15].reverse())
+          .replace(/^M/, 'L')} Z`
+      : '';
+    const bandInnerTopPath = showReference
+      ? `${smoothPath(pts85)} L${pts50[pts50.length - 1].x} ${pts50[pts50.length - 1].y} ${smoothPath([...pts50].reverse()).replace(/^M/, 'L')} Z`
+      : '';
+    const bandInnerBottomPath = showReference
+      ? `${smoothPath(pts50)} L${pts15[pts15.length - 1].x} ${pts15[pts15.length - 1].y} ${smoothPath([...pts15].reverse()).replace(/^M/, 'L')} Z`
+      : '';
 
     const babyPixelPoints = babyPoints.map((p) => ({ x: scaleX(p.month), y: scaleY(p.value) }));
     const babyLinePath = smoothPath(babyPixelPoints);
@@ -108,7 +123,7 @@ export function GrowthChart({
       approxLength,
       lastLabel: babyPoints.length ? `${babyPoints[babyPoints.length - 1].value}${unit}` : '',
     };
-  }, [measure, sex, dob, measurements, valueOf, unit]);
+  }, [measure, sex, dob, measurements, valueOf, unit, showReference]);
 
   // draw-in on tab switch: ~500ms ease-out per the design spec
   const drawAnim = useRef(new Animated.Value(0)).current;
@@ -128,14 +143,18 @@ export function GrowthChart({
   return (
     <View>
       <Svg width="100%" height={190} viewBox={`0 0 ${VB_W} ${VB_H}`}>
-        <Path d={chart.bandOuterPath} fill="#F6E7D8" />
-        <Path d={chart.bandInnerBottomPath} fill="#EFD9C2" />
-        <Path d={chart.line85} fill="none" stroke="#E5CBAA" strokeWidth={1} strokeDasharray="3 4" />
-        <Path d={chart.line50} fill="none" stroke="#DDBE96" strokeWidth={1} strokeDasharray="3 4" />
-        <Path d={chart.line15} fill="none" stroke="#E5CBAA" strokeWidth={1} strokeDasharray="3 4" />
-        <SvgText x={VB_W - 6} y={TOP + 4} fontSize={9} fill="#C4A87F" textAnchor="end">85th</SvgText>
-        <SvgText x={VB_W - 6} y={TOP + 30} fontSize={9} fill="#B08F60" textAnchor="end">50th</SvgText>
-        <SvgText x={VB_W - 6} y={TOP + 58} fontSize={9} fill="#C4A87F" textAnchor="end">15th</SvgText>
+        {showReference && (
+          <>
+            <Path d={chart.bandOuterPath} fill="#F6E7D8" />
+            <Path d={chart.bandInnerBottomPath} fill="#EFD9C2" />
+            <Path d={chart.line85} fill="none" stroke="#E5CBAA" strokeWidth={1} strokeDasharray="3 4" />
+            <Path d={chart.line50} fill="none" stroke="#DDBE96" strokeWidth={1} strokeDasharray="3 4" />
+            <Path d={chart.line15} fill="none" stroke="#E5CBAA" strokeWidth={1} strokeDasharray="3 4" />
+            <SvgText x={VB_W - 6} y={TOP + 4} fontSize={9} fill="#C4A87F" textAnchor="end">85th</SvgText>
+            <SvgText x={VB_W - 6} y={TOP + 30} fontSize={9} fill="#B08F60" textAnchor="end">50th</SvgText>
+            <SvgText x={VB_W - 6} y={TOP + 58} fontSize={9} fill="#C4A87F" textAnchor="end">15th</SvgText>
+          </>
+        )}
 
         <AnimatedPath
           d={chart.babyLinePath}
