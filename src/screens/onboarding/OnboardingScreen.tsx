@@ -65,8 +65,12 @@ export function OnboardingScreen() {
   };
 
   const submit = () => {
+    // "Born" is free text (e.g. "March 8, 2026" or "2026-03-08") — keep the
+    // seeded dob only if it can't be parsed as a date.
+    const parsedDob = new Date(born);
     completeOnboarding({
       name: name || 'Prince',
+      ...(isNaN(parsedDob.getTime()) ? {} : { dob: parsedDob.toISOString().slice(0, 10) }),
       birthWeightKg: parseFloat(weight) || 3.4,
       birthLengthCm: parseFloat(length) || 51,
       sex,
