@@ -155,6 +155,10 @@ export interface Settings {
   voiceLoggingEnabled: boolean;
   voicePermissions: VoicePermissions;
   forceNightPreview?: boolean;
+  // Optional so installs persisted before the feature existed stay valid;
+  // treat undefined as disabled / 3 h.
+  feedReminderEnabled?: boolean;
+  feedReminderHours?: number;
 }
 
 export interface ParsedVoiceDraft {

@@ -19,11 +19,13 @@ export function TrendBarChart({
   labels,
   color,
   fadedColor,
+  onBarPress,
 }: {
   values: number[];
   labels: (string | null)[];
   color: string;
   fadedColor: string;
+  onBarPress?: (index: number) => void;
 }) {
   const n = values.length;
   if (n === 0) return null;
@@ -65,6 +67,20 @@ export function TrendBarChart({
             />
           );
         })}
+        {onBarPress &&
+          values.map((_, i) => (
+            // invisible full-height touch strip — bars themselves are too
+            // thin a target in month view
+            <Rect
+              key={`touch-${i}`}
+              x={PAD_X + i * slot}
+              y={0}
+              width={slot}
+              height={BAR_AREA_H}
+              fill="transparent"
+              onPress={() => onBarPress(i)}
+            />
+          ))}
         {labels.map((label, i) =>
           label == null ? null : (
             <SvgText

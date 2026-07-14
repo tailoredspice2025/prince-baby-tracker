@@ -34,7 +34,13 @@ import {
   demoVaccines,
 } from './demoData';
 import { syncDeleteEvent, syncWriteEvent, syncWriteVaccine, isFirebaseConfigured } from './firestoreSync';
-import { scheduleMedicationReminder, scheduleVaccineReminder } from './notifications';
+import {
+  cancelFeedReminder,
+  ensureNotificationPermissions,
+  rescheduleFeedReminder,
+  scheduleMedicationReminder,
+  scheduleVaccineReminder,
+} from './notifications';
 
 function uid(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
@@ -81,7 +87,10 @@ interface AppState {
   addBaby: (baby: Omit<Baby, 'id' | 'familyId' | 'active'>) => void;
   setActiveBaby: (id: string) => void;
   setBabyPhoto: (uri: string) => void;
-  logQuickEvent: (type: 'bottle' | 'diaper' | 'solids' | 'pump' | 'medicine') => void;
+  logQuickEvent: (
+    type: 'bottle' | 'diaper' | 'solids' | 'pump' | 'medicine',
+    opts?: { quantityMl?: number; kind?: DiaperEvent['kind']; food?: string }
+  ) => void;
   toggleSleep: () => void;
   editingEventId: string | null;
   setEditingEvent: (id: string | null) => void;
@@ -94,6 +103,7 @@ interface AppState {
   addMilestone: (m: Omit<Milestone, 'id' | 'babyId' | 'achieved'>) => void;
   setUnits: (u: Settings['units']) => void;
   setVoiceLoggingEnabled: (v: boolean) => void;
+  setFeedReminder: (enabled: boolean, hours?: number) => void;
   toggleVoicePermission: (key: keyof VoicePermissions) => void;
   addCaregiver: (c: Omit<Caregiver, 'id' | 'familyId'>) => void;
   setVoiceDraft: (d: ParsedVoiceDraft | null) => void;
@@ -200,37 +210,45 @@ export const useStore = create<AppState>()(
   },
   dismissToast: (id) => set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
 
-  logQuickEvent: (type) => {
+  logQuickEvent: (type, opts) => {
     const babyId = get().activeBabyId;
     const loggedBy = get().currentCaregiverId;
     const now = new Date().toISOString();
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     if (type === 'bottle') {
-      const ev: FeedEvent = { id: uid('ev'), babyId, type: 'bottle', time: now, quantityMl: 120, notes: 'Formula', loggedBy, inputMethod: 'tap' };
+      const quantityMl = opts?.quantityMl ?? 120;
+      const ev: FeedEvent = { id: uid('ev'), babyId, type: 'bottle', time: now, quantityMl, notes: 'Formula', loggedBy, inputMethod: 'tap' };
       set((s) => ({ events: [ev, ...s.events] }));
       syncWriteEvent(ev);
-      get().pushToast({ message: 'Bottle · 120 ml logged', onUndo: () => set((s) => ({ events: s.events.filter((e) => e.id !== ev.id) })) });
+      get().pushToast({ message: `Bottle · ${quantityMl} ml logged`, onUndo: () => set((s) => ({ events: s.events.filter((e) => e.id !== ev.id) })) });
     } else if (type === 'diaper') {
-      const ev: DiaperEvent = { id: uid('ev'), babyId, type: 'diaper', time: now, kind: 'wet', loggedBy, inputMethod: 'tap' };
+      const kind = opts?.kind ?? 'wet';
+      const ev: DiaperEvent = { id: uid('ev'), babyId, type: 'diaper', time: now, kind, loggedBy, inputMethod: 'tap' };
       set((s) => ({ events: [ev, ...s.events] }));
       syncWriteEvent(ev);
-      get().pushToast({ message: 'Diaper · wet logged', onUndo: () => set((s) => ({ events: s.events.filter((e) => e.id !== ev.id) })) });
+      get().pushToast({ message: `Diaper · ${kind} logged`, onUndo: () => set((s) => ({ events: s.events.filter((e) => e.id !== ev.id) })) });
     } else if (type === 'solids') {
-      const ev: FeedEvent = { id: uid('ev'), babyId, type: 'solids', time: now, food: 'pear', loggedBy, inputMethod: 'tap' };
+      const food = opts?.food ?? 'pear';
+      const ev: FeedEvent = { id: uid('ev'), babyId, type: 'solids', time: now, food, loggedBy, inputMethod: 'tap' };
       set((s) => ({ events: [ev, ...s.events] }));
       syncWriteEvent(ev);
-      get().pushToast({ message: 'Solids logged', onUndo: () => set((s) => ({ events: s.events.filter((e) => e.id !== ev.id) })) });
+      get().pushToast({ message: `Solids · ${food} logged`, onUndo: () => set((s) => ({ events: s.events.filter((e) => e.id !== ev.id) })) });
     } else if (type === 'pump') {
-      const ev: FeedEvent = { id: uid('ev'), babyId, type: 'pump', time: now, quantityMl: 90, side: 'left', loggedBy, inputMethod: 'tap' };
+      const quantityMl = opts?.quantityMl ?? 90;
+      const ev: FeedEvent = { id: uid('ev'), babyId, type: 'pump', time: now, quantityMl, side: 'left', loggedBy, inputMethod: 'tap' };
       set((s) => ({ events: [ev, ...s.events] }));
       syncWriteEvent(ev);
-      get().pushToast({ message: 'Pump · 90 ml logged', onUndo: () => set((s) => ({ events: s.events.filter((e) => e.id !== ev.id) })) });
+      get().pushToast({ message: `Pump · ${quantityMl} ml logged`, onUndo: () => set((s) => ({ events: s.events.filter((e) => e.id !== ev.id) })) });
     } else if (type === 'medicine') {
       const ev: MedicineEvent = { id: uid('ev'), babyId, type: 'medicine', time: now, name: 'Vitamin D drops', dose: '400 IU', loggedBy, inputMethod: 'tap' };
       set((s) => ({ events: [ev, ...s.events] }));
       syncWriteEvent(ev);
       get().pushToast({ message: 'Vitamin D drops logged', onUndo: () => set((s) => ({ events: s.events.filter((e) => e.id !== ev.id) })) });
+    }
+
+    if ((type === 'bottle' || type === 'solids') && get().settings.feedReminderEnabled) {
+      rescheduleFeedReminder(now, get().settings.feedReminderHours ?? 3, get().activeBaby().name).catch(() => {});
     }
   },
 
@@ -291,6 +309,25 @@ export const useStore = create<AppState>()(
 
   setUnits: (u) => set((s) => ({ settings: { ...s.settings, units: u } })),
   setVoiceLoggingEnabled: (v) => set((s) => ({ settings: { ...s.settings, voiceLoggingEnabled: v } })),
+
+  setFeedReminder: (enabled, hours) => {
+    const prevHours = get().settings.feedReminderHours ?? 3;
+    const nextHours = hours ?? prevHours;
+    set((s) => ({ settings: { ...s.settings, feedReminderEnabled: enabled, feedReminderHours: nextHours } }));
+    if (!enabled) {
+      cancelFeedReminder().catch(() => {});
+      return;
+    }
+    ensureNotificationPermissions().catch(() => {});
+    // anchor to the most recent feed so the reminder is meaningful immediately
+    const s = get();
+    const lastFeed = s.events
+      .filter((e) => e.babyId === s.activeBabyId && (e.type === 'bottle' || e.type === 'solids'))
+      .map((e) => ('time' in e ? e.time : ''))
+      .sort()
+      .pop();
+    if (lastFeed) rescheduleFeedReminder(lastFeed, nextHours, s.activeBaby().name).catch(() => {});
+  },
   toggleVoicePermission: (key) =>
     set((s) => ({
       settings: { ...s.settings, voicePermissions: { ...s.settings.voicePermissions, [key]: !s.settings.voicePermissions[key] } },
@@ -318,6 +355,9 @@ export const useStore = create<AppState>()(
       };
       set((s) => ({ events: [ev, ...s.events] }));
       syncWriteEvent(ev);
+      if (draft.eventType !== 'pump' && get().settings.feedReminderEnabled) {
+        rescheduleFeedReminder(draft.time, get().settings.feedReminderHours ?? 3, get().activeBaby().name).catch(() => {});
+      }
     } else if (draft.eventType === 'diaper') {
       const ev: DiaperEvent = {
         id: uid('ev'),

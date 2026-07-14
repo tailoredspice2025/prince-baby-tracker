@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -6,11 +6,13 @@ import { AppText } from '../../components/AppText';
 import { BellIcon, ClockIcon } from '../../components/icons';
 import { BottleIcon, SleepIcon, DiaperIcon, SolidsIcon, PumpIcon, MedicineIcon } from '../../components/icons';
 import { QuickLogTile } from '../../components/QuickLogTile';
+import { PickerType, QuickLogPicker } from '../../components/QuickLogPicker';
 import { TimelineRow } from '../../components/TimelineRow';
 import { VoiceBar } from '../../components/VoiceBar';
 import { useStore } from '../../lib/store';
 import { useTheme } from '../../theme/ThemeProvider';
 import { ageString, clockTime, durationLabel, relativeTime } from '../../lib/time';
+import { eventRowFor } from '../../lib/eventRow';
 import { DiaperEvent, FeedEvent, MedicineEvent, SleepEvent, TimelineEvent } from '../../types/models';
 import { PastelKey } from '../../theme/tokens';
 import { NightHomeView } from './NightHomeView';
@@ -45,6 +47,7 @@ export function HomeScreen() {
   const toggleSleep = useStore((s) => s.toggleSleep);
   const setEditingEvent = useStore((s) => s.setEditingEvent);
   const voiceEnabled = useStore((s) => s.settings.voiceLoggingEnabled);
+  const [pickerType, setPickerType] = useState<PickerType | null>(null);
 
   if (theme.mode === 'night') return <NightHomeView />;
 
@@ -89,26 +92,7 @@ export function HomeScreen() {
     [babyEvents]
   );
 
-  function caregiverName(id: string) {
-    return caregivers.find((c) => c.id === id)?.name.split(' · ')[0] ?? 'Caregiver';
-  }
-
-  function rowFor(e: TimelineEvent) {
-    const time = 'time' in e ? e.time : e.endTime ?? e.startTime;
-    let title = '';
-    if (e.type === 'bottle') title = `Bottle · ${(e as FeedEvent).quantityMl ?? ''} ml`;
-    else if (e.type === 'solids') title = `Solids${(e as FeedEvent).food ? ` · ${(e as FeedEvent).food}` : ''}`;
-    else if (e.type === 'pump') title = `Pump · ${(e as FeedEvent).quantityMl ?? ''} ml`;
-    else if (e.type === 'diaper') title = `Diaper · ${(e as DiaperEvent).kind}`;
-    else if (e.type === 'medicine') title = (e as MedicineEvent).name;
-    else if (e.type === 'sleep') {
-      const se = e as SleepEvent;
-      title = se.endTime ? `Sleep · ${durationLabel(new Date(se.endTime).getTime() - new Date(se.startTime).getTime())}` : 'Sleep started';
-    }
-    const voiceTag = e.inputMethod === 'voice' ? ' 🎙️ voice' : '';
-    const subLine = `logged by ${caregiverName(e.loggedBy)}${voiceTag}`;
-    return { title, time: clockTime(time), subLine };
-  }
+  const rowFor = (e: TimelineEvent) => eventRowFor(e, caregivers);
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.bg }}>
@@ -158,6 +142,7 @@ export function HomeScreen() {
                 title="Bottle"
                 caption={bottle ? `${relativeTime(bottle.time, now)} · ${bottle.quantityMl}ml` : 'Tap to log'}
                 onPress={() => logQuickEvent('bottle')}
+                onLongPress={() => setPickerType('bottle')}
               />
             </View>
             <View style={{ width: '47%' }}>
@@ -176,6 +161,7 @@ export function HomeScreen() {
                 title="Diaper"
                 caption={diaper ? `${relativeTime(diaper.time, now)} · ${diaper.kind}` : 'Tap to log'}
                 onPress={() => logQuickEvent('diaper')}
+                onLongPress={() => setPickerType('diaper')}
               />
             </View>
             <View style={{ width: '47%' }}>
@@ -185,6 +171,7 @@ export function HomeScreen() {
                 title="Solids"
                 caption={solids ? `${relativeTime(solids.time, now)}${solids.food ? ` · ${solids.food}` : ''}` : 'Tap to log'}
                 onPress={() => logQuickEvent('solids')}
+                onLongPress={() => setPickerType('solids')}
               />
             </View>
             <View style={{ width: '47%' }}>
@@ -194,6 +181,7 @@ export function HomeScreen() {
                 title="Pump"
                 caption={pump ? `${relativeTime(pump.time, now)} · ${pump.quantityMl}ml` : 'Tap to log'}
                 onPress={() => logQuickEvent('pump')}
+                onLongPress={() => setPickerType('pump')}
               />
             </View>
             <View style={{ width: '47%' }}>
@@ -236,6 +224,7 @@ export function HomeScreen() {
           </View>
         </ScrollView>
       </SafeAreaView>
+      <QuickLogPicker type={pickerType} onClose={() => setPickerType(null)} />
     </View>
   );
 }

@@ -140,7 +140,7 @@ export function TrendsScreen() {
       const keys = lastNDayKeys(7, now);
       const stats = keys.map(dayFor);
       const labels = keys.map((k) => 'SMTWTFS'[new Date(`${k}T12:00:00`).getDay()]);
-      return { periodLabel: 'Last 7 days', stats, labels, days: aliveDays(keys) };
+      return { periodLabel: 'Last 7 days', stats, labels, days: aliveDays(keys), dayKeys: keys };
     }
     if (range === 'month') {
       const keys = lastNDayKeys(30, now);
@@ -148,7 +148,7 @@ export function TrendsScreen() {
       const labels = keys.map((k, i) =>
         (keys.length - 1 - i) % 7 === 0 ? `${parseInt(k.slice(8), 10)}` : null
       );
-      return { periodLabel: 'Last 30 days', stats, labels, days: aliveDays(keys) };
+      return { periodLabel: 'Last 30 days', stats, labels, days: aliveDays(keys), dayKeys: keys };
     }
     // year: bucket the last 365 days by month, chart the per-day average
     const dayKeys = lastNDayKeys(365, now);
@@ -172,6 +172,7 @@ export function TrendsScreen() {
       labels,
       days: aliveDays(dayKeys),
       monthStats,
+      dayKeys: undefined as string[] | undefined,
     };
   }, [daily, range, dobKey]);
 
@@ -209,11 +210,22 @@ export function TrendsScreen() {
         <View style={{ marginBottom: 10 }}>
           <SegmentedControl options={RANGE_OPTIONS} value={range} onChange={setRange} />
         </View>
-        <AppText weight={700} size={12.5} color={theme.textSecondary} style={{ marginBottom: 16 }}>
-          {range === 'day'
-            ? new Date().toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })
-            : `${view.periodLabel} · ${baby.name}`}
-        </AppText>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 16 }}>
+          <AppText weight={700} size={12.5} color={theme.textSecondary}>
+            {range === 'day'
+              ? new Date().toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })
+              : range === 'year'
+              ? `${view.periodLabel} · ${baby.name}`
+              : `${view.periodLabel} · tap a bar to open that day`}
+          </AppText>
+          {range === 'day' && (
+            <Pressable onPress={() => navigation.navigate('DayLog', { day: todayKey })} hitSlop={10}>
+              <AppText weight={800} size={12.5} color={theme.coralDeep}>
+                Full log ›
+              </AppText>
+            </Pressable>
+          )}
+        </View>
 
         {range === 'day' ? (
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
@@ -262,6 +274,11 @@ export function TrendsScreen() {
                   labels={view.labels}
                   color={m.color}
                   fadedColor={m.faded}
+                  onBarPress={
+                    view.dayKeys
+                      ? (i) => navigation.navigate('DayLog', { day: view.dayKeys![i] })
+                      : undefined
+                  }
                 />
                 {range === 'year' && (
                   <AppText weight={700} size={10.5} color={theme.textTertiary} style={{ marginTop: 4 }}>

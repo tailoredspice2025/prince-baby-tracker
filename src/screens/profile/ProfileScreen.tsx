@@ -27,6 +27,7 @@ export function ProfileScreen() {
   const settings = useStore((s) => s.settings);
   const setUnits = useStore((s) => s.setUnits);
   const setVoiceLoggingEnabled = useStore((s) => s.setVoiceLoggingEnabled);
+  const setFeedReminder = useStore((s) => s.setFeedReminder);
   const pushToast = useStore((s) => s.pushToast);
   const [shareCode, setShareCode] = useState<string | null>(null);
 
@@ -247,6 +248,41 @@ export function ProfileScreen() {
             </AppText>
             <Toggle value={settings.voiceLoggingEnabled} onChange={setVoiceLoggingEnabled} />
           </Pressable>
+          <View style={{ padding: 13, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: theme.border }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <AppText weight={700} size={14.5} color={theme.ink}>
+                Feed reminder
+              </AppText>
+              <Toggle
+                value={settings.feedReminderEnabled ?? false}
+                onChange={(v) => setFeedReminder(v)}
+              />
+            </View>
+            {(settings.feedReminderEnabled ?? false) && (
+              <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
+                {[2, 3, 4].map((h) => {
+                  const active = (settings.feedReminderHours ?? 3) === h;
+                  return (
+                    <Pressable
+                      key={h}
+                      onPress={() => setFeedReminder(true, h)}
+                      style={{
+                        flex: 1,
+                        alignItems: 'center',
+                        paddingVertical: 7,
+                        borderRadius: 999,
+                        backgroundColor: active ? theme.ink : '#F0E4D2',
+                      }}
+                    >
+                      <AppText weight={active ? 800 : 700} size={12.5} color={active ? '#F5E9DB' : theme.textSecondary}>
+                        every {h} h
+                      </AppText>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            )}
+          </View>
           <Pressable
             onPress={exportPdf}
             style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 13, paddingHorizontal: 16 }}

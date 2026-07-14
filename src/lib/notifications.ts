@@ -64,3 +64,29 @@ export async function setupNotificationChannel() {
 export async function cancelReminder(identifier: string) {
   await Notifications.cancelScheduledNotificationAsync(identifier);
 }
+
+const FEED_REMINDER_ID = 'feed-reminder';
+
+/**
+ * (Re)schedules the single "time to feed" reminder for `hours` after the
+ * most recent feed. Called on every feed log, so the reminder keeps
+ * sliding forward and only fires after a genuine gap.
+ */
+export async function rescheduleFeedReminder(lastFeedISO: string, hours: number, babyName: string) {
+  await Notifications.cancelScheduledNotificationAsync(FEED_REMINDER_ID).catch(() => {});
+  const fireAt = new Date(new Date(lastFeedISO).getTime() + hours * 3600_000);
+  if (fireAt.getTime() <= Date.now()) return;
+  await Notifications.scheduleNotificationAsync({
+    identifier: FEED_REMINDER_ID,
+    content: {
+      title: `Feeding time? 🍼`,
+      body: `It's been ${hours} hours since ${babyName}'s last feed`,
+      sound: Platform.OS === 'ios' ? 'default' : undefined,
+    },
+    trigger: { date: fireAt, channelId: 'reminders' } as Notifications.DateTriggerInput,
+  });
+}
+
+export async function cancelFeedReminder() {
+  await Notifications.cancelScheduledNotificationAsync(FEED_REMINDER_ID).catch(() => {});
+}
