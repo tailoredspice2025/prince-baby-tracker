@@ -9,6 +9,7 @@ import { MedicineFormScreen } from '../screens/health/MedicineFormScreen';
 import { SicknessFormScreen } from '../screens/health/SicknessFormScreen';
 import { AddMeasurementScreen } from '../screens/growth/AddMeasurementScreen';
 import { MilestonesScreen } from '../screens/milestones/MilestonesScreen';
+import { TrendsScreen } from '../screens/trends/TrendsScreen';
 import { AddMilestoneScreen } from '../screens/milestones/AddMilestoneScreen';
 import { AddBabyScreen } from '../screens/profile/AddBabyScreen';
 
@@ -22,6 +23,7 @@ export function RootNavigator() {
       {!onboarded && <Stack.Screen name="Onboarding" component={OnboardingScreen} />}
       <Stack.Screen name="Main" component={MainTabs} />
       <Stack.Screen name="Milestones" component={MilestonesScreen} />
+      <Stack.Screen name="Trends" component={TrendsScreen} />
       <Stack.Screen name="VoicePermissions" component={VoicePermissionsScreen} options={{ presentation: 'modal' }} />
       <Stack.Screen name="VaccineForm" component={VaccineFormScreen} options={{ presentation: 'modal' }} />
       <Stack.Screen name="MedicineForm" component={MedicineFormScreen} options={{ presentation: 'modal' }} />

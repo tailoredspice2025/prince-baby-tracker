@@ -106,6 +106,14 @@ export function PlusIcon({ size = 20, color = '#fff' }: IconProps) {
   );
 }
 
+export function ChevronLeftIcon({ size = 18, color = '#7C6E5F' }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 18 18">
+      <Path d="M11.5 3.5L6 9l5.5 5.5" fill="none" stroke={color} strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
 export function SmallPlusIcon({ size = 15, color = '#A98F73' }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 15 15">

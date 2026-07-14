@@ -24,6 +24,7 @@ import {
   demoBaby,
   demoCaregivers,
   demoEvents,
+  demoHistoryEvents,
   demoMeasurements,
   demoMedications,
   demoMilestonesAchieved,
@@ -348,6 +349,16 @@ export const useStore = create<AppState>()(
     {
       name: 'prince-baby-tracker',
       storage: createJSONStorage(() => AsyncStorage),
+      version: 1,
+      // v0 → v1: installs persisted before the Trends screen existed only
+      // have the 3-event demo seed; append the generated demo history so
+      // trends have data, without touching anything the user logged.
+      migrate: (persisted: any, version) => {
+        if (version < 1 && persisted?.events && !persisted.events.some((e: any) => String(e.id).startsWith('ev-h-'))) {
+          persisted.events = [...persisted.events, ...demoHistoryEvents];
+        }
+        return persisted;
+      },
       // persist only durable data — transient UI state (sheets, toasts,
       // live transcript) always starts fresh
       partialize: (s) => ({

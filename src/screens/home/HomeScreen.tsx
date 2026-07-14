@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import { AppText } from '../../components/AppText';
 import { BellIcon, ClockIcon } from '../../components/icons';
 import { BottleIcon, SleepIcon, DiaperIcon, SolidsIcon, PumpIcon, MedicineIcon } from '../../components/icons';
@@ -34,6 +35,7 @@ const EVENT_EMOJI: Record<TimelineEvent['type'], string> = {
 
 export function HomeScreen() {
   const theme = useTheme();
+  const navigation = useNavigation<any>();
   const baby = useStore((s) => s.activeBaby());
   const events = useStore((s) => s.events);
   const caregivers = useStore((s) => s.caregivers);
@@ -209,9 +211,11 @@ export function HomeScreen() {
             <AppText weight={900} size={17} color={theme.ink}>
               Today
             </AppText>
-            <AppText weight={800} size={12.5} color={theme.coralDeep}>
-              See all
-            </AppText>
+            <Pressable onPress={() => navigation.navigate('Trends')} hitSlop={10}>
+              <AppText weight={800} size={12.5} color={theme.coralDeep}>
+                See all ›
+              </AppText>
+            </Pressable>
           </View>
           <View>
             {timeline.map((e, i) => {

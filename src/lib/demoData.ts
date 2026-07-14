@@ -48,7 +48,7 @@ export const demoCaregivers: Caregiver[] = [
   { id: 'cg-nanny', familyId: FAMILY_ID, name: 'Anita · nanny', role: 'caregiver', colorKey: 'sage', loggedCount: 96, online: false, schedule: 'Mon–Fri' },
 ];
 
-export const demoEvents: TimelineEvent[] = [
+const demoTodayEvents: TimelineEvent[] = [
   {
     id: 'ev-1',
     babyId: BABY_ID,
@@ -79,6 +79,153 @@ export const demoEvents: TimelineEvent[] = [
     inputMethod: 'tap',
   },
 ];
+
+// mulberry32 — tiny deterministic PRNG so the generated history is stable
+// across reloads (same day offset → same events) while still looking organic.
+function seededRand(seed: number): () => number {
+  return () => {
+    seed |= 0;
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/**
+ * ~12 weeks of plausible history (bottles, naps + night sleep, diapers,
+ * pumping, daily vitamin D, and solids ramping in over the last month) so
+ * the Trends screen has real day/week/month curves to show before any
+ * Firebase project is connected. Excludes today — today's rows come from
+ * demoTodayEvents and live logging.
+ */
+function generateHistoryEvents(days = 84): TimelineEvent[] {
+  const events: TimelineEvent[] = [];
+  const caregivers = ['cg-mom', 'cg-dad', 'cg-nanny'];
+
+  for (let d = days; d >= 1; d--) {
+    const rand = seededRand(d * 7919);
+    const pick = <T,>(arr: T[]): T => arr[Math.floor(rand() * arr.length)];
+    const jitter = (range: number) => Math.floor(rand() * range * 2) - range;
+    let n = 0;
+    const id = () => `ev-h-${d}-${n++}`;
+
+    // Bottles: 5–7 across the day, 100–160 ml
+    const bottles = 5 + Math.floor(rand() * 3);
+    for (let i = 0; i < bottles; i++) {
+      const hour = 6.5 + (i * 15) / bottles;
+      events.push({
+        id: id(),
+        babyId: BABY_ID,
+        type: 'bottle',
+        time: todayAt(Math.floor(hour), Math.floor((hour % 1) * 60) + jitter(15), -d),
+        quantityMl: 100 + Math.floor(rand() * 7) * 10,
+        loggedBy: pick(caregivers),
+        inputMethod: rand() < 0.3 ? 'voice' : 'tap',
+      });
+    }
+
+    // Solids: none until ~5 weeks ago, then ramping to 1–2/day
+    const solidsCount = d <= 14 ? 1 + Math.floor(rand() * 2) : d <= 35 ? Math.floor(rand() * 2) : 0;
+    const foods = ['pear', 'apple', 'banana', 'carrot', 'oat cereal', 'sweet potato'];
+    for (let i = 0; i < solidsCount; i++) {
+      events.push({
+        id: id(),
+        babyId: BABY_ID,
+        type: 'solids',
+        time: todayAt(i === 0 ? 11 : 17, 30 + jitter(20), -d),
+        food: pick(foods),
+        loggedBy: pick(caregivers),
+        inputMethod: 'tap',
+      });
+    }
+
+    // Naps: two daytime naps
+    const napPlans: [number, number][] = [
+      [9, 50 + Math.floor(rand() * 50)],
+      [14, 45 + Math.floor(rand() * 45)],
+    ];
+    for (const [startHour, mins] of napPlans) {
+      const start = new Date(todayAt(startHour, jitter(25) + 25, -d));
+      const end = new Date(start.getTime() + mins * 60000);
+      events.push({
+        id: id(),
+        babyId: BABY_ID,
+        type: 'sleep',
+        startTime: start.toISOString(),
+        endTime: end.toISOString(),
+        loggedBy: pick(caregivers),
+        inputMethod: 'tap',
+      });
+    }
+
+    // Night sleep: starts this evening, ends next morning (spans midnight).
+    // Skipped for d=1 — last night's sleep is already seeded as ev-3 in
+    // demoTodayEvents, and generating it here would double-count today.
+    if (d > 1) {
+      const nightStart = new Date(todayAt(22, jitter(35), -d));
+      const nightEnd = new Date(todayAt(6, 15 + jitter(30), -d + 1));
+      events.push({
+        id: id(),
+        babyId: BABY_ID,
+        type: 'sleep',
+        startTime: nightStart.toISOString(),
+        endTime: nightEnd.toISOString(),
+        wokeCount: rand() < 0.55 ? 1 + Math.floor(rand() * 2) : 0,
+        loggedBy: pick(caregivers),
+        inputMethod: 'tap',
+      });
+    }
+
+    // Diapers: 5–8, mostly wet
+    const diapers = 5 + Math.floor(rand() * 4);
+    for (let i = 0; i < diapers; i++) {
+      const r = rand();
+      events.push({
+        id: id(),
+        babyId: BABY_ID,
+        type: 'diaper',
+        time: todayAt(7 + Math.floor((i * 15) / diapers), Math.floor(rand() * 60), -d),
+        kind: r < 0.6 ? 'wet' : r < 0.85 ? 'dirty' : 'both',
+        loggedBy: pick(caregivers),
+        inputMethod: rand() < 0.2 ? 'voice' : 'tap',
+      });
+    }
+
+    // Pumping: 1–2 sessions
+    const pumps = 1 + (rand() < 0.5 ? 1 : 0);
+    for (let i = 0; i < pumps; i++) {
+      events.push({
+        id: id(),
+        babyId: BABY_ID,
+        type: 'pump',
+        time: todayAt(i === 0 ? 8 : 20, 30 + jitter(20), -d),
+        quantityMl: 80 + Math.floor(rand() * 6) * 10,
+        side: rand() < 0.5 ? 'left' : rand() < 0.5 ? 'right' : 'both',
+        loggedBy: 'cg-mom',
+        inputMethod: 'tap',
+      });
+    }
+
+    // Daily vitamin D
+    events.push({
+      id: id(),
+      babyId: BABY_ID,
+      type: 'medicine',
+      time: todayAt(18, jitter(10), -d),
+      name: 'Vitamin D drops',
+      dose: '400 IU',
+      loggedBy: pick(caregivers),
+      inputMethod: 'tap',
+    });
+  }
+
+  return events;
+}
+
+export const demoHistoryEvents: TimelineEvent[] = generateHistoryEvents();
+
+export const demoEvents: TimelineEvent[] = [...demoTodayEvents, ...demoHistoryEvents];
 
 export const demoMeasurements: Measurement[] = [
   { id: 'm-birth', babyId: BABY_ID, date: '2026-03-08', weightKg: 3.4, heightCm: 51, headCm: 34.5 },
