@@ -1,4 +1,4 @@
-# App Store submission kit — Prince Baby Tracker v1
+# App Store submission kit — DenBaby v1
 
 Everything to paste into App Store Connect, plus the checklist of what's
 done in-app vs. what needs manual action.
@@ -7,7 +7,7 @@ done in-app vs. what needs manual action.
 
 ## App name
 
-**Prince Baby Tracker** (30-char limit; fits)
+**DenBaby** (30-char limit; fits easily — 7 chars)
 
 ## Subtitle (30 chars max)
 
@@ -22,7 +22,7 @@ done in-app vs. what needs manual action.
 
 > **Track your baby's day in one tap — or just say it.**
 >
-> Prince Baby Tracker is a fast, beautiful log for the things new parents
+> DenBaby is a fast, beautiful log for the things new parents
 > track every day: bottles, sleep, diapers, solids, pumping and medicine.
 >
 > **One-tap logging.** Big friendly tiles log a feed or diaper instantly,
@@ -49,7 +49,7 @@ done in-app vs. what needs manual action.
 > ads, no tracking. Export a tidy PDF summary for pediatrician visits
 > whenever you need it.
 >
-> Prince Baby Tracker is a record-keeping tool for parents, not a medical
+> DenBaby is a record-keeping tool for parents, not a medical
 > device. Always consult your pediatrician about your baby's health.
 
 ## Keywords (100 chars max, comma-separated, no spaces needed)
@@ -88,7 +88,7 @@ but "collected" becomes yes. Revisit then.)
 
 ## Review notes (paste into "Notes" in App Store Connect)
 
-> Prince Baby Tracker is a standalone, fully native baby activity tracker
+> DenBaby is a standalone, fully native baby activity tracker
 > (React Native / Expo). All functionality works offline with no account
 > or setup: the app seeds a demo baby profile so every screen is
 > populated and testable immediately.

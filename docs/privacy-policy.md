@@ -1,8 +1,8 @@
-# Prince Baby Tracker — Privacy Policy
+# DenBaby — Privacy Policy
 
 _Last updated: July 2026_
 
-Prince Baby Tracker ("the app") is a baby activity and growth tracker for
+DenBaby ("the app") is a baby activity and growth tracker for
 parents. This policy explains what data the app handles and where it goes.
 The short version: **your data stays on your device.**
 
@@ -67,7 +67,7 @@ controlled entirely by you, on your device.
 
 ## Medical disclaimer
 
-Prince Baby Tracker is a record-keeping tool, not a medical device. Growth
+DenBaby is a record-keeping tool, not a medical device. Growth
 charts and summaries are for your own records and are not medical advice.
 Always consult your pediatrician about your baby's health and growth.
 

@@ -387,7 +387,7 @@ export const useStore = create<AppState>()(
   },
     }),
     {
-      name: 'prince-baby-tracker',
+      name: 'denbaby',
       storage: createJSONStorage(() => AsyncStorage),
       version: 1,
       // v0 → v1: installs persisted before the Trends screen existed only

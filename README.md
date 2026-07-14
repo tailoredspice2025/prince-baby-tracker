@@ -1,6 +1,6 @@
-# Prince — Baby Growth & Care Tracker
+# DenBaby — Baby Growth & Care Tracker
 
-React Native (Expo) implementation of the `Prince Baby Tracker.dc.html` design handoff — see `../project/design_handoff_baby_tracker/README.md` for the full design spec this was built from.
+React Native (Expo) implementation of the `Prince Baby Tracker.dc.html` design handoff — see `../project/design_handoff_baby_tracker/README.md` for the full design spec this was built from. (The original design handoff predates the DenBaby name; the mockup file itself hasn't been renamed.)
 
 ## Stack
 
@@ -39,7 +39,7 @@ Until `.env` is filled in, `isFirebaseConfigured()` (`src/lib/firebase.ts`) is f
 
 ## Notable implementation choices
 
-- **WHO percentiles** (`src/lib/whoData.ts`, `src/lib/percentiles.ts`) use the Cole LMS method with a simplified constant coefficient-of-variation per measure, built from the published WHO median tables. Good enough for an app growth chart; swap in the official WHO LMS CSVs before treating this as a clinical tool.
-- **Baby sex** isn't in the original design but is needed for percentile lookups, so onboarding (and the add-baby form) include a small Boy/Girl selector labeled "for growth percentiles".
+- **WHO percentiles** (`src/lib/whoData.ts`, `src/lib/percentiles.ts`) use the Cole LMS method with a simplified constant coefficient-of-variation per measure, built from the published WHO median tables. The v1 Growth screen deliberately shows only the baby's own curve — no percentile comparison — per product decision; `GrowthChart`'s `showReference` prop and this data are wired up and ready for a phase-2 return of WHO comparison bands. Swap in the official WHO LMS CSVs before treating this as a clinical tool.
+- **Baby sex** isn't in the original design; it's collected for the phase-2 percentile lookups above, so onboarding (and the add-baby form) include a small Boy/Girl selector.
 - **Night mode** triggers automatically on a running sleep session during night hours (8pm–6am) or system dark mode, per the 1g spec (`src/theme/ThemeProvider.tsx`).
 - **Voice permissions**: feeds (bottle + solids), sleep, and diapers can auto-log after a 3-second undo window; pumping is off by default; vaccines/medicine/sickness always open a confirmation form and are never auto-saved, per the 2b spec.
