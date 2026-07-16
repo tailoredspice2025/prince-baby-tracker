@@ -80,4 +80,4 @@ reflect the change.
 
 ## Contact
 
-Questions about this policy: **[ADD YOUR CONTACT EMAIL BEFORE PUBLISHING]**
+Questions about this policy: **vijendratailor@gmail.com**

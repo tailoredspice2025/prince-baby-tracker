@@ -70,10 +70,12 @@ matched automatically.)
 
 ## URLs
 
-- Privacy policy URL: host `docs/privacy-policy.md` somewhere public
-  (GitHub Pages works) — **required before submission**. Fill in the
-  contact email placeholder first.
-- Support URL: can be the same page or a simple contact page.
+- Privacy policy URL: `docs/index.html`, published via GitHub Pages once
+  enabled in repo Settings → Pages (source: this branch, folder `/docs`).
+  Expected URL: `https://<org>.github.io/<repo>/` — update this doc with
+  the exact URL once Pages confirms it.
+- Support URL: same page (it doubles as the contact page — see the
+  Contact section at the bottom).
 
 ## App Privacy ("nutrition label") answers
 
