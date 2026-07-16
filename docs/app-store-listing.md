@@ -70,12 +70,18 @@ matched automatically.)
 
 ## URLs
 
-- Privacy policy URL: `docs/index.html`, published via GitHub Pages once
-  enabled in repo Settings → Pages (source: this branch, folder `/docs`).
-  Expected URL: `https://<org>.github.io/<repo>/` — update this doc with
-  the exact URL once Pages confirms it.
-- Support URL: same page (it doubles as the contact page — see the
-  Contact section at the bottom).
+- **Privacy policy URL: https://tailoredspice2025.github.io/prince-baby-tracker/**
+  — live via GitHub Pages (source: `claude/unzip-commit-push-t4m8ez` branch,
+  `/docs` folder). Paste this into App Store Connect's Privacy Policy URL
+  field.
+- **Support URL: same link** (it doubles as the contact page — see the
+  Contact section at the bottom of that page).
+
+Note: this repo is currently **public** (required for GitHub Pages on the
+free plan). Plan is to upgrade to GitHub Pro (~$48/yr) after Apple approval
+and switch the repo back to private — Pro supports Pages on private repos,
+so this URL keeps working when that happens. Don't flip the repo private
+before upgrading, or this link breaks.
 
 ## App Privacy ("nutrition label") answers
 
@@ -135,7 +141,8 @@ Done in code (v1 scope):
 
 Manual actions still needed:
 - [ ] Apple Developer Program enrollment approved
-- [ ] Host privacy policy at a public URL (fill in contact email first)
+- [x] Host privacy policy at a public URL — live at
+      https://tailoredspice2025.github.io/prince-baby-tracker/
 - [ ] App Store Connect: create app record, paste listing texts above
 - [ ] Production build via EAS (`eas build --profile production
       --platform ios`) or Xcode archive, then upload
