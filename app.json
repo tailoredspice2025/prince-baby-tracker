@@ -10,6 +10,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.denbaby.app",
+      "buildNumber": "2",
       "infoPlist": {
         "NSMicrophoneUsageDescription": "DenBaby uses the microphone so you can log feeds, sleep, and diapers hands-free by speaking.",
         "NSSpeechRecognitionUsageDescription": "DenBaby turns your speech into a logged event, like \"feed done 120 ml at 12\".",
