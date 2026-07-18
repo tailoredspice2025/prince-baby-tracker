@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { AppText } from '../../components/AppText';
 import { SmallPlusIcon } from '../../components/icons';
+import { canUseAppLock } from '../../lib/appLock';
 
 // Multi-caregiver (list + invite/share-code flow) is phase 2 — hidden for
 // the v1 App Store release so review doesn't hit a dead-end demo flow.
@@ -31,7 +32,12 @@ export function ProfileScreen() {
   const setUnits = useStore((s) => s.setUnits);
   const setVoiceLoggingEnabled = useStore((s) => s.setVoiceLoggingEnabled);
   const setFeedReminder = useStore((s) => s.setFeedReminder);
+  const setAppLockEnabled = useStore((s) => s.setAppLockEnabled);
   const pushToast = useStore((s) => s.pushToast);
+  const [lockAvailable, setLockAvailable] = useState(false);
+  useEffect(() => {
+    canUseAppLock().then(setLockAvailable);
+  }, []);
   const latest = measurements[measurements.length - 1];
   const otherBabies = babies.filter((b) => b.id !== baby.id);
 
@@ -235,6 +241,19 @@ export function ProfileScreen() {
             </AppText>
             <Toggle value={settings.voiceLoggingEnabled} onChange={setVoiceLoggingEnabled} />
           </Pressable>
+          {lockAvailable && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 13, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: theme.border }}>
+              <View>
+                <AppText weight={700} size={14.5} color={theme.ink}>
+                  App Lock
+                </AppText>
+                <AppText weight={600} size={11.5} color={theme.textTertiary} style={{ marginTop: 1 }}>
+                  Require Face ID to open DenBaby
+                </AppText>
+              </View>
+              <Toggle value={settings.appLockEnabled ?? false} onChange={setAppLockEnabled} />
+            </View>
+          )}
           <View style={{ padding: 13, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: theme.border }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <AppText weight={700} size={14.5} color={theme.ink}>

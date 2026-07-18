@@ -30,6 +30,15 @@ Apple's terms; the app itself does not record, store, or transmit audio.
 You can disable voice logging in Settings, and the app never listens
 unless you are actively holding the button.
 
+## App Lock (Face ID)
+
+App Lock is an optional setting (off by default) that requires Face ID,
+Touch ID, or your device passcode to open DenBaby, even if your phone is
+already unlocked. This authentication is handled entirely by your
+device's operating system — DenBaby never sees, stores, or has access to
+your biometric data. Turning App Lock on or off is available anytime in
+Settings.
+
 ## Photos and camera
 
 Photos you add to your baby's profile, milestones, or sickness records

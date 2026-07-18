@@ -15,6 +15,7 @@
         "NSSpeechRecognitionUsageDescription": "DenBaby turns your speech into a logged event, like \"feed done 120 ml at 12\".",
         "NSPhotoLibraryUsageDescription": "Add a photo of your baby to their profile and memories.",
         "NSCameraUsageDescription": "Take a photo of your baby for their profile and memories.",
+        "NSFaceIDUsageDescription": "Use Face ID to lock DenBaby so only you can open it, even on an unlocked phone.",
         "UIBackgroundModes": ["audio"]
       }
     },

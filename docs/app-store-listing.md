@@ -111,14 +111,21 @@ but "collected" becomes yes. Revisit then.)
 >   microphone + speech recognition permissions; a confirmation sheet is
 >   always shown before anything is saved).
 > - HEALTH: vaccines, sickness log, medicines with local reminders.
-> - PROFILE: units, feed reminder setting, and "Export for pediatrician"
->   (generates a PDF locally and opens the share sheet).
+> - PROFILE: units, feed reminder setting, optional App Lock (Face ID),
+>   and "Export for pediatrician" (generates a PDF locally and opens the
+>   share sheet).
+>
+> Note: App Lock is OFF by default, so the app opens straight to Home
+> with no authentication prompt during review. It only appears as a
+> toggle in Profile > Settings if you want to test it.
 >
 > Privacy: all data is stored locally on-device. No account system, no
 > analytics, no ads, no third-party data sharing. Microphone audio is
 > processed by the OS speech recognizer and never recorded or uploaded.
-> The app is a record-keeping tool for parents and makes no medical
-> claims; growth screens carry a "not medical advice" note.
+> Face ID/Touch ID authentication (when App Lock is enabled) is handled
+> entirely by the OS; the app never receives biometric data. The app is
+> a record-keeping tool for parents and makes no medical claims; growth
+> screens carry a "not medical advice" note.
 
 ## Screenshots (need to produce)
 
@@ -136,8 +143,9 @@ Done in code (v1 scope):
 - [x] Percentile comparisons removed; growth shows baby's own curve only
       (phase 2: WHO reference bands — code retained behind `showReference`)
 - [x] "Not medical advice" note on Growth screen + PDF footer
-- [x] Permission purpose strings for mic / speech / photos / camera (app.json)
+- [x] Permission purpose strings for mic / speech / photos / camera / Face ID (app.json)
 - [x] No tracking/analytics SDKs; privacy label is "Data Not Collected"
+- [x] Optional Face ID/passcode App Lock (off by default; Profile > Settings)
 
 Manual actions still needed:
 - [ ] Apple Developer Program enrollment approved

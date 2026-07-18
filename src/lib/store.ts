@@ -103,6 +103,7 @@ interface AppState {
   addMilestone: (m: Omit<Milestone, 'id' | 'babyId' | 'achieved'>) => void;
   setUnits: (u: Settings['units']) => void;
   setVoiceLoggingEnabled: (v: boolean) => void;
+  setAppLockEnabled: (v: boolean) => void;
   setFeedReminder: (enabled: boolean, hours?: number) => void;
   toggleVoicePermission: (key: keyof VoicePermissions) => void;
   addCaregiver: (c: Omit<Caregiver, 'id' | 'familyId'>) => void;
@@ -309,6 +310,7 @@ export const useStore = create<AppState>()(
 
   setUnits: (u) => set((s) => ({ settings: { ...s.settings, units: u } })),
   setVoiceLoggingEnabled: (v) => set((s) => ({ settings: { ...s.settings, voiceLoggingEnabled: v } })),
+  setAppLockEnabled: (v) => set((s) => ({ settings: { ...s.settings, appLockEnabled: v } })),
 
   setFeedReminder: (enabled, hours) => {
     const prevHours = get().settings.feedReminderHours ?? 3;

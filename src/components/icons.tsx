@@ -218,3 +218,14 @@ export function InviteIcon({ size = 18, color = '#C96F4A' }: IconProps) {
     </Svg>
   );
 }
+
+export function LockIcon({ size = 20, color = '#7C6E5F' }: IconProps) {
+  const h = (22 / 20) * size;
+  return (
+    <Svg width={size} height={h} viewBox="0 0 20 22">
+      <Rect x={3} y={10} width={14} height={10} rx={3} fill="none" stroke={color} strokeWidth={1.8} />
+      <Path d="M6 10V6.5a4 4 0 018 0V10" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" />
+      <Circle cx={10} cy={15} r={1.6} fill={color} />
+    </Svg>
+  );
+}

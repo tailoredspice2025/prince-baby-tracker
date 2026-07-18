@@ -159,6 +159,8 @@ export interface Settings {
   // treat undefined as disabled / 3 h.
   feedReminderEnabled?: boolean;
   feedReminderHours?: number;
+  // Optional, defaults to disabled — see src/lib/appLock.ts.
+  appLockEnabled?: boolean;
 }
 
 export interface ParsedVoiceDraft {

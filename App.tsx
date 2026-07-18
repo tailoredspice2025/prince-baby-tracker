@@ -22,6 +22,7 @@ import { ToastHost } from './src/components/ToastHost';
 import { QuickAddSheet } from './src/components/QuickAddSheet';
 import { EventEditSheet } from './src/components/EventEditSheet';
 import { VoiceListeningSheet } from './src/screens/voice/VoiceListeningSheet';
+import { AppLockScreen } from './src/components/AppLockScreen';
 import { useStore } from './src/lib/store';
 import { ensureNotificationPermissions, scheduleMedicationReminder, scheduleVaccineReminder, setupNotificationChannel } from './src/lib/notifications';
 
@@ -57,13 +58,15 @@ function AppInner() {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.bg }}>
-      <NavigationContainer ref={navigationRef} theme={navTheme}>
-        <RootNavigator />
-      </NavigationContainer>
-      <QuickAddSheet />
-      <EventEditSheet />
-      <VoiceListeningSheet />
-      <ToastHost />
+      <AppLockScreen>
+        <NavigationContainer ref={navigationRef} theme={navTheme}>
+          <RootNavigator />
+        </NavigationContainer>
+        <QuickAddSheet />
+        <EventEditSheet />
+        <VoiceListeningSheet />
+        <ToastHost />
+      </AppLockScreen>
       <StatusBar style={theme.mode === 'night' ? 'light' : 'dark'} />
     </View>
   );
