@@ -104,7 +104,9 @@
   <div class="lede">
     DenBaby ("the app") is a baby activity and growth tracker for parents.
     This policy explains what data the app handles and where it goes.
-    The short version: <strong>your data stays on your device.</strong>
+    The short version: <strong>your data stays on your device unless you turn
+    on optional Family Sync — and even then, it's shared only with the
+    caregivers you invite.</strong>
   </div>
 
   <h2>Data the app stores</h2>
@@ -116,9 +118,31 @@
     <li>Milestones and optional photos</li>
     <li>Your baby's profile — name, date of birth, sex, birth measurements</li>
   </ul>
-  <p><strong>All of this is stored locally on your device.</strong> It is not
-  uploaded to us or to any third party. We do not operate accounts, and we
-  cannot see your data.</p>
+  <p>By default, <strong>all of this is stored locally on your device.</strong>
+  It is not uploaded to us or to any third party. We do not require accounts,
+  and we cannot see your data.</p>
+
+  <h2>Family Sync (optional)</h2>
+  <p>Family Sync lets two or more caregivers — for example both parents — log
+  to the same baby profile from their own phones. It is <strong>off by
+  default</strong> and only activates when you tap "Invite caregiver" or join
+  a family with an invite code.</p>
+  <p>When Family Sync is on:</p>
+  <ul>
+    <li>The data listed above (except photos, which stay on each device) is
+    stored in a private cloud database (Google Firebase/Firestore) so it can
+    be shared between your family's devices, under
+    <a href="https://firebase.google.com/support/privacy">Google's privacy
+    commitments</a>.</li>
+    <li>Access is limited to the caregivers in your family. Joining requires
+    an invite code that you generate and share; codes expire after 24 hours.</li>
+    <li>No account is created — devices are identified by an anonymous ID,
+    not by your name, email, or phone number. The only personal detail stored
+    is the display name each caregiver chooses (for example "Dad").</li>
+    <li>You can leave the family at any time in Profile → Leave family. Your
+    data stays on your phone but stops syncing. The family owner can also
+    delete the shared cloud copy for everyone, which permanently removes it.</li>
+  </ul>
 
   <h2>Microphone and speech recognition</h2>
   <p>Voice logging is optional. When you hold the microphone button, the app
@@ -139,8 +163,8 @@
 
   <h2>Photos and camera</h2>
   <p>Photos you add to your baby's profile, milestones, or sickness records
-  stay on your device. The app only accesses photos you explicitly pick and
-  never scans your photo library.</p>
+  stay on your device — they are not uploaded by Family Sync. The app only
+  accesses photos you explicitly pick and never scans your photo library.</p>
 
   <h2>Notifications</h2>
   <p>Medicine, vaccine, and feed reminders are scheduled locally on your
@@ -153,20 +177,24 @@
 
   <h2>What we do NOT do</h2>
   <ul>
-    <li>No accounts, no sign-up, no login</li>
+    <li>No sign-up, no login, no email or phone number collected</li>
     <li>No analytics or tracking SDKs</li>
     <li>No advertising, and no sharing of any data with advertisers or data brokers</li>
     <li>No sale of data of any kind</li>
   </ul>
 
   <h2>Data deletion</h2>
-  <p>Because everything is stored locally, deleting the app deletes all of its
-  data. You can also delete individual entries inside the app at any time.</p>
+  <p>Without Family Sync, everything is stored locally: deleting the app
+  deletes all of its data. With Family Sync on, deleting the app removes the
+  local copy; the shared cloud copy remains for the rest of the family until
+  the family owner deletes it (Profile → Leave family → Leave &amp; delete
+  cloud data). You can also delete individual entries inside the app at any
+  time, which removes them for the whole family.</p>
 
   <h2>Children's privacy</h2>
   <p>The app is a tool for parents and caregivers, and is not directed at
   children. The data logged relates to your child but is entered and
-  controlled entirely by you, on your device.</p>
+  controlled entirely by you.</p>
 
   <h2>Medical disclaimer</h2>
   <p>DenBaby is a record-keeping tool, not a medical device. Growth charts and
@@ -175,9 +203,8 @@
 
   <h2>Changes to this policy</h2>
   <p>If a future version of the app adds features that change how data is
-  handled (for example, optional multi-caregiver sync), this policy will be
-  updated before that feature ships, and the app's App Store listing will
-  reflect the change.</p>
+  handled, this policy will be updated before that feature ships, and the
+  app's App Store listing will reflect the change.</p>
 
   <h2>Contact</h2>
   <p>Questions about this policy: <a href="mailto:vijendratailor@gmail.com">vijendratailor@gmail.com</a></p>

@@ -34,8 +34,11 @@ service cloud.firestore {
 
     match /inviteCodes/{code} {
       allow read: if isSignedIn();
-      allow create: if isCaregiverOf(resource.data.familyId) || isSignedIn();
-      allow delete: if false;
+      // only a caregiver of the target family may mint codes for it
+      // (request.resource is the doc being created; resource would be the
+      // pre-existing doc, which doesn't exist yet on create)
+      allow create: if isCaregiverOf(request.resource.data.familyId);
+      allow update, delete: if false;
     }
   }
 }

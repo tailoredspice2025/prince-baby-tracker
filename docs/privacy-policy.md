@@ -4,7 +4,9 @@ _Last updated: July 2026_
 
 DenBaby ("the app") is a baby activity and growth tracker for
 parents. This policy explains what data the app handles and where it goes.
-The short version: **your data stays on your device.**
+The short version: **your data stays on your device unless you turn on
+optional Family Sync — and even then, it's shared only with the caregivers
+you invite.**
 
 ## Data the app stores
 
@@ -16,9 +18,33 @@ The app stores the information you log about your baby:
 - Milestones and optional photos
 - Your baby's profile — name, date of birth, sex, birth measurements
 
-**All of this is stored locally on your device.** It is not uploaded to us
-or to any third party. We do not operate accounts, and we cannot see your
-data.
+By default, **all of this is stored locally on your device.** It is not
+uploaded to us or to any third party. We do not require accounts, and we
+cannot see your data.
+
+## Family Sync (optional)
+
+Family Sync lets two or more caregivers — for example both parents — log
+to the same baby profile from their own phones. It is **off by default**
+and only activates when you tap "Invite caregiver" or join a family with
+an invite code.
+
+When Family Sync is on:
+
+- The data listed above (except photos, which stay on each device) is
+  stored in a private cloud database (Google Firebase/Firestore) so it can
+  be shared between your family's devices. Firebase stores this data on
+  Google Cloud infrastructure under
+  [Google's privacy commitments](https://firebase.google.com/support/privacy).
+- Access is limited to the caregivers in your family. Joining requires an
+  invite code that you generate and share; codes expire after 24 hours.
+- No account is created — devices are identified by an anonymous ID, not
+  by your name, email, or phone number. The only personal detail stored is
+  the display name each caregiver chooses (for example "Dad").
+- You can leave the family at any time in Profile → Leave family. Your
+  data stays on your phone but stops syncing. The family owner can also
+  delete the shared cloud copy for everyone ("Leave & delete cloud data"),
+  which permanently removes it.
 
 ## Microphone and speech recognition
 
@@ -42,8 +68,8 @@ Settings.
 ## Photos and camera
 
 Photos you add to your baby's profile, milestones, or sickness records
-stay on your device. The app only accesses photos you explicitly pick and
-never scans your photo library.
+stay on your device — they are not uploaded by Family Sync. The app only
+accesses photos you explicitly pick and never scans your photo library.
 
 ## Notifications
 
@@ -58,21 +84,25 @@ your choice.
 
 ## What we do NOT do
 
-- No accounts, no sign-up, no login
+- No sign-up, no login, no email or phone number collected
 - No analytics or tracking SDKs
 - No advertising, and no sharing of any data with advertisers or data brokers
 - No sale of data of any kind
 
 ## Data deletion
 
-Because everything is stored locally, deleting the app deletes all of its
-data. You can also delete individual entries inside the app at any time.
+Without Family Sync, everything is stored locally: deleting the app
+deletes all of its data. With Family Sync on, deleting the app removes
+the local copy; the shared cloud copy remains for the rest of the family
+until the family owner deletes it (Profile → Leave family → Leave &
+delete cloud data). You can also delete individual entries inside the app
+at any time, which removes them for the whole family.
 
 ## Children's privacy
 
 The app is a tool for parents and caregivers, and is not directed at
 children. The data logged relates to your child but is entered and
-controlled entirely by you, on your device.
+controlled entirely by you.
 
 ## Medical disclaimer
 
@@ -83,9 +113,8 @@ Always consult your pediatrician about your baby's health and growth.
 ## Changes to this policy
 
 If a future version of the app adds features that change how data is
-handled (for example, optional multi-caregiver sync), this policy will be
-updated before that feature ships, and the app's App Store listing will
-reflect the change.
+handled, this policy will be updated before that feature ships, and the
+app's App Store listing will reflect the change.
 
 ## Contact
 

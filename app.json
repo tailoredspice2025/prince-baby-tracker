@@ -17,11 +17,8 @@
         "NSPhotoLibraryUsageDescription": "Add a photo of your baby to their profile and memories.",
         "NSCameraUsageDescription": "Take a photo of your baby for their profile and memories.",
         "NSFaceIDUsageDescription": "Use Face ID to lock DenBaby so only you can open it, even on an unlocked phone.",
-        "UIBackgroundModes": [
-          "audio",
-          "audio"
-        ],
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "UIBackgroundModes": ["audio"]
       }
     },
     "android": {

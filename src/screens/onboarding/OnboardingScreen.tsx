@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Image, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { AppText } from '../../components/AppText';
 import { CameraIcon } from '../../components/icons';
 import { PrimaryButton, TextLink } from '../../components/Button';
 import { useStore } from '../../lib/store';
+import { isFirebaseConfigured } from '../../lib/firestoreSync';
 import { useTheme } from '../../theme/ThemeProvider';
 import { radii } from '../../theme/tokens';
 
@@ -44,6 +46,7 @@ function FieldCard({
 
 export function OnboardingScreen() {
   const theme = useTheme();
+  const navigation = useNavigation<any>();
   const completeOnboarding = useStore((s) => s.completeOnboarding);
   const [name, setName] = useState('Prince');
   const [born, setBorn] = useState('March 8, 2026');
@@ -165,7 +168,29 @@ export function OnboardingScreen() {
 
         <View style={{ flex: 1, minHeight: 24 }} />
         <PrimaryButton label="Continue" onPress={submit} />
-        <TextLink label="Invite a caregiver later" onPress={submit} />
+        {isFirebaseConfigured() ? (
+          <Pressable
+            onPress={() => navigation.navigate('JoinFamily')}
+            style={{
+              marginTop: 10,
+              backgroundColor: theme.surface,
+              borderWidth: 2,
+              borderColor: '#E0CDB4',
+              borderRadius: radii.cardLg,
+              paddingVertical: 13,
+              alignItems: 'center',
+            }}
+          >
+            <AppText weight={800} size={14} color={theme.ink}>
+              Join your family
+            </AppText>
+            <AppText weight={600} size={11.5} color={theme.textTertiary} style={{ marginTop: 1 }}>
+              Someone already tracking this baby? Enter their code
+            </AppText>
+          </Pressable>
+        ) : (
+          <TextLink label="Invite a caregiver later" onPress={submit} />
+        )}
       </ScrollView>
     </SafeAreaView>
   );

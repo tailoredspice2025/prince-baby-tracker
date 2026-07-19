@@ -35,6 +35,8 @@ function AppInner() {
 
   useEffect(() => {
     setupNotificationChannel();
+    // reconnect family live-sync if this device is linked (no-op otherwise)
+    useStore.getState().initFamilySync();
     ensureNotificationPermissions().then((granted) => {
       if (!granted) return;
       medications.forEach((m) => scheduleMedicationReminder(m).catch(() => {}));
