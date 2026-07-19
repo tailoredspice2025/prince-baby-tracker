@@ -13,6 +13,8 @@ import { TrendsScreen } from '../screens/trends/TrendsScreen';
 import { DayTimelineScreen } from '../screens/trends/DayTimelineScreen';
 import { AddMilestoneScreen } from '../screens/milestones/AddMilestoneScreen';
 import { AddBabyScreen } from '../screens/profile/AddBabyScreen';
+import { InviteCaregiverScreen } from '../screens/profile/InviteCaregiverScreen';
+import { JoinFamilyScreen } from '../screens/onboarding/JoinFamilyScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -33,6 +35,8 @@ export function RootNavigator() {
       <Stack.Screen name="AddMeasurement" component={AddMeasurementScreen} options={{ presentation: 'modal' }} />
       <Stack.Screen name="AddMilestone" component={AddMilestoneScreen} options={{ presentation: 'modal' }} />
       <Stack.Screen name="AddBaby" component={AddBabyScreen} options={{ presentation: 'modal' }} />
+      <Stack.Screen name="InviteCaregiver" component={InviteCaregiverScreen} options={{ presentation: 'modal' }} />
+      <Stack.Screen name="JoinFamily" component={JoinFamilyScreen} options={{ presentation: 'modal' }} />
     </Stack.Navigator>
   );
 }

@@ -33,7 +33,19 @@ import {
   demoSickness,
   demoVaccines,
 } from './demoData';
-import { syncDeleteEvent, syncWriteEvent, syncWriteVaccine, isFirebaseConfigured } from './firestoreSync';
+import {
+  createFamily,
+  deleteFamilyData,
+  fetchFamilySnapshot,
+  getUid,
+  isFirebaseConfigured,
+  joinFamily,
+  removeCaregiverDoc,
+  resolveInviteCode,
+  SyncedCollection,
+} from './firestoreSync';
+import { pendingIds, startFamilySync, stopFamilySync, syncDelete, syncWrite, uploadLocalData } from './familySync';
+import { eventTime } from './eventRow';
 import {
   cancelFeedReminder,
   ensureNotificationPermissions,
@@ -54,6 +66,11 @@ export interface Toast {
 
 interface AppState {
   onboarded: boolean;
+  // Family sync (multi-caregiver): null until this device creates or joins
+  // a family. myUid is the Firebase anonymous-auth uid, which doubles as
+  // this device's caregiver id once linked.
+  familyId: string | null;
+  myUid: string | null;
   babies: Baby[];
   activeBabyId: string;
   currentCaregiverId: string;
@@ -107,6 +124,13 @@ interface AppState {
   setFeedReminder: (enabled: boolean, hours?: number) => void;
   toggleVoicePermission: (key: keyof VoicePermissions) => void;
   addCaregiver: (c: Omit<Caregiver, 'id' | 'familyId'>) => void;
+  // Family sync lifecycle
+  initFamilySync: () => void;
+  createFamilyAndLink: (myName: string) => Promise<void>;
+  joinFamilyWithCode: (code: string, myName: string) => Promise<'ok' | 'invalid-code' | 'error'>;
+  leaveFamily: (opts?: { deleteCloudData?: boolean }) => Promise<void>;
+  removeCaregiver: (caregiverId: string) => void;
+  applyRemoteCollection: (col: SyncedCollection, docs: Record<string, unknown>[]) => void;
   setVoiceDraft: (d: ParsedVoiceDraft | null) => void;
   applyVoiceDraft: () => void;
   dismissToast: (id: string) => void;
@@ -117,6 +141,8 @@ export const useStore = create<AppState>()(
   persist(
     (set, get) => ({
   onboarded: false,
+  familyId: null,
+  myUid: null,
   babies: [demoBaby],
   activeBabyId: demoBaby.id,
   currentCaregiverId: 'cg-mom',
@@ -151,18 +177,24 @@ export const useStore = create<AppState>()(
     return s.babies.find((b) => b.id === s.activeBabyId) ?? s.babies[0];
   },
 
-  completeOnboarding: (baby) =>
+  completeOnboarding: (baby) => {
     set((s) => ({
       onboarded: true,
       babies: s.babies.map((b) => (b.id === s.activeBabyId ? { ...b, ...baby } : b)),
-    })),
+    }));
+    const updated = get().activeBaby();
+    syncWrite('babies', updated);
+  },
 
   addBaby: (baby) => {
     const id = uid('baby');
+    const familyId = get().familyId ?? 'demo-family';
+    const newBaby: Baby = { ...baby, id, familyId, active: true };
     set((s) => ({
-      babies: [...s.babies.map((b) => ({ ...b, active: false })), { ...baby, id, familyId: 'demo-family', active: true }],
+      babies: [...s.babies.map((b) => ({ ...b, active: false })), newBaby],
       activeBabyId: id,
     }));
+    syncWrite('babies', newBaby);
   },
 
   setActiveBaby: (id) =>
@@ -171,10 +203,15 @@ export const useStore = create<AppState>()(
       babies: s.babies.map((b) => ({ ...b, active: b.id === id })),
     })),
 
-  setBabyPhoto: (uri) =>
+  setBabyPhoto: (uri) => {
     set((s) => ({
       babies: s.babies.map((b) => (b.id === s.activeBabyId ? { ...b, photoUri: uri } : b)),
-    })),
+    }));
+    // Note: the photo URI is a device-local file path — it labels the baby on
+    // this phone but doesn't transfer the image itself. Cloud photo storage
+    // is a later enhancement; other caregivers see the initial-letter avatar.
+    syncWrite('babies', get().activeBaby());
+  },
 
   editingEventId: null,
   setEditingEvent: (id) => set({ editingEventId: id }),
@@ -184,7 +221,7 @@ export const useStore = create<AppState>()(
       events: s.events.map((e) => {
         if (e.id !== id) return e;
         const updated = { ...e, ...patch } as TimelineEvent;
-        syncWriteEvent(updated);
+        syncWrite('events', updated);
         return updated;
       }),
     })),
@@ -192,13 +229,13 @@ export const useStore = create<AppState>()(
   deleteEvent: (id) => {
     const removed = get().events.find((e) => e.id === id);
     set((s) => ({ events: s.events.filter((e) => e.id !== id), editingEventId: null }));
-    syncDeleteEvent(id);
+    syncDelete('events', id);
     if (removed) {
       get().pushToast({
         message: 'Event deleted',
         onUndo: () => {
           set((s) => ({ events: [removed, ...s.events] }));
-          syncWriteEvent(removed);
+          syncWrite('events', removed);
         },
       });
     }
@@ -221,30 +258,30 @@ export const useStore = create<AppState>()(
       const quantityMl = opts?.quantityMl ?? 120;
       const ev: FeedEvent = { id: uid('ev'), babyId, type: 'bottle', time: now, quantityMl, notes: 'Formula', loggedBy, inputMethod: 'tap' };
       set((s) => ({ events: [ev, ...s.events] }));
-      syncWriteEvent(ev);
+      syncWrite('events', ev);
       get().pushToast({ message: `Bottle · ${quantityMl} ml logged`, onUndo: () => set((s) => ({ events: s.events.filter((e) => e.id !== ev.id) })) });
     } else if (type === 'diaper') {
       const kind = opts?.kind ?? 'wet';
       const ev: DiaperEvent = { id: uid('ev'), babyId, type: 'diaper', time: now, kind, loggedBy, inputMethod: 'tap' };
       set((s) => ({ events: [ev, ...s.events] }));
-      syncWriteEvent(ev);
+      syncWrite('events', ev);
       get().pushToast({ message: `Diaper · ${kind} logged`, onUndo: () => set((s) => ({ events: s.events.filter((e) => e.id !== ev.id) })) });
     } else if (type === 'solids') {
       const food = opts?.food ?? 'pear';
       const ev: FeedEvent = { id: uid('ev'), babyId, type: 'solids', time: now, food, loggedBy, inputMethod: 'tap' };
       set((s) => ({ events: [ev, ...s.events] }));
-      syncWriteEvent(ev);
+      syncWrite('events', ev);
       get().pushToast({ message: `Solids · ${food} logged`, onUndo: () => set((s) => ({ events: s.events.filter((e) => e.id !== ev.id) })) });
     } else if (type === 'pump') {
       const quantityMl = opts?.quantityMl ?? 90;
       const ev: FeedEvent = { id: uid('ev'), babyId, type: 'pump', time: now, quantityMl, side: 'left', loggedBy, inputMethod: 'tap' };
       set((s) => ({ events: [ev, ...s.events] }));
-      syncWriteEvent(ev);
+      syncWrite('events', ev);
       get().pushToast({ message: `Pump · ${quantityMl} ml logged`, onUndo: () => set((s) => ({ events: s.events.filter((e) => e.id !== ev.id) })) });
     } else if (type === 'medicine') {
       const ev: MedicineEvent = { id: uid('ev'), babyId, type: 'medicine', time: now, name: 'Vitamin D drops', dose: '400 IU', loggedBy, inputMethod: 'tap' };
       set((s) => ({ events: [ev, ...s.events] }));
-      syncWriteEvent(ev);
+      syncWrite('events', ev);
       get().pushToast({ message: 'Vitamin D drops logged', onUndo: () => set((s) => ({ events: s.events.filter((e) => e.id !== ev.id) })) });
     }
 
@@ -267,7 +304,7 @@ export const useStore = create<AppState>()(
         inputMethod: 'tap',
       };
       set((st) => ({ events: [ev, ...st.events], runningSleepSession: null }));
-      syncWriteEvent(ev);
+      syncWrite('events', ev);
       get().pushToast({ message: 'Sleep session ended' });
     } else {
       set({ runningSleepSession: { babyId: s.activeBabyId, startTime: new Date().toISOString() } });
@@ -279,13 +316,14 @@ export const useStore = create<AppState>()(
     const babyId = get().activeBabyId;
     const measurement: Measurement = { id: uid('m'), babyId, ...m };
     set((s) => ({ measurements: [...s.measurements, measurement] }));
+    syncWrite('measurements', measurement);
   },
 
   addVaccine: (v) => {
     const babyId = get().activeBabyId;
     const vaccine: Vaccine = { id: uid('v'), babyId, ...v };
     set((s) => ({ vaccines: [...s.vaccines, vaccine] }));
-    syncWriteVaccine(vaccine);
+    syncWrite('vaccines', vaccine);
     scheduleVaccineReminder(vaccine).catch(() => {});
   },
 
@@ -293,12 +331,14 @@ export const useStore = create<AppState>()(
     const babyId = get().activeBabyId;
     const episode: SicknessEpisode = { id: uid('s'), babyId, ...sEp };
     set((s) => ({ sickness: [episode, ...s.sickness] }));
+    syncWrite('sickness', episode);
   },
 
   addMedication: (m) => {
     const babyId = get().activeBabyId;
     const med: Medication = { id: uid('med'), babyId, ...m };
     set((s) => ({ medications: [med, ...s.medications] }));
+    syncWrite('medications', med);
     scheduleMedicationReminder(med).catch(() => {});
   },
 
@@ -306,6 +346,7 @@ export const useStore = create<AppState>()(
     const babyId = get().activeBabyId;
     const milestone: Milestone = { id: uid('ms'), babyId, achieved: true, ...m };
     set((s) => ({ milestonesAchieved: [milestone, ...s.milestonesAchieved] }));
+    syncWrite('milestones', milestone);
   },
 
   setUnits: (u) => set((s) => ({ settings: { ...s.settings, units: u } })),
@@ -338,6 +379,178 @@ export const useStore = create<AppState>()(
   addCaregiver: (c) =>
     set((s) => ({ caregivers: [...s.caregivers, { id: uid('cg'), familyId: 'demo-family', ...c }] })),
 
+  // ——— Family sync lifecycle ———————————————————————————————————————————
+
+  /** Reconnects live sync on app start when this device is already linked. */
+  initFamilySync: () => {
+    const { familyId, applyRemoteCollection } = get();
+    if (familyId && isFirebaseConfigured()) {
+      startFamilySync(familyId, applyRemoteCollection);
+    }
+  },
+
+  /** First "Invite caregiver" tap: creates the cloud family, makes this
+   * device its owner, and uploads all existing local data so solo history
+   * becomes the family's shared history. */
+  createFamilyAndLink: async (myName) => {
+    const s = get();
+    const me: Caregiver = {
+      id: 'pending', // replaced with the auth uid by createFamily
+      familyId: 'pending',
+      name: myName || 'Parent',
+      role: 'owner',
+      colorKey: 'peach',
+      loggedCount: 0,
+      online: true,
+    };
+    const familyId = await createFamily(me);
+    const uidNow = await getUid();
+    if (!uidNow) throw new Error('Sign-in failed');
+    // Events this device logged under the local demo caregiver id now belong
+    // to the real identity, so "logged by" survives the switch to cloud.
+    const remappedEvents = s.events.map((e) =>
+      e.loggedBy === s.currentCaregiverId ? { ...e, loggedBy: uidNow } : e
+    );
+    set({
+      familyId,
+      myUid: uidNow,
+      currentCaregiverId: uidNow,
+      caregivers: [{ ...me, id: uidNow, familyId }],
+      events: remappedEvents,
+      babies: s.babies.map((b) => ({ ...b, familyId })),
+    });
+    startFamilySync(familyId, get().applyRemoteCollection);
+    const now = get();
+    uploadLocalData({
+      babies: now.babies,
+      events: now.events,
+      measurements: now.measurements,
+      vaccines: now.vaccines,
+      sickness: now.sickness,
+      medications: now.medications,
+      milestones: now.milestonesAchieved,
+    });
+  },
+
+  /** Join flow: the family's cloud data becomes this device's data. */
+  joinFamilyWithCode: async (code, myName) => {
+    try {
+      const familyId = await resolveInviteCode(code.trim());
+      if (!familyId) return 'invalid-code';
+      const uidNow = await joinFamily(familyId, {
+        name: myName || 'Parent',
+        role: 'editor',
+        colorKey: 'sky',
+        loggedCount: 0,
+        online: true,
+      });
+      const snapshot = await fetchFamilySnapshot(familyId);
+      const babies = (snapshot.babies as unknown as Baby[]) ?? [];
+      const activeBabyId = babies.find((b) => b.active)?.id ?? babies[0]?.id ?? get().activeBabyId;
+      set({
+        familyId,
+        myUid: uidNow,
+        currentCaregiverId: uidNow,
+        onboarded: true,
+        babies: babies.length ? babies.map((b) => ({ ...b, active: b.id === activeBabyId })) : get().babies,
+        activeBabyId,
+        caregivers: (snapshot.caregivers as unknown as Caregiver[]) ?? [],
+        events: (snapshot.events as unknown as TimelineEvent[]) ?? [],
+        measurements: (snapshot.measurements as unknown as Measurement[]) ?? [],
+        vaccines: (snapshot.vaccines as unknown as Vaccine[]) ?? [],
+        sickness: (snapshot.sickness as unknown as SicknessEpisode[]) ?? [],
+        medications: (snapshot.medications as unknown as Medication[]) ?? [],
+        milestonesAchieved: (snapshot.milestones as unknown as Milestone[]) ?? [],
+      });
+      startFamilySync(familyId, get().applyRemoteCollection);
+      return 'ok';
+    } catch (err) {
+      console.warn('joinFamilyWithCode failed', err);
+      return 'error';
+    }
+  },
+
+  /** Detaches this device. Data logged so far stays on the phone; the
+   * cloud copy stays with the family unless deleteCloudData is set (owner
+   * wiping the whole family). */
+  leaveFamily: async (opts) => {
+    const { familyId, myUid } = get();
+    if (!familyId) return;
+    stopFamilySync();
+    try {
+      if (opts?.deleteCloudData) {
+        await deleteFamilyData(familyId);
+      } else if (myUid) {
+        await removeCaregiverDoc(familyId, myUid);
+      }
+    } catch (err) {
+      console.warn('leaveFamily cloud cleanup failed', err);
+    }
+    set({ familyId: null, myUid: null });
+  },
+
+  /** Owner removing another caregiver from the family. */
+  removeCaregiver: (caregiverId) => {
+    const { familyId } = get();
+    set((s) => ({ caregivers: s.caregivers.filter((c) => c.id !== caregiverId) }));
+    if (familyId) removeCaregiverDoc(familyId, caregiverId).catch((err) => console.warn('removeCaregiver failed', err));
+  },
+
+  /** Inbound merge: a live snapshot replaces the local slice, except docs
+   * with a still-queued local write, which keep their (newer) local
+   * version until the queue drains — last-write-wins without clobbering
+   * offline edits. */
+  applyRemoteCollection: (col, docs) => {
+    const pending = pendingIds(col);
+    const keepLocal = <T extends { id: string }>(local: T[]): T[] => local.filter((d) => pending.has(d.id));
+    const merge = <T extends { id: string }>(local: T[], remote: T[]): T[] => {
+      const kept = keepLocal(local);
+      const keptIds = new Set(kept.map((d) => d.id));
+      return [...kept, ...remote.filter((d) => !keptIds.has(d.id))];
+    };
+    if (col === 'events') {
+      set((s) => ({
+        events: merge(s.events, docs as unknown as TimelineEvent[]).sort((a, b) =>
+          eventTime(b).localeCompare(eventTime(a))
+        ),
+      }));
+    } else if (col === 'measurements') {
+      set((s) => ({
+        measurements: merge(s.measurements, docs as unknown as Measurement[]).sort((a, b) =>
+          a.date.localeCompare(b.date)
+        ),
+      }));
+    } else if (col === 'vaccines') {
+      set((s) => ({ vaccines: merge(s.vaccines, docs as unknown as Vaccine[]) }));
+    } else if (col === 'sickness') {
+      set((s) => ({ sickness: merge(s.sickness, docs as unknown as SicknessEpisode[]) }));
+    } else if (col === 'medications') {
+      set((s) => ({ medications: merge(s.medications, docs as unknown as Medication[]) }));
+    } else if (col === 'milestones') {
+      set((s) => ({ milestonesAchieved: merge(s.milestonesAchieved, docs as unknown as Milestone[]) }));
+    } else if (col === 'babies') {
+      set((s) => {
+        const remote = docs as unknown as Baby[];
+        if (!remote.length) return {};
+        const merged = merge(s.babies, remote);
+        const activeStillExists = merged.some((b) => b.id === s.activeBabyId);
+        const activeBabyId = activeStillExists ? s.activeBabyId : merged[0].id;
+        return { babies: merged.map((b) => ({ ...b, active: b.id === activeBabyId })), activeBabyId };
+      });
+    } else if (col === 'caregivers') {
+      set((s) => {
+        const remote = docs as unknown as Caregiver[];
+        if (!remote.length) return {};
+        // Being removed from the family remotely detaches this device.
+        if (s.myUid && !remote.some((c) => c.id === s.myUid) && !pending.has(s.myUid)) {
+          stopFamilySync();
+          return { familyId: null, myUid: null, caregivers: remote };
+        }
+        return { caregivers: remote };
+      });
+    }
+  },
+
   setVoiceDraft: (d) => set({ voiceDraft: d }),
 
   applyVoiceDraft: () => {
@@ -356,7 +569,7 @@ export const useStore = create<AppState>()(
         inputMethod: 'voice',
       };
       set((s) => ({ events: [ev, ...s.events] }));
-      syncWriteEvent(ev);
+      syncWrite('events', ev);
       if (draft.eventType !== 'pump' && get().settings.feedReminderEnabled) {
         rescheduleFeedReminder(draft.time, get().settings.feedReminderHours ?? 3, get().activeBaby().name).catch(() => {});
       }
@@ -371,7 +584,7 @@ export const useStore = create<AppState>()(
         inputMethod: 'voice',
       };
       set((s) => ({ events: [ev, ...s.events] }));
-      syncWriteEvent(ev);
+      syncWrite('events', ev);
     } else if (draft.eventType === 'sleep') {
       const ev: SleepEvent = {
         id: uid('ev'),
@@ -383,7 +596,7 @@ export const useStore = create<AppState>()(
         inputMethod: 'voice',
       };
       set((s) => ({ events: [ev, ...s.events] }));
-      syncWriteEvent(ev);
+      syncWrite('events', ev);
     }
     set({ voiceDraft: null });
   },
@@ -391,13 +604,18 @@ export const useStore = create<AppState>()(
     {
       name: 'denbaby',
       storage: createJSONStorage(() => AsyncStorage),
-      version: 1,
+      version: 2,
       // v0 → v1: installs persisted before the Trends screen existed only
       // have the 3-event demo seed; append the generated demo history so
       // trends have data, without touching anything the user logged.
+      // v1 → v2: family-sync fields added; default to unlinked.
       migrate: (persisted: any, version) => {
         if (version < 1 && persisted?.events && !persisted.events.some((e: any) => String(e.id).startsWith('ev-h-'))) {
           persisted.events = [...persisted.events, ...demoHistoryEvents];
+        }
+        if (version < 2) {
+          persisted.familyId = persisted.familyId ?? null;
+          persisted.myUid = persisted.myUid ?? null;
         }
         return persisted;
       },
@@ -405,6 +623,8 @@ export const useStore = create<AppState>()(
       // live transcript) always starts fresh
       partialize: (s) => ({
         onboarded: s.onboarded,
+        familyId: s.familyId,
+        myUid: s.myUid,
         babies: s.babies,
         activeBabyId: s.activeBabyId,
         currentCaregiverId: s.currentCaregiverId,

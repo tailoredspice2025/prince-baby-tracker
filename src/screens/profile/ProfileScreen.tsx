@@ -1,14 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { Alert, Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { AppText } from '../../components/AppText';
 import { SmallPlusIcon } from '../../components/icons';
 import { canUseAppLock } from '../../lib/appLock';
-
-// Multi-caregiver (list + invite/share-code flow) is phase 2 — hidden for
-// the v1 App Store release so review doesn't hit a dead-end demo flow.
-const SHOW_CAREGIVERS = false;
+import { isFirebaseConfigured } from '../../lib/firestoreSync';
 import { Toggle } from '../../components/Toggle';
 import { useStore } from '../../lib/store';
 import { useTheme } from '../../theme/ThemeProvider';
@@ -24,6 +21,11 @@ export function ProfileScreen() {
   const babies = useStore((s) => s.babies);
   const setActiveBaby = useStore((s) => s.setActiveBaby);
   const caregivers = useStore((s) => s.caregivers);
+  const familyId = useStore((s) => s.familyId);
+  const myUid = useStore((s) => s.myUid);
+  const events = useStore((s) => s.events);
+  const leaveFamily = useStore((s) => s.leaveFamily);
+  const removeCaregiver = useStore((s) => s.removeCaregiver);
   const measurements = useStore((s) => s.measurements).filter((m) => m.babyId === baby.id);
   const vaccines = useStore((s) => s.vaccines).filter((v) => v.babyId === baby.id);
   const sickness = useStore((s) => s.sickness).filter((sEp) => sEp.babyId === baby.id);
@@ -167,52 +169,113 @@ export function ProfileScreen() {
           </View>
         </Pressable>
 
-        {SHOW_CAREGIVERS && (
+        {isFirebaseConfigured() && (
         <>
         <AppText weight={900} size={15} color={theme.ink} style={{ marginBottom: 10 }}>
           Caregivers
         </AppText>
         <View style={{ backgroundColor: theme.surface, borderRadius: radii.cardLg, overflow: 'hidden', ...theme.cardShadow, marginBottom: 12 }}>
-          {caregivers.map((c, i) => {
-            const p = pastels[c.colorKey as PastelKey];
-            return (
-              <View
-                key={c.id}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 12,
-                  paddingVertical: 13,
-                  paddingHorizontal: 16,
-                  borderBottomWidth: i === caregivers.length - 1 ? 0 : 1,
-                  borderBottomColor: theme.border,
-                }}
-              >
-                <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: p.bg, alignItems: 'center', justifyContent: 'center' }}>
-                  <AppText weight={900} size={15} color={p.title}>
-                    {c.name.charAt(0)}
-                  </AppText>
+          {familyId != null &&
+            caregivers.map((c, i) => {
+              const p = pastels[c.colorKey as PastelKey] ?? pastels.peach;
+              const isMe = c.id === myUid;
+              const iAmOwner = caregivers.find((cg) => cg.id === myUid)?.role === 'owner';
+              const loggedCount = events.filter((e) => e.loggedBy === c.id).length;
+              return (
+                <View
+                  key={c.id}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 12,
+                    paddingVertical: 13,
+                    paddingHorizontal: 16,
+                    borderBottomWidth: 1,
+                    borderBottomColor: theme.border,
+                  }}
+                >
+                  <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: p.bg, alignItems: 'center', justifyContent: 'center' }}>
+                    <AppText weight={900} size={15} color={p.title}>
+                      {c.name.charAt(0)}
+                    </AppText>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <AppText weight={800} size={14.5} color={theme.ink}>
+                      {c.name}
+                      {isMe ? ' (you)' : ''}
+                    </AppText>
+                    <AppText weight={600} size={12} color={theme.textSecondary}>
+                      {c.role === 'owner' ? 'Owner' : 'Can log'} · logged {loggedCount} events
+                    </AppText>
+                  </View>
+                  {!isMe && iAmOwner && (
+                    <Pressable
+                      onPress={() =>
+                        Alert.alert('Remove caregiver?', `${c.name} will lose access to ${baby.name}'s data.`, [
+                          { text: 'Cancel', style: 'cancel' },
+                          { text: 'Remove', style: 'destructive', onPress: () => removeCaregiver(c.id) },
+                        ])
+                      }
+                      hitSlop={10}
+                    >
+                      <AppText weight={800} size={12} color={theme.coralDeep}>
+                        Remove
+                      </AppText>
+                    </Pressable>
+                  )}
                 </View>
-                <View style={{ flex: 1 }}>
-                  <AppText weight={800} size={14.5} color={theme.ink}>
-                    {c.name}
-                  </AppText>
-                  <AppText weight={600} size={12} color={theme.textSecondary}>
-                    {c.role === 'owner' ? 'Owner' : c.role === 'editor' ? 'Editor' : 'Can log'} · logged {c.loggedCount} events
-                  </AppText>
-                </View>
-                {c.online ? (
-                  <AppText weight={800} size={11} color={theme.successGreen}>
-                    ● ONLINE
-                  </AppText>
-                ) : (
-                  <AppText weight={700} size={11} color={theme.textTertiary}>
-                    {c.schedule ?? c.lastActive}
-                  </AppText>
-                )}
-              </View>
-            );
-          })}
+              );
+            })}
+          <Pressable
+            onPress={() => navigation.navigate('InviteCaregiver')}
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 13, paddingHorizontal: 16 }}
+          >
+            <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: '#FFE8D6', alignItems: 'center', justifyContent: 'center' }}>
+              <SmallPlusIcon />
+            </View>
+            <View style={{ flex: 1 }}>
+              <AppText weight={800} size={14.5} color={theme.ink}>
+                Invite caregiver
+              </AppText>
+              <AppText weight={600} size={12} color={theme.textSecondary}>
+                {familyId ? 'Share a new invite code' : 'Log together across phones'}
+              </AppText>
+            </View>
+            <AppText weight={800} size={12} color={theme.coralDeep}>
+              ›
+            </AppText>
+          </Pressable>
+          {familyId != null && (
+            <Pressable
+              onPress={() => {
+                const iAmOwner = caregivers.find((cg) => cg.id === myUid)?.role === 'owner';
+                Alert.alert(
+                  'Leave family?',
+                  iAmOwner
+                    ? 'Your data stays on this phone. You can also delete the shared cloud copy for everyone.'
+                    : 'Your data stays on this phone, but it will stop syncing with the family.',
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Leave', style: 'destructive', onPress: () => leaveFamily() },
+                    ...(iAmOwner
+                      ? [
+                          {
+                            text: 'Leave & delete cloud data',
+                            style: 'destructive' as const,
+                            onPress: () => leaveFamily({ deleteCloudData: true }),
+                          },
+                        ]
+                      : []),
+                  ]
+                );
+              }}
+              style={{ paddingVertical: 13, paddingHorizontal: 16, borderTopWidth: 1, borderTopColor: theme.border }}
+            >
+              <AppText weight={700} size={13.5} color={theme.coralDeep}>
+                Leave family
+              </AppText>
+            </Pressable>
+          )}
         </View>
         </>
         )}

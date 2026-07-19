@@ -3,14 +3,23 @@ import {
   deleteDoc,
   doc,
   DocumentData,
+  getDoc,
+  getDocs,
   onSnapshot,
-  Query,
-  query,
   serverTimestamp,
   setDoc,
 } from 'firebase/firestore';
 import { db, ensureSignedIn, isFirebaseConfigured } from './firebase';
-import { TimelineEvent, Vaccine } from '../types/models';
+import {
+  Baby,
+  Caregiver,
+  Measurement,
+  Medication,
+  Milestone,
+  SicknessEpisode,
+  TimelineEvent,
+  Vaccine,
+} from '../types/models';
 
 export { isFirebaseConfigured };
 
@@ -23,65 +32,125 @@ export { isFirebaseConfigured };
 //   families/{familyId}/sickness/{episodeId}
 //   families/{familyId}/medications/{medId}
 //   families/{familyId}/milestones/{milestoneId}
-//   families/{familyId}/caregivers/{caregiverId}
-//   inviteCodes/{code} -> { familyId }   (short-lived lookup doc for "join by code")
+//   families/{familyId}/caregivers/{caregiverId}   caregiverId == auth uid
+//   inviteCodes/{code} -> { familyId, createdAtMs }  (join-by-code lookup)
 //
 // Every write is fire-and-forget from the Zustand store's point of view: the
 // store already applied an optimistic local update, so a slow/offline
-// network never blocks the UI. When Firebase isn't configured (see
-// isFirebaseConfigured in firebase.ts) these are no-ops and the app runs
-// purely on local demo state.
+// network never blocks the UI. Failed writes are queued and retried by
+// familySync.ts. When Firebase isn't configured these are no-ops and the
+// app runs purely on local state.
 
-let cachedFamilyId: string | null = null;
+/** Collections that sync, keyed by their Firestore subcollection name. */
+export type SyncedCollection =
+  | 'babies'
+  | 'events'
+  | 'measurements'
+  | 'vaccines'
+  | 'sickness'
+  | 'medications'
+  | 'milestones'
+  | 'caregivers';
 
-async function familyEventsCollection(familyId: string) {
+export type SyncedDoc =
+  | Baby
+  | TimelineEvent
+  | Measurement
+  | Vaccine
+  | SicknessEpisode
+  | Medication
+  | Milestone
+  | Caregiver;
+
+export const SYNCED_COLLECTIONS: SyncedCollection[] = [
+  'babies',
+  'events',
+  'measurements',
+  'vaccines',
+  'sickness',
+  'medications',
+  'milestones',
+  'caregivers',
+];
+
+const INVITE_CODE_TTL_MS = 24 * 60 * 60 * 1000;
+
+/** Firestore rejects `undefined` field values — strip them before writing. */
+function withoutUndefined<T extends Record<string, unknown>>(obj: T): Record<string, unknown> {
+  return Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined));
+}
+
+/** Throws when unconfigured/offline so callers (familySync queue) can retry. */
+export async function writeDoc(familyId: string, col: SyncedCollection, docObj: { id: string }): Promise<void> {
+  if (!isFirebaseConfigured() || !db) return;
   await ensureSignedIn();
-  return collection(db!, 'families', familyId, 'events');
+  await setDoc(doc(db, 'families', familyId, col, docObj.id), {
+    ...withoutUndefined(docObj as Record<string, unknown>),
+    updatedAt: serverTimestamp(),
+  });
 }
 
-export async function syncWriteEvent(event: TimelineEvent, familyId = cachedFamilyId ?? 'demo-family') {
+export async function removeDoc(familyId: string, col: SyncedCollection, id: string): Promise<void> {
   if (!isFirebaseConfigured() || !db) return;
-  try {
-    const col = await familyEventsCollection(familyId);
-    await setDoc(doc(col, event.id), { ...event, updatedAt: serverTimestamp() });
-  } catch (err) {
-    console.warn('syncWriteEvent failed (will retry on next write)', err);
-  }
+  await ensureSignedIn();
+  await deleteDoc(doc(db, 'families', familyId, col, id));
 }
 
-export async function syncDeleteEvent(eventId: string, familyId = cachedFamilyId ?? 'demo-family') {
-  if (!isFirebaseConfigured() || !db) return;
-  try {
-    const col = await familyEventsCollection(familyId);
-    await deleteDoc(doc(col, eventId));
-  } catch (err) {
-    console.warn('syncDeleteEvent failed', err);
-  }
+/** Strips Firestore-only fields so a doc matches the local model shape. */
+export function toLocalDoc(data: DocumentData): DocumentData {
+  const { updatedAt, ...rest } = data;
+  return rest;
 }
 
-export async function syncWriteVaccine(vaccine: Vaccine, familyId = cachedFamilyId ?? 'demo-family') {
-  if (!isFirebaseConfigured() || !db) return;
-  try {
-    await ensureSignedIn();
-    const col = collection(db, 'families', familyId, 'vaccines');
-    await setDoc(doc(col, vaccine.id), { ...vaccine, updatedAt: serverTimestamp() });
-  } catch (err) {
-    console.warn('syncWriteVaccine failed', err);
-  }
-}
-
-/** Subscribes to a family's live event feed; returns an unsubscribe fn. Used to
- * reconcile the local store with what other caregivers logged in real time. */
-export function subscribeFamilyEvents(
+/** Live-subscribes to one family subcollection; returns an unsubscribe fn. */
+export function subscribeCollection(
   familyId: string,
-  onChange: (events: DocumentData[]) => void
+  col: SyncedCollection,
+  onChange: (docs: DocumentData[]) => void
 ): () => void {
   if (!isFirebaseConfigured() || !db) return () => {};
-  cachedFamilyId = familyId;
-  const q: Query = query(collection(db, 'families', familyId, 'events'));
-  return onSnapshot(q, (snap) => {
-    onChange(snap.docs.map((d) => d.data()));
+  return onSnapshot(
+    collection(db, 'families', familyId, col),
+    (snap) => onChange(snap.docs.map((d) => toLocalDoc(d.data()))),
+    (err) => console.warn(`subscribe ${col} failed`, err)
+  );
+}
+
+/** One-shot fetch of every synced subcollection — used by the join flow. */
+export async function fetchFamilySnapshot(familyId: string): Promise<Record<SyncedCollection, DocumentData[]>> {
+  if (!isFirebaseConfigured() || !db) throw new Error('Firebase not configured');
+  await ensureSignedIn();
+  const out = {} as Record<SyncedCollection, DocumentData[]>;
+  for (const col of SYNCED_COLLECTIONS) {
+    const snap = await getDocs(collection(db, 'families', familyId, col));
+    out[col] = snap.docs.map((d) => toLocalDoc(d.data()));
+  }
+  return out;
+}
+
+/** Signs in (anonymously) and returns the stable device identity. */
+export async function getUid(): Promise<string | null> {
+  if (!isFirebaseConfigured()) return null;
+  const user = await ensureSignedIn();
+  return user?.uid ?? null;
+}
+
+/**
+ * Bootstraps a brand-new family: caregiver doc first (the rules' entry
+ * point — only a doc whose id matches your uid may be created in an empty
+ * family), then the family root doc.  Returns the new familyId.
+ */
+export async function createFamily(caregiver: Caregiver): Promise<string> {
+  if (!isFirebaseConfigured() || !db) throw new Error('Firebase not configured');
+  const uid = await getUid();
+  if (!uid) throw new Error('Sign-in failed');
+  const familyId = `fam-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  await setDoc(doc(db, 'families', familyId, 'caregivers', uid), {
+    ...withoutUndefined({ ...caregiver, id: uid, familyId } as unknown as Record<string, unknown>),
+    updatedAt: serverTimestamp(),
   });
+  await setDoc(doc(db, 'families', familyId), { createdAtMs: Date.now(), updatedAt: serverTimestamp() });
+  return familyId;
 }
 
 function randomShareCode(): string {
@@ -91,24 +160,62 @@ function randomShareCode(): string {
   return code;
 }
 
-/** Creates an invite-code doc that resolves to the given family, for the
- * "Invite caregiver · Share code" row on the profile screen. */
+/** Creates an invite-code doc that resolves to the given family. Codes
+ * expire after 24 h (enforced client-side on join — see joinFamilyByCode). */
 export async function createInviteCode(familyId: string): Promise<string> {
   if (!isFirebaseConfigured() || !db) return randomShareCode(); // still usable to show in the UI in demo mode
   await ensureSignedIn();
   const code = randomShareCode();
-  await setDoc(doc(db, 'inviteCodes', code), { familyId, createdAt: serverTimestamp() });
+  await setDoc(doc(db, 'inviteCodes', code), { familyId, createdAtMs: Date.now(), createdAt: serverTimestamp() });
   return code;
 }
 
-export async function joinFamilyByCode(code: string): Promise<string | null> {
+/** Resolves an invite code to a familyId, or null if unknown/expired. */
+export async function resolveInviteCode(code: string): Promise<string | null> {
   if (!isFirebaseConfigured() || !db) return null;
   await ensureSignedIn();
-  const snap = await new Promise<DocumentData | undefined>((resolve) => {
-    const unsub = onSnapshot(doc(db!, 'inviteCodes', code), (d) => {
-      unsub();
-      resolve(d.data());
-    });
+  const snap = await getDoc(doc(db, 'inviteCodes', code.toUpperCase()));
+  const data = snap.data();
+  if (!data?.familyId) return null;
+  if (typeof data.createdAtMs === 'number' && Date.now() - data.createdAtMs > INVITE_CODE_TTL_MS) return null;
+  return data.familyId as string;
+}
+
+/** Adds the current device to a family as a new caregiver (the join flow). */
+export async function joinFamily(familyId: string, caregiver: Omit<Caregiver, 'id' | 'familyId'>): Promise<string> {
+  if (!isFirebaseConfigured() || !db) throw new Error('Firebase not configured');
+  const uid = await getUid();
+  if (!uid) throw new Error('Sign-in failed');
+  await setDoc(doc(db, 'families', familyId, 'caregivers', uid), {
+    ...withoutUndefined({ ...caregiver, id: uid, familyId } as unknown as Record<string, unknown>),
+    updatedAt: serverTimestamp(),
   });
-  return (snap?.familyId as string) ?? null;
+  return uid;
+}
+
+/** Removes a caregiver from the family (their device loses access on the
+ * next security-rules check; used by both "remove" and "leave family"). */
+export async function removeCaregiverDoc(familyId: string, caregiverId: string): Promise<void> {
+  if (!isFirebaseConfigured() || !db) return;
+  await ensureSignedIn();
+  await deleteDoc(doc(db, 'families', familyId, 'caregivers', caregiverId));
+}
+
+/** Deletes every doc in the family's subtree (client-side iteration —
+ * fine at family scale). Caregiver docs go last so access survives the
+ * deletion pass; the caller's own caregiver doc is the very last delete. */
+export async function deleteFamilyData(familyId: string): Promise<void> {
+  if (!isFirebaseConfigured() || !db) return;
+  const uid = await getUid();
+  const dataCollections = SYNCED_COLLECTIONS.filter((c) => c !== 'caregivers');
+  for (const col of dataCollections) {
+    const snap = await getDocs(collection(db, 'families', familyId, col));
+    for (const d of snap.docs) await deleteDoc(d.ref);
+  }
+  const cgSnap = await getDocs(collection(db, 'families', familyId, 'caregivers'));
+  const others = cgSnap.docs.filter((d) => d.id !== uid);
+  for (const d of others) await deleteDoc(d.ref);
+  await deleteDoc(doc(db, 'families', familyId));
+  const own = cgSnap.docs.find((d) => d.id === uid);
+  if (own) await deleteDoc(own.ref);
 }
