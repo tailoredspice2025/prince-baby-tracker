@@ -10,14 +10,18 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.denbaby.app",
-      "buildNumber": "2",
+      "buildNumber": "3",
       "infoPlist": {
-        "NSMicrophoneUsageDescription": "DenBaby uses the microphone so you can log feeds, sleep, and diapers hands-free by speaking.",
-        "NSSpeechRecognitionUsageDescription": "DenBaby turns your speech into a logged event, like \"feed done 120 ml at 12\".",
+        "NSMicrophoneUsageDescription": "DenBaby uses the microphone so you can log events hands-free by speaking.",
+        "NSSpeechRecognitionUsageDescription": "DenBaby turns your speech into a logged event.",
         "NSPhotoLibraryUsageDescription": "Add a photo of your baby to their profile and memories.",
         "NSCameraUsageDescription": "Take a photo of your baby for their profile and memories.",
         "NSFaceIDUsageDescription": "Use Face ID to lock DenBaby so only you can open it, even on an unlocked phone.",
-        "UIBackgroundModes": ["audio"]
+        "UIBackgroundModes": [
+          "audio",
+          "audio"
+        ],
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -29,7 +33,12 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "permissions": ["RECORD_AUDIO", "POST_NOTIFICATIONS", "READ_MEDIA_IMAGES", "CAMERA"]
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.READ_MEDIA_IMAGES",
+        "android.permission.CAMERA"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -40,7 +49,9 @@
         {
           "microphonePermission": "DenBaby uses the microphone so you can log events hands-free by speaking.",
           "speechRecognitionPermission": "DenBaby turns your speech into a logged event.",
-          "androidSpeechServicePackages": ["com.google.android.googlequicksearchbox"]
+          "androidSpeechServicePackages": [
+            "com.google.android.googlequicksearchbox"
+          ]
         }
       ],
       [
@@ -56,6 +67,11 @@
           "cameraPermission": "Take a photo of your baby for their profile and memories."
         }
       ]
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "8955ec0f-991a-4a12-bb43-c52f061178f9"
+      }
+    }
   }
 }
