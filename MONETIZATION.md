@@ -77,10 +77,19 @@ newsletter needs email addresses, so it must be:
   every email, a data-processing agreement with the email tool, and a
   privacy-policy update describing email collection + the third-party sender.
 
-### Tooling
-- **Beehiiv** (built for newsletter monetization; has its own ad network) or
-  ConvertKit / Mailchimp for the list + sending.
-- In-app capture → a single opt-in field posting the email to the tool's API.
+### Tooling — cheap path (own the list in Firebase)
+Storing emails ≠ sending them. Do them separately to stay near-$0 early:
+- **Capture + own the list in Firebase** (we already have it). A `subscribers`
+  collection: `{ email, consentAt, babyStage }`, one tiny write per opt-in.
+  Security rule: **create-only** (clients can add but can't read/list, so the
+  list can't be scraped). This keeps the list portable — not locked to any
+  vendor.
+- **Send only when ready, via a free-tier tool** — NOT Beehiiv early on.
+  MailerLite (~1k subscribers free), Brevo (~300/day free), or Resend
+  (~3k/mo free). Import/API-sync the Firebase list in when it's time to send.
+  These handle the hard parts for free: unsubscribe, deliverability, GDPR
+  consent, bounces — which is why we don't roll our own SMTP.
+- **Only pay** (Beehiiv / paid tiers) once the list is large enough to earn.
 - Content: same sourcing question as pregnancy content — write conservative,
   clearly **non-medical** material grounded in public sources (NHS, WHO), or
   license a vetted set. Never diagnostic; always "consult your midwife".
