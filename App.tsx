@@ -24,7 +24,7 @@ import { EventEditSheet } from './src/components/EventEditSheet';
 import { VoiceListeningSheet } from './src/screens/voice/VoiceListeningSheet';
 import { AppLockScreen } from './src/components/AppLockScreen';
 import { useStore } from './src/lib/store';
-import { ensureNotificationPermissions, scheduleMedicationReminder, scheduleVaccineReminder, setupNotificationChannel } from './src/lib/notifications';
+import { ensureNotificationPermissions, scheduleMedicationReminder, scheduleVaccineReminders, setupNotificationChannel } from './src/lib/notifications';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -40,7 +40,7 @@ function AppInner() {
     ensureNotificationPermissions().then((granted) => {
       if (!granted) return;
       medications.forEach((m) => scheduleMedicationReminder(m).catch(() => {}));
-      vaccines.forEach((v) => scheduleVaccineReminder(v).catch(() => {}));
+      vaccines.forEach((v) => scheduleVaccineReminders(v).catch(() => {}));
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

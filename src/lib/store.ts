@@ -49,10 +49,11 @@ import { pendingIds, startFamilySync, stopFamilySync, syncDelete, syncWrite, upl
 import { eventTime } from './eventRow';
 import {
   cancelFeedReminder,
+  cancelVaccineReminders,
   ensureNotificationPermissions,
   rescheduleFeedReminder,
   scheduleMedicationReminder,
-  scheduleVaccineReminder,
+  scheduleVaccineReminders,
 } from './notifications';
 
 function uid(prefix: string) {
@@ -116,6 +117,8 @@ interface AppState {
   deleteEvent: (id: string) => void;
   addMeasurement: (m: Omit<Measurement, 'id' | 'babyId'>) => void;
   addVaccine: (v: Omit<Vaccine, 'id' | 'babyId'>) => void;
+  updateVaccine: (id: string, patch: Partial<Vaccine>) => void;
+  deleteVaccine: (id: string) => void;
   addSicknessEpisode: (s: Omit<SicknessEpisode, 'id' | 'babyId'>) => void;
   addMedication: (m: Omit<Medication, 'id' | 'babyId'>) => void;
   addMilestone: (m: Omit<Milestone, 'id' | 'babyId' | 'achieved'>) => void;
@@ -325,7 +328,29 @@ export const useStore = create<AppState>()(
     const vaccine: Vaccine = { id: uid('v'), babyId, ...v };
     set((s) => ({ vaccines: [...s.vaccines, vaccine] }));
     syncWrite('vaccines', vaccine);
-    scheduleVaccineReminder(vaccine).catch(() => {});
+    scheduleVaccineReminders(vaccine).catch(() => {});
+  },
+
+  updateVaccine: (id, patch) => {
+    let updated: Vaccine | undefined;
+    set((s) => ({
+      vaccines: s.vaccines.map((v) => {
+        if (v.id !== id) return v;
+        updated = { ...v, ...patch };
+        return updated;
+      }),
+    }));
+    if (updated) {
+      syncWrite('vaccines', updated);
+      // reschedule (or clear, if it's now 'done') this appointment's reminders
+      scheduleVaccineReminders(updated).catch(() => {});
+    }
+  },
+
+  deleteVaccine: (id) => {
+    set((s) => ({ vaccines: s.vaccines.filter((v) => v.id !== id) }));
+    syncDelete('vaccines', id);
+    cancelVaccineReminders(id).catch(() => {});
   },
 
   addSicknessEpisode: (sEp) => {
@@ -533,7 +558,12 @@ export const useStore = create<AppState>()(
         ),
       }));
     } else if (col === 'vaccines') {
-      set((s) => ({ vaccines: merge(s.vaccines, docs as unknown as Vaccine[]) }));
+      const remote = docs as unknown as Vaccine[];
+      set((s) => ({ vaccines: merge(s.vaccines, remote) }));
+      // Reminders are per-device, so arm this phone's copy for every synced
+      // appointment — this is what makes both parents get nudged when one of
+      // them books it. Idempotent (stable ids); clears any that became done.
+      remote.forEach((v) => scheduleVaccineReminders(v).catch(() => {}));
     } else if (col === 'sickness') {
       set((s) => ({ sickness: merge(s.sickness, docs as unknown as SicknessEpisode[]) }));
     } else if (col === 'medications') {

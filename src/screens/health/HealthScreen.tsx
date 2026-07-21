@@ -72,11 +72,34 @@ export function HealthScreen() {
         <AppText weight={900} size={15} color={theme.ink} style={{ marginBottom: 10 }}>
           Vaccines
         </AppText>
+        <Pressable
+          onPress={() => navigation.navigate('VaccineForm', { mode: 'appointment' })}
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            backgroundColor: theme.surface,
+            borderWidth: 2,
+            borderColor: '#E0CDB4',
+            borderStyle: 'dashed',
+            borderRadius: radii.cardLg,
+            paddingVertical: 14,
+            marginBottom: 12,
+          }}
+        >
+          <AppText size={15}>📅</AppText>
+          <AppText weight={800} size={13.5} color="#A98F73">
+            Add vaccine appointment
+          </AppText>
+        </Pressable>
         <SectionCard>
           {vaccines.map((v, i) => {
             const done = v.status === 'done';
             const meta = done
               ? [new Date(v.date).toLocaleDateString([], { month: 'short', day: 'numeric' }), v.site, v.reaction, v.notes].filter(Boolean).join(' · ')
+              : v.appointmentAt
+              ? `${new Date(v.appointmentAt).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })} · ${new Date(v.appointmentAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}🔔${v.clinic ? ` · ${v.clinic}` : ''}`
               : `Due ${new Date(v.date).toLocaleDateString([], { month: 'short', day: 'numeric' })}${v.notes ? ` · ${v.notes}` : ''}`;
             return (
               <Row key={v.id} last={i === vaccines.length - 1}>

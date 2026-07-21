@@ -83,9 +83,14 @@ export interface Vaccine {
   doseLabel: string; // e.g. "3 of 5"
   status: 'done' | 'due';
   date: string; // ISO — given date if done, due date if due
+  // For an upcoming appointment (status 'due'): the full date+time it's
+  // booked for. Drives the 48h/24h/2h reminders. Absent for logged/given
+  // doses and for due entries with no scheduled appointment yet.
+  appointmentAt?: string; // ISO date+time
   site?: string;
   batchNo?: string;
-  clinic?: string;
+  clinic?: string; // clinic / doctor name
+  address?: string; // clinic address, shown in the reminder
   reaction?: string;
   notes?: string;
   fromVoice?: boolean;
