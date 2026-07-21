@@ -42,6 +42,7 @@ import {
   joinFamily,
   removeCaregiverDoc,
   resolveInviteCode,
+  syncWindowCutoffMs,
   SyncedCollection,
 } from './firestoreSync';
 import { pendingIds, startFamilySync, stopFamilySync, syncDelete, syncWrite, uploadLocalData } from './familySync';
@@ -509,11 +510,22 @@ export const useStore = create<AppState>()(
       return [...kept, ...remote.filter((d) => !keptIds.has(d.id))];
     };
     if (col === 'events') {
-      set((s) => ({
-        events: merge(s.events, docs as unknown as TimelineEvent[]).sort((a, b) =>
-          eventTime(b).localeCompare(eventTime(a))
-        ),
-      }));
+      // Events sync a rolling recent window (see firestoreSync), so a remote
+      // snapshot is authoritative only for that window. Retain local events
+      // that fall OUTSIDE it — older frozen history the listener no longer
+      // covers — plus any with a still-queued write. Within the window,
+      // remote wins (adds/edits/deletes all propagate).
+      set((s) => {
+        const remote = docs as unknown as TimelineEvent[];
+        const remoteIds = new Set(remote.map((d) => d.id));
+        const windowCutoff = new Date(syncWindowCutoffMs()).toISOString();
+        const keptLocal = s.events.filter(
+          (e) => !remoteIds.has(e.id) && (eventTime(e) < windowCutoff || pending.has(e.id))
+        );
+        return {
+          events: [...remote, ...keptLocal].sort((a, b) => eventTime(b).localeCompare(eventTime(a))),
+        };
+      });
     } else if (col === 'measurements') {
       set((s) => ({
         measurements: merge(s.measurements, docs as unknown as Measurement[]).sort((a, b) =>

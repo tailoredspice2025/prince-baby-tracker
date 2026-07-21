@@ -6,8 +6,11 @@ import {
   getDoc,
   getDocs,
   onSnapshot,
+  query,
   serverTimestamp,
   setDoc,
+  Timestamp,
+  where,
 } from 'firebase/firestore';
 import { db, ensureSignedIn, isFirebaseConfigured } from './firebase';
 import {
@@ -75,6 +78,26 @@ export const SYNCED_COLLECTIONS: SyncedCollection[] = [
 
 const INVITE_CODE_TTL_MS = 24 * 60 * 60 * 1000;
 
+// Live-sync read cost is bounded by only subscribing to a rolling recent
+// window of the high-volume `events` collection, rather than a baby's entire
+// history. Without this, every cold app launch re-reads all events ever
+// logged (the Firebase JS SDK on React Native keeps its cache only in
+// memory, so nothing survives a restart) — so reads, and cost, would grow
+// unbounded with the baby's age. Older events stay on each device (loaded
+// once via fetchFamilySnapshot when joining) and are effectively frozen:
+// edits/deletes to items older than this window don't propagate between
+// devices, which is an acceptable trade for a flat, predictable bill.
+// Every synced doc carries a serverTimestamp `updatedAt`; a fixed cutoff on
+// that field only ever excludes a doc by deletion (updatedAt is monotonic),
+// so add/edit/delete all still propagate correctly *within* the window.
+export const SYNC_WINDOW_DAYS = 14;
+const WINDOWED_COLLECTIONS = new Set<SyncedCollection>(['events']);
+
+/** Epoch-ms cutoff for the live sync window (now − SYNC_WINDOW_DAYS). */
+export function syncWindowCutoffMs(): number {
+  return Date.now() - SYNC_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+}
+
 /** Firestore rejects `undefined` field values — strip them before writing. */
 function withoutUndefined<T extends Record<string, unknown>>(obj: T): Record<string, unknown> {
   return Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined));
@@ -102,15 +125,23 @@ export function toLocalDoc(data: DocumentData): DocumentData {
   return rest;
 }
 
-/** Live-subscribes to one family subcollection; returns an unsubscribe fn. */
+/** Live-subscribes to one family subcollection; returns an unsubscribe fn.
+ * High-volume collections (see WINDOWED_COLLECTIONS) are limited to docs
+ * updated within the recent sync window so read cost stays flat as history
+ * grows. Small collections (babies, caregivers, vaccines, …) subscribe in
+ * full so old-item edits/deletes always propagate. */
 export function subscribeCollection(
   familyId: string,
   col: SyncedCollection,
   onChange: (docs: DocumentData[]) => void
 ): () => void {
   if (!isFirebaseConfigured() || !db) return () => {};
+  const ref = collection(db, 'families', familyId, col);
+  const q = WINDOWED_COLLECTIONS.has(col)
+    ? query(ref, where('updatedAt', '>=', Timestamp.fromMillis(syncWindowCutoffMs())))
+    : ref;
   return onSnapshot(
-    collection(db, 'families', familyId, col),
+    q,
     (snap) => onChange(snap.docs.map((d) => toLocalDoc(d.data()))),
     (err) => console.warn(`subscribe ${col} failed`, err)
   );

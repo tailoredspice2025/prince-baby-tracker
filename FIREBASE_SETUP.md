@@ -59,3 +59,25 @@ roughly 30 minutes, all in the browser except the last part.
 These values are not secrets in the traditional sense — they ship inside
 every Firebase app's binary. Security comes from the Firestore rules
 (step 4), which only let a family's own caregivers read its data.
+
+## Scaling & cost
+
+Solo users (no Family Sync) cost nothing — their data never leaves the
+device. Only sync families touch Firestore, and the bill is dominated by
+document **reads**.
+
+- **Live sync reads a rolling recent window**, not a baby's whole history.
+  See `SYNC_WINDOW_DAYS` in `src/lib/firestoreSync.ts` (currently 14 days).
+  This keeps reads flat as a baby accumulates months of logs; older history
+  stays on each device. Lower the constant to cut cost further, raise it to
+  reload more on cold start.
+- **Move to the Blaze (pay-as-you-go) plan before real scale.** The free
+  Spark plan has *daily* caps (50k reads/day) that are fine for you + a
+  co-parent testing, but would stall sync at real user counts. Blaze
+  includes the same free daily tier before charging.
+- **Set a budget alert** in the Google Cloud console (Billing → Budgets &
+  alerts) — e.g. email at £20/month — as insurance against surprises.
+- Further reduction at large scale (thousands of active sync families):
+  switch from the `firebase` JS SDK to `@react-native-firebase`, which has
+  native on-disk persistence + resume tokens so cold launches read only
+  what changed. Bigger change — not needed until you're actually there.
