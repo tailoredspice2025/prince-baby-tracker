@@ -9,6 +9,7 @@ import { isFirebaseConfigured } from '../../lib/firestoreSync';
 import { Toggle } from '../../components/Toggle';
 import { Segmented } from '../../components/Segmented';
 import { useStore } from '../../lib/store';
+import { FEATURES } from '../../lib/features';
 import { useTheme } from '../../theme/ThemeProvider';
 import { radii, pastels, PastelKey } from '../../theme/tokens';
 import { ageString } from '../../lib/time';
@@ -346,15 +347,18 @@ export function ProfileScreen() {
               compact
             />
           </View>
-          <Pressable
-            onPress={() => navigation.navigate('VoicePermissions')}
-            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 13, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: theme.border }}
-          >
-            <AppText weight={700} size={14.5} color={theme.ink}>
-              Voice logging
-            </AppText>
-            <Toggle value={settings.voiceLoggingEnabled} onChange={setVoiceLoggingEnabled} />
-          </Pressable>
+          {/* Hidden for v1.0 — no setting for a feature that isn't there. */}
+          {FEATURES.voiceLogging && (
+            <Pressable
+              onPress={() => navigation.navigate('VoicePermissions')}
+              style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 13, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: theme.border }}
+            >
+              <AppText weight={700} size={14.5} color={theme.ink}>
+                Voice logging
+              </AppText>
+              <Toggle value={settings.voiceLoggingEnabled} onChange={setVoiceLoggingEnabled} />
+            </Pressable>
+          )}
           {lockAvailable && (
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 13, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: theme.border }}>
               <View>

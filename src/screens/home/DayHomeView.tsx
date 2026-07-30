@@ -10,6 +10,7 @@ import { PickerType, QuickLogPicker } from '../../components/QuickLogPicker';
 import { TimelineRow } from '../../components/TimelineRow';
 import { VoiceBar } from '../../components/VoiceBar';
 import { useStore } from '../../lib/store';
+import { FEATURES } from '../../lib/features';
 import { useTheme } from '../../theme/ThemeProvider';
 import { ageString, clockTime, durationLabel, relativeTime } from '../../lib/time';
 import { eventRowFor } from '../../lib/eventRow';
@@ -53,10 +54,15 @@ export function DayHomeView() {
   const logQuickEvent = useStore((s) => s.logQuickEvent);
   const toggleSleep = useStore((s) => s.toggleSleep);
   const setEditingEvent = useStore((s) => s.setEditingEvent);
-  const voiceEnabled = useStore((s) => s.settings.voiceLoggingEnabled);
+  const voiceSetting = useStore((s) => s.settings.voiceLoggingEnabled);
   const nightPreview = useStore((s) => s.settings.forceNightPreview);
   const setForceNightPreview = useStore((s) => s.setForceNightPreview);
   const [pickerType, setPickerType] = useState<PickerType | null>(null);
+
+  // Gated on the build-time switch as well as the stored setting — the stored
+  // one is already true on every existing install, so it alone would leave the
+  // bar visible on exactly the devices we're hiding it from. features.ts.
+  const voiceEnabled = FEATURES.voiceLogging && voiceSetting;
 
   // Ticks once a minute so the running sleep timer and the "3m ago" captions
   // stay honest without a re-render every second.

@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppText } from '../../components/AppText';
 import { VoiceBar } from '../../components/VoiceBar';
 import { useStore } from '../../lib/store';
+import { FEATURES } from '../../lib/features';
 import { useTheme } from '../../theme/ThemeProvider';
 import { ageString, clockTime, durationLabel, relativeTime } from '../../lib/time';
 import { FeedEvent, DiaperEvent } from '../../types/models';
@@ -22,7 +23,8 @@ export function NightHomeView() {
   const events = useStore((s) => s.events).filter((e) => e.babyId === baby.id);
   const logQuickEvent = useStore((s) => s.logQuickEvent);
   const setForceNightPreview = useStore((s) => s.setForceNightPreview);
-  const voiceEnabled = useStore((s) => s.settings.voiceLoggingEnabled);
+  const voiceSetting = useStore((s) => s.settings.voiceLoggingEnabled);
+  const voiceEnabled = FEATURES.voiceLogging && voiceSetting;
   const [now, setNow] = useState(new Date());
 
   useEffect(() => {

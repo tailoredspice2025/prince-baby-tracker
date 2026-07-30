@@ -7,7 +7,7 @@ React Native (Expo) implementation of the `Prince Baby Tracker.dc.html` design h
 - **Expo / React Native / TypeScript** — one codebase for iOS and Android.
 - **Zustand** for local app state (persisted to AsyncStorage, so data survives app restarts), seeded with demo data that matches the mockups so the app is fully navigable out of the box.
 - **Firebase (Firestore + Auth)** for real-time multi-caregiver sync — wired up in code but pointed at no project until you configure one (see below). Until then, the app runs entirely on local demo data.
-- **expo-speech-recognition** for the hold-to-speak voice logging feature, feeding a small rule-based parser (`src/lib/voiceParser.ts`).
+- **expo-speech-recognition** for hold-to-speak voice logging, feeding a small rule-based parser (`src/lib/voiceParser.ts`). **Hidden in v1.0** — capture doesn't work on device, so the whole feature is switched off behind `FEATURES.voiceLogging` in `src/lib/features.ts`. The dependency and all the code stay in the tree; see `BACKLOG.md` for what has to be fixed before v1.1 turns it back on.
 - **expo-notifications** for medicine and vaccine-due reminders.
 - **react-native-svg** for the WHO growth-percentile chart.
 
@@ -41,5 +41,5 @@ Until `.env` is filled in, `isFirebaseConfigured()` (`src/lib/firebase.ts`) is f
 
 - **WHO percentiles** (`src/lib/whoData.ts`, `src/lib/percentiles.ts`) use the Cole LMS method with a simplified constant coefficient-of-variation per measure, built from the published WHO median tables. The v1 Growth screen deliberately shows only the baby's own curve — no percentile comparison — per product decision; `GrowthChart`'s `showReference` prop and this data are wired up and ready for a phase-2 return of WHO comparison bands. Swap in the official WHO LMS CSVs before treating this as a clinical tool.
 - **Baby sex** isn't in the original design; it's collected for the phase-2 percentile lookups above, so onboarding (and the add-baby form) include a small Boy/Girl selector.
-- **Night mode** triggers automatically on a running sleep session during night hours (8pm–6am) or system dark mode, per the 1g spec (`src/theme/ThemeProvider.tsx`).
-- **Voice permissions**: feeds (bottle + solids), sleep, and diapers can auto-log after a 3-second undo window; pumping is off by default; vaccines/medicine/sickness always open a confirmation form and are never auto-saved, per the 2b spec.
+- **Night mode** is opt-in via the moon button on Home, with an Exit button inside it (`src/theme/ThemeProvider.tsx`). It used to switch itself on during a sleep session at night, which replaced the whole home screen with a two-button view the moment you tapped Sleep — and, because it gated an early `return` above four hooks, crashed the app. Colour theme is separate, chosen in Profile → Appearance.
+- **Voice permissions**: feeds (bottle + solids), sleep, and diapers can auto-log after a 3-second countdown; pumping is off by default; vaccines/medicine/sickness always open a confirmation form and are never auto-saved, per the 2b spec. **All deferred to v1.1 along with the rest of voice logging.**

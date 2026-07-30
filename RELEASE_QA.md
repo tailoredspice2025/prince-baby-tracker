@@ -54,6 +54,8 @@ build. Test the thing you actually ship.
 - [ ] Export **PDF** → share sheet opens with a document
 - [ ] 📱 Enable **App Lock**, background & reopen → Face ID prompt gates entry
 - [ ] ☁️👥 **Invite caregiver** → code shown; second device **joins** → data appears
+- [ ] 🔇 **No mic bar** on Home or in the night view, and **no "Voice logging"
+      row** in Profile (hidden for v1.0 — see `BACKLOG.md`)
 
 ---
 
@@ -127,7 +129,14 @@ whenever the tester happens to be at their desk:
   no crash, no duplicate-key error.
 - ❌ Delete an event → removed from timeline; **Undo** restores it.
 
-### Voice logging 📱
+### Voice logging 📱 — ⏸️ DEFERRED TO v1.1, DO NOT TEST IN v1.0
+
+Hidden behind `FEATURES.voiceLogging = false`. For v1.0 the only checks are
+that it's genuinely **gone**: no mic bar on Home, none in the night view, and
+no "Voice logging" row in Profile. The stories below are kept for v1.1 — and
+note that every one of them was previously ticked while capture didn't work at
+all, which is what `AUDIT.md` exists to prevent.
+
 - ✅ Hold the mic, say "feed done, 120 ml bottle at 12" → draft shows Bottle ·
   120 ml at 12:00; confirm logs it.
 - ✅ Say "wet nappy now" → draft shows Nappy · wet.
