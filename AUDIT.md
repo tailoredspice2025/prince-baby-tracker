@@ -36,6 +36,30 @@ Two rules that fall out of this, learned the hard way:
 
 ---
 
+## The chain applies to code being written, not just code being audited
+
+The framework was used properly on sleep and on voice — both times as a
+*review* of existing code, on request. It was not used on the moon button in
+build 12, which was written fresh and shipped with a green `npm run verify`.
+The trace takes ten seconds and needs no device:
+
+> capture — user taps a moon, meaning "make it dark" · derive —
+> `setForceNightPreview(true)` · surface — `NightHomeView`, **feed and diaper
+> only** · editable — Exit
+
+The mismatch is plain at the surface step, in code written an hour earlier.
+
+**So: every change ships with one sentence — "tap X and you will see exactly
+Y." If that sentence can't be written, the change isn't finished.**
+
+The tell that it was skipped was already in writing. The test handed over said
+*"moon button → night colours"* — a wrong expectation, because nobody had
+traced what the tap actually rendered. **A test instruction that states the
+action but guesses the outcome is the signature of an untraced change.** Write
+the expected outcome first; if it can't be stated precisely, stop and trace.
+
+---
+
 ## The two statuses — there is no third
 
 Every link in every audit gets exactly one of these. Never leave a link out.
