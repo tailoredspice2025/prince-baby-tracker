@@ -110,7 +110,7 @@ interface AppState {
   setBabyPhoto: (uri: string) => void;
   logQuickEvent: (
     type: 'bottle' | 'diaper' | 'solids' | 'pump' | 'medicine',
-    opts?: { quantityMl?: number; kind?: DiaperEvent['kind']; food?: string }
+    opts?: { quantityMl?: number; kind?: DiaperEvent['kind']; food?: string; name?: string; dose?: string }
   ) => void;
   toggleSleep: () => void;
   editingEventId: string | null;
@@ -126,6 +126,8 @@ interface AppState {
   addMilestone: (m: Omit<Milestone, 'id' | 'babyId' | 'achieved'>) => void;
   setUnits: (u: Settings['units']) => void;
   setThemePreference: (p: NonNullable<Settings['themePreference']>) => void;
+  /** Night-feeding view is opt-in — it never takes over the screen by itself. */
+  setForceNightPreview: (v: boolean) => void;
   setVoiceLoggingEnabled: (v: boolean) => void;
   setAppLockEnabled: (v: boolean) => void;
   setFeedReminder: (enabled: boolean, hours?: number) => void;
@@ -301,10 +303,16 @@ export const useStore = create<AppState>()(
       syncWrite('events', ev);
       get().pushToast({ message: `Pump · ${quantityMl} ml logged`, onUndo: () => set((s) => ({ events: s.events.filter((e) => e.id !== ev.id) })) });
     } else if (type === 'medicine') {
-      const ev: MedicineEvent = { id: uid('ev'), babyId, type: 'medicine', time: now, name: 'Vitamin D drops', dose: '400 IU', loggedBy, inputMethod: 'tap' };
-      set((s) => ({ events: [ev, ...s.events] }));
+      // Repeats whatever was last given rather than always Vitamin D, the same
+      // way bottle amounts repeat — and it stays editable afterwards.
+      const s = get();
+      const last = s.events.find((e) => e.babyId === babyId && e.type === 'medicine') as MedicineEvent | undefined;
+      const name = opts?.name ?? last?.name ?? 'Vitamin D drops';
+      const dose = opts?.dose ?? (opts?.name ? '' : last?.dose ?? '400 IU');
+      const ev: MedicineEvent = { id: uid('ev'), babyId, type: 'medicine', time: now, name, dose, loggedBy, inputMethod: 'tap' };
+      set((st) => ({ events: [ev, ...st.events] }));
       syncWrite('events', ev);
-      get().pushToast({ message: 'Vitamin D drops logged', onUndo: () => set((s) => ({ events: s.events.filter((e) => e.id !== ev.id) })) });
+      get().pushToast({ message: `${name} logged`, onUndo: () => set((st) => ({ events: st.events.filter((e) => e.id !== ev.id) })) });
     }
 
     if ((type === 'bottle' || type === 'solids') && get().settings.feedReminderEnabled) {
@@ -395,6 +403,7 @@ export const useStore = create<AppState>()(
 
   setUnits: (u) => set((s) => ({ settings: { ...s.settings, units: u } })),
   setThemePreference: (p) => set((s) => ({ settings: { ...s.settings, themePreference: p } })),
+  setForceNightPreview: (v) => set((s) => ({ settings: { ...s.settings, forceNightPreview: v } })),
   setVoiceLoggingEnabled: (v) => set((s) => ({ settings: { ...s.settings, voiceLoggingEnabled: v } })),
   setAppLockEnabled: (v) => set((s) => ({ settings: { ...s.settings, appLockEnabled: v } })),
 

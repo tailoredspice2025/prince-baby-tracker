@@ -40,7 +40,9 @@ build. Test the thing you actually ship.
 - [ ] App launches to Home without a crash; new **baby-face icon** on the home screen
 - [ ] Log a **bottle** → appears at top of today's timeline with the amount
 - [ ] Log a **nappy** → appears with the right type
-- [ ] Start a **sleep** session, stop it → logs a duration
+- [ ] Start a **sleep** session → a "Sleeping · 0m" row appears in Today
+      *immediately*; stop it → logs a duration with both start and end
+- [ ] 🌙 Repeat the sleep start/stop **between 20:00 and 06:00** (see §1b)
 - [ ] Log **solids**, **pump**, **medicine** → each appears
 - [ ] **Undo** a just-logged event from the toast → it disappears
 - [ ] Open **Trends** → charts render for day/week/month
@@ -52,6 +54,51 @@ build. Test the thing you actually ship.
 - [ ] Export **PDF** → share sheet opens with a document
 - [ ] 📱 Enable **App Lock**, background & reopen → Face ID prompt gates entry
 - [ ] ☁️👥 **Invite caregiver** → code shown; second device **joins** → data appears
+
+---
+
+## 1b. ⛔ Round-trip completeness matrix (run every release)
+
+Build 11 shipped a sleep record that showed one bare timestamp and let you
+edit only its start — while the duration derived from *both* ends fed the
+daily total and the trend chart. Tapping through and seeing "something
+appeared" is not a test. For **every** event type, run the full round trip:
+
+**log it → find it in Today → open it → change every field → save → reopen →
+confirm it stuck → check the number it feeds in Trends.**
+
+| Type | Fields that must be visible *and* editable | Feeds |
+|---|---|---|
+| Bottle | time, amount | daily ml, bottle count |
+| Sleep | **start, end, derived duration** | daily sleep hours, session count |
+| Diaper | time, kind (wet/dirty/both) | wet vs dirty counts |
+| Solids | time, food | solids count |
+| Pump | time, amount, side | pumped ml |
+| Medicine | time, name, dose | medicine count |
+
+Rules this matrix exists to enforce:
+
+1. **Every field that is stored must be shown somewhere.** If it's in the
+   model and on no screen, either surface it or delete it from the model.
+2. **Every field that is written by a default must be editable.** A one-tap
+   log guesses; the user must always be able to correct the guess.
+3. **Any edit path touching one input of a derived value must touch all of
+   them.** Sleep's duration comes from start *and* end — editing the start
+   alone silently rewrote history in the trends.
+4. **A derived value must read the same everywhere it appears** — row, day
+   log, daily total, chart, weekly average.
+
+### Time-dependent UI
+
+Anything gated on the clock must be tested **inside its window**, not
+whenever the tester happens to be at their desk:
+
+- [ ] 🌙 Night mode (moon button on Home) → opens the night view in night
+      colours, **Exit** returns you to the full home screen
+- [ ] Start and stop a sleep session **after 20:00** — the old build crashed
+      here and nowhere else
+- [ ] A sleep spanning **midnight** → its hours split across both days in
+      Trends, and the edit sheet shows a sane duration (not 23h)
 
 ---
 

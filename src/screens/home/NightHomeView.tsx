@@ -21,6 +21,7 @@ export function NightHomeView() {
   const toggleSleep = useStore((s) => s.toggleSleep);
   const events = useStore((s) => s.events).filter((e) => e.babyId === baby.id);
   const logQuickEvent = useStore((s) => s.logQuickEvent);
+  const setForceNightPreview = useStore((s) => s.setForceNightPreview);
   const voiceEnabled = useStore((s) => s.settings.voiceLoggingEnabled);
   const [now, setNow] = useState(new Date());
 
@@ -51,6 +52,19 @@ export function NightHomeView() {
                 {baby.name} · {runningSleepSession ? `asleep ${durationLabel(elapsedMs)}` : ageString(baby.dob, now)}
               </AppText>
             </View>
+            {/* Always an obvious way back — this view hides the timeline,
+                trends and everything else. */}
+            <Pressable
+              onPress={() => setForceNightPreview(false)}
+              hitSlop={10}
+              accessibilityRole="button"
+              accessibilityLabel="Leave night mode"
+              style={{ borderRadius: 999, paddingVertical: 8, paddingHorizontal: 14, backgroundColor: nightColors.timerPillBg }}
+            >
+              <AppText weight={800} size={12.5} color={nightColors.timerPillText}>
+                Exit
+              </AppText>
+            </Pressable>
           </View>
 
           <View style={{ backgroundColor: theme.surface, borderRadius: 24, padding: 20, marginBottom: 16, alignItems: 'center' }}>

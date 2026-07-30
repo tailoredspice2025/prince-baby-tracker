@@ -6,6 +6,18 @@ export function eventTime(e: TimelineEvent): string {
   return 'time' in e ? e.time : e.endTime ?? e.startTime;
 }
 
+/** Sleep is the only event with two timestamps and a derived duration, so it
+ * needs all three shown — a lone timestamp on a sleep row reads as the start
+ * when it is actually the end. */
+export function sleepRange(e: SleepEvent): string {
+  return e.endTime ? `${clockTime(e.startTime)} – ${clockTime(e.endTime)}` : `Started ${clockTime(e.startTime)}`;
+}
+
+export function sleepDurationMs(e: SleepEvent): number {
+  if (!e.endTime) return 0;
+  return new Date(e.endTime).getTime() - new Date(e.startTime).getTime();
+}
+
 /** Title / time / byline used by timeline rows on Home and the day log.
  * Pass `meId` (this device's caregiver id) so your own entries read
  * "logged by you" rather than a name you have to disambiguate. */
@@ -13,17 +25,34 @@ export function eventRowFor(e: TimelineEvent, caregivers: Caregiver[], meId?: st
   const caregiverName = (id: string) =>
     id && id === meId ? 'you' : caregivers.find((c) => c.id === id)?.name.split(' · ')[0] ?? 'you';
   let title = '';
-  if (e.type === 'bottle') title = `Bottle · ${(e as FeedEvent).quantityMl ?? ''} ml`;
-  else if (e.type === 'solids') title = `Solids${(e as FeedEvent).food ? ` · ${(e as FeedEvent).food}` : ''}`;
-  else if (e.type === 'pump') title = `Pump · ${(e as FeedEvent).quantityMl ?? ''} ml`;
-  else if (e.type === 'diaper') title = `Diaper · ${(e as DiaperEvent).kind}`;
-  else if (e.type === 'medicine') title = (e as MedicineEvent).name;
-  else if (e.type === 'sleep') {
+  // Extra context shown before the byline — currently the sleep start/end
+  // range, which otherwise has nowhere to appear.
+  let detail = '';
+
+  if (e.type === 'bottle') {
+    const q = (e as FeedEvent).quantityMl;
+    title = q != null ? `Bottle · ${q} ml` : 'Bottle';
+  } else if (e.type === 'solids') {
+    title = `Solids${(e as FeedEvent).food ? ` · ${(e as FeedEvent).food}` : ''}`;
+  } else if (e.type === 'pump') {
+    const q = (e as FeedEvent).quantityMl;
+    title = q != null ? `Pump · ${q} ml` : 'Pump';
+  } else if (e.type === 'diaper') {
+    title = `Diaper · ${(e as DiaperEvent).kind}`;
+  } else if (e.type === 'medicine') {
+    const me = e as MedicineEvent;
+    title = me.dose ? `${me.name} · ${me.dose}` : me.name;
+  } else if (e.type === 'sleep') {
     const se = e as SleepEvent;
-    title = se.endTime
-      ? `Sleep · ${durationLabel(new Date(se.endTime).getTime() - new Date(se.startTime).getTime())}`
-      : 'Sleep started';
+    title = se.endTime ? `Sleep · ${durationLabel(sleepDurationMs(se))}` : 'Sleep in progress';
+    detail = sleepRange(se);
   }
+
   const voiceTag = e.inputMethod === 'voice' ? ' 🎙️ voice' : '';
-  return { title, time: clockTime(eventTime(e)), subLine: `logged by ${caregiverName(e.loggedBy)}${voiceTag}` };
+  const byline = `logged by ${caregiverName(e.loggedBy)}${voiceTag}`;
+  return {
+    title,
+    time: clockTime(eventTime(e)),
+    subLine: detail ? `${detail} · ${byline}` : byline,
+  };
 }

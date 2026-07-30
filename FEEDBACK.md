@@ -4,6 +4,48 @@ Real-world testing notes. Newest first.
 
 ---
 
+## From TestFlight build 11 — 30 Jul 2026 → all fixed in **build 12**
+
+| # | Issue | Status |
+|---|---|---|
+| 10 | **App crashed on sleep start/stop** | ✅ `HomeScreen` called four `useMemo`s *below* an early `return` for the night view. Starting a sleep after 20:00 flipped that flag, the hook count changed mid-render, React threw. Now a pure switch between `DayHomeView` / `NightHomeView`. |
+| 11 | Sleep record showed only one time, not start **and** end | ✅ rows read `Sleep · 1h 20m` / end time / `9:15 PM – 10:35 PM · logged by you` |
+| 12 | Sleep entry could not be edited properly | ✅ edit sheet now has **Fell asleep** + **Woke up** with a live duration; both ends save together |
+| 13 | Nothing appeared in Today while a sleep was running | ✅ live "Sleeping · 12m · started 9:15 PM" row, tap to end |
+| 14 | *(found by audit, not reported)* solids/diaper/medicine had hardcoded defaults and **no way to correct them** | ✅ edit sheet is field-aware for all six types: food, nappy kind, pump side, medicine name + dose |
+| 15 | *(found by audit)* medicine dose stored but never displayed | ✅ shown on the row |
+| 16 | Night view took over the screen on its own | ✅ opt-in only — moon button on Home, **Exit** inside it; forces night colours |
+
+**Root-cause notes.**
+
+*Why the crash reached a build.* The illegal early return had been there a
+while, but the flag above it used to come from the system colour scheme, which
+never changes mid-session — so the hook count never actually varied. Fix #3 in
+build 11 re-pointed that flag at `runningSleepSession`, which flips at runtime,
+turning a dormant bug into a guaranteed crash. It also only fires between 20:00
+and 06:00, so daytime testing could never see it. Both gaps are now closed:
+ESLint's `react-hooks/rules-of-hooks` catches the pattern statically (it flags
+the exact line with "did you accidentally call a React Hook after an early
+return?"), and `RELEASE_QA.md` §1b requires clock-gated behaviour to be tested
+inside its window.
+
+*The one that mattered more than the crash.* Sleep stores two timestamps and
+derives a duration from the pair. The edit sheet wrote `startTime` and left
+`endTime` untouched — so correcting a mis-tapped start silently rewrote the
+duration feeding the daily total, the trend chart and the weekly average. Data
+corruption behind a clean UI, and nobody would have noticed. Hence the rule now
+in §1b: *any edit path touching one input of a derived value must touch all of
+them.*
+
+*Why items 14–15 were found late.* Build 10's item #4 was reported as "bottle
+defaults to 120 ml with no way to change it". That was fixed for bottle alone,
+when the same bug sat in solids (`'pear'`), diaper (`'wet'`), pump side
+(`'left'`) and medicine (`'Vitamin D drops'`) the whole time. Fixing the
+reported instance instead of the class is what put the tester back in the QA
+seat. §1b's matrix is per-type for exactly this reason.
+
+---
+
 ## From TestFlight build 10 — 30 Jul 2026 → all fixed in **build 11**
 
 | # | Issue | Status |

@@ -6,11 +6,15 @@ import { useTheme } from '../theme/ThemeProvider';
 import { PastelKey, pastels, radii } from '../theme/tokens';
 import { DiaperEvent } from '../types/models';
 
-export type PickerType = 'bottle' | 'diaper' | 'solids' | 'pump';
+export type PickerType = 'bottle' | 'diaper' | 'solids' | 'pump' | 'medicine';
 
 const CONFIG: Record<
   PickerType,
-  { title: string; pastel: PastelKey; options: { label: string; opts: { quantityMl?: number; kind?: DiaperEvent['kind']; food?: string } }[] }
+  {
+    title: string;
+    pastel: PastelKey;
+    options: { label: string; opts: { quantityMl?: number; kind?: DiaperEvent['kind']; food?: string; name?: string; dose?: string } }[];
+  }
 > = {
   bottle: {
     title: 'Bottle — how much?',
@@ -31,6 +35,17 @@ const CONFIG: Record<
     title: 'Pump — how much?',
     pastel: 'rose',
     options: [60, 90, 120, 150].map((ml) => ({ label: `${ml} ml`, opts: { quantityMl: ml } })),
+  },
+  medicine: {
+    title: 'Medicine — which one?',
+    pastel: 'sand',
+    options: [
+      { name: 'Vitamin D drops', dose: '400 IU' },
+      { name: 'Paracetamol', dose: '2.5 ml' },
+      { name: 'Ibuprofen', dose: '2.5 ml' },
+      { name: 'Colic drops', dose: '' },
+      { name: 'Iron drops', dose: '' },
+    ].map((m) => ({ label: m.name, opts: { name: m.name, dose: m.dose } })),
   },
 };
 

@@ -42,6 +42,13 @@ review button.
 - [ ] `git reset --hard origin/<branch>` done — local now equals the repo
       (this is what prevents the recurring stale-file / merge-conflict mess)
 - [ ] `npm install` ran clean
+- [ ] ⛔ **`npm run verify` passes with 0 errors** (`eslint` + `tsc --noEmit`).
+      Lint is not cosmetic here: `react-hooks/rules-of-hooks` is the rule that
+      catches the build-11 crash class — a hook called after an early `return`
+      changes the hook count between renders and kills the app. TypeScript
+      cannot see it. Warnings are tolerated; **errors block the build.**
+- [ ] ⛔ **Round-trip matrix in `RELEASE_QA.md` §1b** run for every event type
+      (log → open → edit every field → save → reopen → check the Trends number)
 - [ ] If a new **native module** was added since last build (e.g. a picker,
       a Firebase package), that's expected — EAS rebuilds native from scratch
 - [ ] For a **Family Sync (v1.1)** build only: EAS Firebase env vars are set
@@ -75,13 +82,16 @@ Improvements → Analytics Data → newest `DenBaby-*.ips`) and fix before resub
 
 | # | What bit us | Permanent fix (in place) |
 |---|---|---|
-| 1 | Build number collisions (autoIncrement + remote source BOTH kept producing duplicate numbers across `git reset --hard`) | **Explicit, committed build number.** `autoIncrement` is OFF and `appVersionSource` is `local`; the build number is exactly `ios.buildNumber` in app.json. Before each production build, bump that number in the repo and push — deterministic and visible in git, no magic. Current: **10** (builds 3 & 4 already exist in ASC). |
+| 1 | Build number collisions (autoIncrement + remote source BOTH kept producing duplicate numbers across `git reset --hard`) | **Explicit, committed build number.** `autoIncrement` is OFF and `appVersionSource` is `local`; the build number is exactly `ios.buildNumber` in app.json. Before each production build, bump that number in the repo and push — deterministic and visible in git, no magic. Current: **12** (builds 3, 4 & 11 already exist in ASC). |
 | 2 | — | (see #1) |
 | 3 | `git reset --hard` discarded local auto-bumps → duplicate numbers | committed explicit number survives reset — it IS the repo value |
 | 4 | Stale local `app.json`/`eas.json` → repeated merge conflicts | always `git reset --hard origin/<branch>` before building (golden rule 1) |
 | 5 | App **crashed on launch** and reached Apple (rejected 2.1(a)) | TestFlight launch gate before every submit (golden rule 2) — plus removed the unused `react-native-reanimated` that caused it |
 | 6 | Encryption compliance prompt each submit | `ITSAppUsesNonExemptEncryption:false` in app.json |
 | 7 | Push-notification prompt each build | saved "No, don't ask again" to eas.json |
+| 8 | Build 11 **crashed on sleep start/stop** — `HomeScreen` returned early above four `useMemo`s, so flipping the night-view flag changed the hook count mid-render | ESLint + `react-hooks/rules-of-hooks` in `npm run verify`, wired into the pre-build checklist; `HomeScreen` is now a pure switch between `DayHomeView` / `NightHomeView` so no hook can sit under a conditional return; plus a root `ErrorBoundary` so a render error degrades to a recoverable screen instead of killing the app |
+| 9 | Bug only fired **after 20:00**, so daytime testing missed it entirely | `RELEASE_QA.md` §1b "time-dependent UI" — clock-gated behaviour is tested inside its window |
+| 10 | Sleep stored start+end but showed one timestamp and edited only the start, silently rewriting the duration behind the daily total and trend chart | `RELEASE_QA.md` §1b round-trip completeness matrix: every stored field visible and editable, and any edit touching one input of a derived value must touch all of them |
 
 ---
 

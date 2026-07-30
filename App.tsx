@@ -21,6 +21,7 @@ import { RootNavigator } from './src/navigation/RootNavigator';
 import { ToastHost } from './src/components/ToastHost';
 import { QuickAddSheet } from './src/components/QuickAddSheet';
 import { EventEditSheet } from './src/components/EventEditSheet';
+import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { VoiceListeningSheet } from './src/screens/voice/VoiceListeningSheet';
 import { AppLockScreen } from './src/components/AppLockScreen';
 import { useStore } from './src/lib/store';
@@ -92,9 +93,11 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayout}>
       <SafeAreaProvider>
-        <ThemeProvider>
-          <AppInner />
-        </ThemeProvider>
+        <ErrorBoundary>
+          <ThemeProvider>
+            <AppInner />
+          </ThemeProvider>
+        </ErrorBoundary>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
