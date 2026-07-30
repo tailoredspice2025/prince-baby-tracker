@@ -93,9 +93,17 @@ export function EventEditSheet() {
   // negative duration.
   const resolvedEnd = () => {
     const s = new Date(withTimeOfDay((event as SleepEvent).startTime, startDate));
-    const endIso = withTimeOfDay((event as SleepEvent).endTime ?? (event as SleepEvent).startTime, endDate);
-    let e = new Date(endIso);
-    if (e <= s) e = new Date(e.getTime() + 24 * 3600 * 1000);
+    // The end is always rebuilt from the START's date, never from its own.
+    //
+    // The previous version kept the end on whatever date it already had and
+    // added 24h whenever it landed before the start. That ratcheted: drag the
+    // wake time earlier once and the end jumped to the next day, where it
+    // stayed — every later edit changed only the time of day, so an 8-minute
+    // nap was stuck reading "24h 8m" with no way back. Anchoring to the start
+    // recomputes from scratch, so a bad edit is always recoverable.
+    const e = new Date(s);
+    e.setHours(endDate.getHours(), endDate.getMinutes(), 0, 0);
+    if (e <= s) e.setDate(e.getDate() + 1); // genuinely crossed midnight
     return { start: s, end: e };
   };
   const sleepMs = isSleep ? resolvedEnd().end.getTime() - resolvedEnd().start.getTime() : 0;
