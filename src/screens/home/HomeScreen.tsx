@@ -84,17 +84,20 @@ export function HomeScreen() {
 
   const dueMed = medications.find((m) => m.ongoing && m.reminderTime);
 
-  const timeline = useMemo(
-    () =>
-      [...babyEvents]
-        .sort((a, b) => {
-          const ta = 'time' in a ? a.time : a.endTime ?? a.startTime;
-          const tb = 'time' in b ? b.time : b.endTime ?? b.startTime;
-          return new Date(tb).getTime() - new Date(ta).getTime();
-        })
-        .slice(0, 5),
-    [babyEvents]
-  );
+  // Scoped to today so the "Today" heading is truthful — this is where a
+  // just-logged entry shows up, which wasn't obvious before.
+  const todayEvents = useMemo(() => {
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    return [...babyEvents]
+      .filter((e) => new Date('time' in e ? e.time : e.endTime ?? e.startTime) >= start)
+      .sort((a, b) => {
+        const ta = 'time' in a ? a.time : a.endTime ?? a.startTime;
+        const tb = 'time' in b ? b.time : b.endTime ?? b.startTime;
+        return new Date(tb).getTime() - new Date(ta).getTime();
+      });
+  }, [babyEvents]);
+  const timeline = useMemo(() => todayEvents.slice(0, 8), [todayEvents]);
 
   const rowFor = (e: TimelineEvent) => eventRowFor(e, caregivers, meId);
 
@@ -144,7 +147,11 @@ export function HomeScreen() {
                 pastelKey={EVENT_PASTEL.bottle}
                 icon={<BottleIcon color="#C96F4A" />}
                 title="Bottle"
-                caption={bottle ? `${relativeTime(bottle.time, now)} · ${bottle.quantityMl}ml` : 'Tap to log'}
+                caption={
+                  bottle
+                    ? `${relativeTime(bottle.time, now)} · ${bottle.quantityMl}ml · hold to change`
+                    : 'Tap to log · hold to choose'
+                }
                 onPress={() => logQuickEvent('bottle')}
                 onLongPress={() => setPickerType('bottle')}
               />
@@ -163,7 +170,7 @@ export function HomeScreen() {
                 pastelKey={EVENT_PASTEL.diaper}
                 icon={<DiaperIcon />}
                 title="Diaper"
-                caption={diaper ? `${relativeTime(diaper.time, now)} · ${diaper.kind}` : 'Tap to log'}
+                caption={diaper ? `${relativeTime(diaper.time, now)} · ${diaper.kind} · hold to change` : 'Tap to log · hold to choose'}
                 onPress={() => logQuickEvent('diaper')}
                 onLongPress={() => setPickerType('diaper')}
               />
@@ -173,7 +180,7 @@ export function HomeScreen() {
                 pastelKey={EVENT_PASTEL.solids}
                 icon={<SolidsIcon />}
                 title="Solids"
-                caption={solids ? `${relativeTime(solids.time, now)}${solids.food ? ` · ${solids.food}` : ''}` : 'Tap to log'}
+                caption={solids ? `${relativeTime(solids.time, now)}${solids.food ? ` · ${solids.food}` : ''} · hold to change` : 'Tap to log · hold to choose'}
                 onPress={() => logQuickEvent('solids')}
                 onLongPress={() => setPickerType('solids')}
               />
@@ -183,7 +190,7 @@ export function HomeScreen() {
                 pastelKey={EVENT_PASTEL.pump}
                 icon={<PumpIcon />}
                 title="Pump"
-                caption={pump ? `${relativeTime(pump.time, now)} · ${pump.quantityMl}ml` : 'Tap to log'}
+                caption={pump ? `${relativeTime(pump.time, now)} · ${pump.quantityMl}ml · hold to change` : 'Tap to log · hold to choose'}
                 onPress={() => logQuickEvent('pump')}
                 onLongPress={() => setPickerType('pump')}
               />
@@ -201,7 +208,7 @@ export function HomeScreen() {
 
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12 }}>
             <AppText weight={900} size={17} color={theme.ink}>
-              Today
+              Today{todayEvents.length ? ` · ${todayEvents.length}` : ''}
             </AppText>
             <Pressable onPress={() => navigation.navigate('Trends')} hitSlop={10}>
               <AppText weight={800} size={12.5} color={theme.coralDeep}>
@@ -210,6 +217,13 @@ export function HomeScreen() {
             </Pressable>
           </View>
           <View>
+            {timeline.length === 0 && (
+              <View style={{ backgroundColor: theme.surface, borderRadius: 18, padding: 18, ...theme.cardShadow }}>
+                <AppText weight={700} size={13.5} color={theme.textSecondary}>
+                  Nothing logged yet today — tap a tile above and it'll appear here.
+                </AppText>
+              </View>
+            )}
             {timeline.map((e, i) => {
               const r = rowFor(e);
               return (
@@ -225,6 +239,11 @@ export function HomeScreen() {
                 />
               );
             })}
+            {timeline.length > 0 && (
+              <AppText weight={600} size={11.5} color={theme.textTertiary} style={{ marginTop: 8 }}>
+                Tap any entry to edit or delete it
+              </AppText>
+            )}
           </View>
         </ScrollView>
       </SafeAreaView>

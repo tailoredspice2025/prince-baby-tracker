@@ -266,8 +266,18 @@ export const useStore = create<AppState>()(
     const now = new Date().toISOString();
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
+    /** Most recent amount logged for this feed type, so a one-tap log
+     * repeats what this baby actually takes instead of a fixed 120 ml. */
+    const lastAmount = (t: 'bottle' | 'pump'): number | undefined => {
+      const s = get();
+      return s.events
+        .filter((e) => e.babyId === s.activeBabyId && e.type === t && (e as FeedEvent).quantityMl != null)
+        .sort((a, b) => eventTime(b).localeCompare(eventTime(a)))
+        .map((e) => (e as FeedEvent).quantityMl)[0];
+    };
+
     if (type === 'bottle') {
-      const quantityMl = opts?.quantityMl ?? 120;
+      const quantityMl = opts?.quantityMl ?? lastAmount('bottle') ?? 120;
       const ev: FeedEvent = { id: uid('ev'), babyId, type: 'bottle', time: now, quantityMl, notes: 'Formula', loggedBy, inputMethod: 'tap' };
       set((s) => ({ events: [ev, ...s.events] }));
       syncWrite('events', ev);
@@ -285,7 +295,7 @@ export const useStore = create<AppState>()(
       syncWrite('events', ev);
       get().pushToast({ message: `Solids · ${food} logged`, onUndo: () => set((s) => ({ events: s.events.filter((e) => e.id !== ev.id) })) });
     } else if (type === 'pump') {
-      const quantityMl = opts?.quantityMl ?? 90;
+      const quantityMl = opts?.quantityMl ?? lastAmount('pump') ?? 90;
       const ev: FeedEvent = { id: uid('ev'), babyId, type: 'pump', time: now, quantityMl, side: 'left', loggedBy, inputMethod: 'tap' };
       set((s) => ({ events: [ev, ...s.events] }));
       syncWrite('events', ev);
