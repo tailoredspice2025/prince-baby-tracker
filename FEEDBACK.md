@@ -1,102 +1,43 @@
 # DenBaby — testing feedback & fix backlog
 
-Real-world testing notes to fix in a future pass. Newest first. Nothing here
-is fixed yet — this is the running to-do from device testing.
+Real-world testing notes. Newest first.
 
 ---
 
-## From TestFlight build 10 (first build that launches) — 30 Jul 2026
+## From TestFlight build 10 — 30 Jul 2026 → all fixed in **build 11**
 
-### Onboarding / "add your baby" screen
+| # | Issue | Status |
+|---|---|---|
+| 1 | Onboarding date of birth was free text | ✅ date picker (capped at today), also in Add-baby |
+| 2 | Sex selector ambiguous — "says Boy and blank" | ✅ root cause was selected-chip white-on-white in dark mode; new themed Segmented control |
+| 3 | System dark mode forced the stripped Night screen | ✅ in-app Appearance toggle (Light/Dark/Auto, default Light); night screen decoupled |
+| 4 | Bottle defaulted to 120 ml, no way to change | ✅ now repeats the last amount logged; long-press picker advertised on tiles |
+| 5 | Unclear where logged entries appear | ✅ "Today · N" list is genuinely today's entries, with empty state + edit hint |
+| 6 | Edit-entry sheet unusable (keyboard hid Save; tapping away discarded) | ✅ keyboard-avoiding layout, pinned Save, Cancel, no discard once edited |
+| 7 | Event time was typed text | ✅ tap-to-pick time picker; amount has −/+ steppers |
+| 8 | App icon bottle/baby too small | ✅ scaled to ~73% of the canvas (was ~52%) |
+| 9 | No way to say who you are; entries showed a random caregiver | ✅ "Your name" at onboarding + editable in Profile; own entries read "logged by you" |
 
-1. **Date of birth is a plain text field — should be a date picker.**
-   - Now: you type the date as free text ("March 8, 2026"). Clunky and
-     error-prone.
-   - Want: a proper **calendar / date picker**, or at minimum a structured
-     day / month / year entry.
-   - Note: we already added `@react-native-community/datetimepicker` for
-     vaccine appointments — reuse it here (date-only mode).
-
-2. **Sex selector is ambiguous and clunky.**
-   - Now: "Boy / Girl" toggle — the selected vs unselected state is unclear
-     ("says boy and blank"). Tapping the blank one seems to do nothing;
-     tapping "Boy" appears to populate the "Girl" box. Confusing to operate.
-   - Want: an obvious, unmistakable selected state (clear highlight on the
-     chosen option, clear unselected state on the other), and tapping either
-     option clearly selects just that one.
+Bonus found while fixing #2: the same white-on-white bug also hid the
+selected option on the **Growth** (weight/height/head) and **Trends**
+(day/week/month/year) selectors in dark mode — fixed in the shared control.
 
 ---
 
-### ✅ FIXED — Dark mode wrongly forced the stripped-down "Night Mode" screen
+## Details on the notable ones
 
-**Fixed:** colour theme is now user-controlled (Settings → Appearance:
-Light / Dark / Auto, default **Light**), fully decoupled from the night-
-feeding screen. The minimal `NightHomeView` now shows only during an active
-sleep session at night — never just because the phone is in dark mode. No
-need to touch iOS Settings anymore. *(Original report below.)*
+**#3 dark mode → night screen.** `useComputedNightMode()` treated
+`systemScheme === 'dark'` as "it's night", so any phone in dark appearance
+was permanently shown `NightHomeView` (feed + diaper only, no timeline).
+Colour theme is now user-controlled and separate; the minimal night screen
+appears only during an active sleep session in night hours.
 
+**#9 caregiver identity.** Solo installs defaulted to the demo caregiver
+(`currentCaregiverId: 'cg-mom'`). Now this device has its own caregiver
+(`cg-me`), named by you. Persist migration **v2 → v3** re-points existing
+solo installs and re-attributes anything logged as a demo caregiver;
+family-linked installs are untouched (their id is the Firebase uid).
 
-
-- **Symptom:** on the home screen only *night feed + diaper* appear, there's
-  no timeline/list of what was logged, bottle defaults to 120ml with no edit,
-  and it's unclear where recorded events go.
-- **Root cause:** `useComputedNightMode()` in `src/theme/ThemeProvider.tsx`
-  returns true whenever `systemScheme === 'dark'`. So any phone set to Dark
-  appearance is permanently shown `NightHomeView` (the minimal 3am feeding
-  screen) instead of the full home + "Today" timeline.
-- **Why it matters:** many users keep their phone in dark mode 24/7 — they'd
-  never see the real app. This made the app look completely broken.
-- **Fix direction:** decouple *dark colour theme* from *night-feeding mode*.
-  Dark mode → dark colours but the FULL app (all quick-log tiles + timeline).
-  Reserve the minimal NightHomeView for genuine night hours + an active sleep
-  session (or a manual "night mode" toggle) — not merely system dark mode.
-- **Workaround for testing now:** set the iPhone to Light appearance
-  (Settings → Display & Brightness → Light).
-
-### Related (surfaced by the night-mode issue, verify in day/light mode)
-
-- Bottle quick-log defaults to 120ml — confirm the **long-press amount
-  picker** and **tap-to-edit** are discoverable in the full (light) home view.
-- General: make it obvious where a just-logged event appears (the "Today"
-  timeline) — the confirmation toast could point to it.
-
-### Edit-entry sheet is unusable
-
-- Tapping **Edit** on an entry opens the sheet, but the **keyboard covers the
-  fields and the Save button** — can't see what you're editing or reach Save.
-- Tapping anywhere else **dismisses and reverts** to the original value
-  (changes lost).
-- Needs: keyboard-avoiding layout, always-visible Save, and no
-  discard-on-outside-tap while editing.
-
-### Event time is typed text — want a picker
-
-- The time of an entry is free text you have to type.
-- Want: a **time picker/scroller**, and/or **default to the current iPhone
-  time** when logging.
-
-### App icon — bottle/baby is too small
-
-- The bottle + baby face sits small in the middle with too much coral padding.
-- Want: scale it up to fill more of the icon's real estate.
-
-### ✅ FIXED — No way to say who *you* are
-
-**Fixed:** onboarding now asks "Your name", editable any time in Profile →
-Your name. This device logs as its own caregiver (`cg-me`), never the demo
-mum/dad/nanny. Your own entries read "logged by you"; others show their name.
-Migration v2→v3 re-points existing solo installs (and re-attributes anything
-logged as a demo caregiver). Family-linked installs untouched. *(Original
-report below.)*
-
-
-
-- Entries show "logged by Mom" (or similar) but you never chose that, and
-  can't tell whether it's meant to be mum or dad.
-- Cause: without Family Sync the app falls back to the demo caregiver
-  (`currentCaregiverId: 'cg-mom'` + demo mum/dad/nanny list).
-- Want: ask "who are you?" at onboarding (or let you set/edit your name in
-  Profile), and attribute entries to that. Should work solo, not only when
-  Family Sync is on.
+---
 
 _(Add new testing feedback above this line as it comes in.)_
