@@ -34,6 +34,11 @@ review button.
 
 ## Pre-build checklist
 
+- [ ] **Bump `ios.buildNumber` in app.json** to one higher than any build in
+      App Store Connect, commit + push (I do this each time; it's explicit and
+      deterministic — no autoIncrement). Then verify the build output prints
+      that exact number. If it prints a different number, you didn't pull the
+      latest — stop and re-reset.
 - [ ] `git reset --hard origin/<branch>` done — local now equals the repo
       (this is what prevents the recurring stale-file / merge-conflict mess)
 - [ ] `npm install` ran clean
@@ -70,9 +75,9 @@ Improvements → Analytics Data → newest `DenBaby-*.ips`) and fix before resub
 
 | # | What bit us | Permanent fix (in place) |
 |---|---|---|
-| 1 | Build number "1 already used" | `autoIncrement` + then **`appVersionSource: "remote"`** in eas.json — Apple assigns the next number, immune to local resets |
-| 2 | autoIncrement kept defaulting to 1 | superseded by remote source (above) |
-| 3 | `git reset --hard` discarded the local build bump → rebuilt a duplicate number → submit failed | remote source ignores local build number entirely |
+| 1 | Build number collisions (autoIncrement + remote source BOTH kept producing duplicate numbers across `git reset --hard`) | **Explicit, committed build number.** `autoIncrement` is OFF and `appVersionSource` is `local`; the build number is exactly `ios.buildNumber` in app.json. Before each production build, bump that number in the repo and push — deterministic and visible in git, no magic. Current: **10** (builds 3 & 4 already exist in ASC). |
+| 2 | — | (see #1) |
+| 3 | `git reset --hard` discarded local auto-bumps → duplicate numbers | committed explicit number survives reset — it IS the repo value |
 | 4 | Stale local `app.json`/`eas.json` → repeated merge conflicts | always `git reset --hard origin/<branch>` before building (golden rule 1) |
 | 5 | App **crashed on launch** and reached Apple (rejected 2.1(a)) | TestFlight launch gate before every submit (golden rule 2) — plus removed the unused `react-native-reanimated` that caused it |
 | 6 | Encryption compliance prompt each submit | `ITSAppUsesNonExemptEncryption:false` in app.json |
