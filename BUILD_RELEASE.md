@@ -23,9 +23,15 @@ cd ~/prince-baby-tracker
 git fetch origin
 git reset --hard origin/claude/unzip-commit-push-t4m8ez   # ← guarantees latest, discards local throwaway edits
 npm install
-npx eas-cli build --profile production --platform ios     # build number auto-managed by Apple (remote)
+npm run verify                                            # ← lint + typecheck. MUST print 0 errors, or stop
+npx eas-cli build --profile production --platform ios     # build number comes from ios.buildNumber in app.json
 npx eas-cli submit --platform ios --latest
 ```
+
+`npm run verify` is not optional and not cosmetic: `react-hooks/rules-of-hooks`
+is the rule that catches the build-11 sleep crash (a hook called after an early
+`return`), and TypeScript cannot see that class of bug. Warnings are fine —
+errors mean stop.
 
 Then **STOP** and do the TestFlight launch test (below) before touching the
 review button.
