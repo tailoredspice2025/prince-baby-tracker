@@ -80,4 +80,14 @@ need to touch iOS Settings anymore. *(Original report below.)*
 - The bottle + baby face sits small in the middle with too much coral padding.
 - Want: scale it up to fill more of the icon's real estate.
 
+### No way to say who *you* are — entries attributed to a random caregiver
+
+- Entries show "logged by Mom" (or similar) but you never chose that, and
+  can't tell whether it's meant to be mum or dad.
+- Cause: without Family Sync the app falls back to the demo caregiver
+  (`currentCaregiverId: 'cg-mom'` + demo mum/dad/nanny list).
+- Want: ask "who are you?" at onboarding (or let you set/edit your name in
+  Profile), and attribute entries to that. Should work solo, not only when
+  Family Sync is on.
+
 _(Add new testing feedback above this line as it comes in.)_
