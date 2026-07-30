@@ -27,4 +27,20 @@ export const FEATURES = {
    * `parseVoiceTranscript` intact.
    */
   voiceLogging: false,
+
+  /**
+   * The stripped night-feeding screen (feed + diaper only) is OUT of v1.0.
+   *
+   * It has now caused two bad builds. In 11 it switched itself on during a
+   * sleep session at night, replacing the whole home screen — and, because it
+   * gated an early `return` above four hooks, crashed the app. In 12 it was
+   * made opt-in behind a moon button, but a moon means *dark colours*, so
+   * tapping it dropped you into a two-button screen that reads as the app
+   * having lost everything.
+   *
+   * The moon button now does what it looks like it does: Light ⇄ Dark theme.
+   * This screen comes back in 1.1 only if it earns a control of its own that
+   * says what it is.
+   */
+  nightFeedingView: false,
 } as const;

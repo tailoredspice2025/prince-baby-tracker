@@ -55,8 +55,7 @@ export function DayHomeView() {
   const toggleSleep = useStore((s) => s.toggleSleep);
   const setEditingEvent = useStore((s) => s.setEditingEvent);
   const voiceSetting = useStore((s) => s.settings.voiceLoggingEnabled);
-  const nightPreview = useStore((s) => s.settings.forceNightPreview);
-  const setForceNightPreview = useStore((s) => s.setForceNightPreview);
+  const setThemePreference = useStore((s) => s.setThemePreference);
   const [pickerType, setPickerType] = useState<PickerType | null>(null);
 
   // Gated on the build-time switch as well as the stored setting — the stored
@@ -136,12 +135,13 @@ export function DayHomeView() {
                 {baby.name} · {ageString(baby.dob, now)}
               </AppText>
             </View>
-            {/* Night mode is opt-in: it never takes over the screen on its own. */}
+            {/* One tap, light or dark. It does what the moon looks like it
+                does — it does NOT strip the screen down. */}
             <Pressable
-              onPress={() => setForceNightPreview(!nightPreview)}
+              onPress={() => setThemePreference(theme.mode === 'night' ? 'light' : 'dark')}
               hitSlop={8}
               accessibilityRole="button"
-              accessibilityLabel="Switch to night mode"
+              accessibilityLabel={theme.mode === 'night' ? 'Switch to light mode' : 'Switch to dark mode'}
               style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: theme.surface, alignItems: 'center', justifyContent: 'center', marginRight: 8, ...theme.cardShadow }}
             >
               <SleepIcon size={17} color={theme.textSecondary} />

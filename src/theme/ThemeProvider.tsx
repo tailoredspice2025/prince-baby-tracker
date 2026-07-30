@@ -2,6 +2,7 @@ import React, { createContext, useContext } from 'react';
 import { useColorScheme } from 'react-native';
 import { lightColors, nightColors, shadows, ShadowStyle } from './tokens';
 import { useStore } from '../lib/store';
+import { FEATURES } from '../lib/features';
 
 export type AppTheme = {
   mode: 'light' | 'night';
@@ -62,7 +63,8 @@ const ThemeContext = createContext<AppTheme>(lightTheme);
  * trigger. Anything that flips this at runtime must never gate a hook.
  */
 export function useNightFeedingView() {
-  return useStore((s) => !!s.settings.forceNightPreview);
+  const forced = useStore((s) => !!s.settings.forceNightPreview);
+  return FEATURES.nightFeedingView && forced;
 }
 
 /** Forces night colours for the night-feeding view regardless of the user's
