@@ -41,6 +41,7 @@ export function HomeScreen() {
   const baby = useStore((s) => s.activeBaby());
   const events = useStore((s) => s.events);
   const caregivers = useStore((s) => s.caregivers);
+  const meId = useStore((s) => s.currentCaregiverId);
   const medications = useStore((s) => s.medications);
   const runningSleepSession = useStore((s) => s.runningSleepSession);
   const logQuickEvent = useStore((s) => s.logQuickEvent);
@@ -95,7 +96,7 @@ export function HomeScreen() {
     [babyEvents]
   );
 
-  const rowFor = (e: TimelineEvent) => eventRowFor(e, caregivers);
+  const rowFor = (e: TimelineEvent) => eventRowFor(e, caregivers, meId);
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.bg }}>

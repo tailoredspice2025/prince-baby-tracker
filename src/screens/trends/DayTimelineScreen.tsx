@@ -39,6 +39,7 @@ export function DayTimelineScreen() {
   const baby = useStore((s) => s.activeBaby());
   const events = useStore((s) => s.events);
   const caregivers = useStore((s) => s.caregivers);
+  const meId = useStore((s) => s.currentCaregiverId);
   const setEditingEvent = useStore((s) => s.setEditingEvent);
 
   const dayDate = new Date(`${day}T12:00:00`);
@@ -132,7 +133,7 @@ export function DayTimelineScreen() {
         ) : (
           <View>
             {dayEvents.map((e, i) => {
-              const r = eventRowFor(e, caregivers);
+              const r = eventRowFor(e, caregivers, meId);
               return (
                 <TimelineRow
                   key={e.id}

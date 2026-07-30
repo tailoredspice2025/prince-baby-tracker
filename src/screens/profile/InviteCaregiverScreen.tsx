@@ -17,7 +17,9 @@ export function InviteCaregiverScreen() {
   const createFamilyAndLink = useStore((s) => s.createFamilyAndLink);
   const pushToast = useStore((s) => s.pushToast);
   const baby = useStore((s) => s.activeBaby());
-  const [myName, setMyName] = useState('');
+  // prefill from the name already set in Profile / onboarding
+  const savedName = useStore((s) => s.myName());
+  const [myName, setMyName] = useState(savedName === 'You' ? '' : savedName);
   const [busy, setBusy] = useState(false);
   const [code, setCode] = useState<string | null>(null);
 

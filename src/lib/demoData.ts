@@ -48,6 +48,26 @@ export const demoCaregivers: Caregiver[] = [
   { id: 'cg-nanny', familyId: FAMILY_ID, name: 'Anita · nanny', role: 'caregiver', colorKey: 'sage', loggedCount: 96, online: false, schedule: 'Mon–Fri' },
 ];
 
+/** The ids above are seed/demo only. A real install logs as *this* device's
+ * caregiver — see meCaregiver / ME_CAREGIVER_ID below. */
+export const DEMO_CAREGIVER_IDS = demoCaregivers.map((c) => c.id);
+
+/** Stable local id for "me" before (or without) Family Sync. Once a family
+ * is created/joined this is replaced by the Firebase auth uid. */
+export const ME_CAREGIVER_ID = 'cg-me';
+
+export function meCaregiver(name = 'You'): Caregiver {
+  return {
+    id: ME_CAREGIVER_ID,
+    familyId: FAMILY_ID,
+    name,
+    role: 'owner',
+    colorKey: 'peach',
+    loggedCount: 0,
+    online: true,
+  };
+}
+
 const demoTodayEvents: TimelineEvent[] = [
   {
     id: 'ev-1',
@@ -56,7 +76,7 @@ const demoTodayEvents: TimelineEvent[] = [
     time: todayAt(9, 5),
     quantityMl: 120,
     notes: 'Formula',
-    loggedBy: 'cg-dad',
+    loggedBy: ME_CAREGIVER_ID,
     inputMethod: 'voice',
   },
   {
@@ -65,7 +85,7 @@ const demoTodayEvents: TimelineEvent[] = [
     type: 'diaper',
     time: todayAt(8, 50),
     kind: 'wet',
-    loggedBy: 'cg-mom',
+    loggedBy: ME_CAREGIVER_ID,
     inputMethod: 'tap',
   },
   {
@@ -75,7 +95,7 @@ const demoTodayEvents: TimelineEvent[] = [
     startTime: todayAt(23, 20, -1),
     endTime: todayAt(6, 0),
     wokeCount: 2,
-    loggedBy: 'cg-nanny',
+    loggedBy: ME_CAREGIVER_ID,
     inputMethod: 'tap',
   },
 ];
@@ -101,7 +121,7 @@ function seededRand(seed: number): () => number {
  */
 function generateHistoryEvents(days = 84): TimelineEvent[] {
   const events: TimelineEvent[] = [];
-  const caregivers = ['cg-mom', 'cg-dad', 'cg-nanny'];
+  const caregivers = [ME_CAREGIVER_ID];
 
   for (let d = days; d >= 1; d--) {
     const rand = seededRand(d * 7919);
@@ -202,7 +222,7 @@ function generateHistoryEvents(days = 84): TimelineEvent[] {
         time: todayAt(i === 0 ? 8 : 20, 30 + jitter(20), -d),
         quantityMl: 80 + Math.floor(rand() * 6) * 10,
         side: rand() < 0.5 ? 'left' : rand() < 0.5 ? 'right' : 'both',
-        loggedBy: 'cg-mom',
+        loggedBy: ME_CAREGIVER_ID,
         inputMethod: 'tap',
       });
     }

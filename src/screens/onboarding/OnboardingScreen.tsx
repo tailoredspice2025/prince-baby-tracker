@@ -48,6 +48,8 @@ export function OnboardingScreen() {
   const theme = useTheme();
   const navigation = useNavigation<any>();
   const completeOnboarding = useStore((s) => s.completeOnboarding);
+  const setMyName = useStore((s) => s.setMyName);
+  const [myName, setMyNameInput] = useState('');
   const [name, setName] = useState('Prince');
   const [born, setBorn] = useState('March 8, 2026');
   const [weight, setWeight] = useState('3.4');
@@ -68,6 +70,9 @@ export function OnboardingScreen() {
   };
 
   const submit = () => {
+    // whoever is setting the app up is the first caregiver — everything they
+    // log is attributed to this name
+    if (myName.trim()) setMyName(myName);
     // "Born" is free text (e.g. "March 8, 2026" or "2026-03-08") — keep the
     // seeded dob only if it can't be parsed as a date.
     const parsedDob = new Date(born);
@@ -128,6 +133,12 @@ export function OnboardingScreen() {
         </AppText>
 
         <View style={{ gap: 12 }}>
+          <FieldCard
+            label="Your name (shown on what you log)"
+            value={myName}
+            onChangeText={setMyNameInput}
+            placeholder="e.g. Dad"
+          />
           <FieldCard label="Name" value={name} onChangeText={setName} placeholder="Baby's name" />
           <FieldCard label="Born" value={born} onChangeText={setBorn} placeholder="Date of birth" />
           <View style={{ flexDirection: 'row', gap: 12 }}>

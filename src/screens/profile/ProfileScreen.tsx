@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, View } from 'react-native';
+import { Alert, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { AppText } from '../../components/AppText';
@@ -33,6 +33,13 @@ export function ProfileScreen() {
   const settings = useStore((s) => s.settings);
   const setUnits = useStore((s) => s.setUnits);
   const setThemePreference = useStore((s) => s.setThemePreference);
+  const currentCaregiverId = useStore((s) => s.currentCaregiverId);
+  const setMyName = useStore((s) => s.setMyName);
+  const savedMyName = caregivers.find((c) => c.id === currentCaregiverId)?.name ?? 'You';
+  const [myNameDraft, setMyNameDraft] = useState(savedMyName);
+  useEffect(() => {
+    setMyNameDraft(savedMyName);
+  }, [savedMyName]);
   const setVoiceLoggingEnabled = useStore((s) => s.setVoiceLoggingEnabled);
   const setFeedReminder = useStore((s) => s.setFeedReminder);
   const setAppLockEnabled = useStore((s) => s.setAppLockEnabled);
@@ -285,6 +292,33 @@ export function ProfileScreen() {
           Settings
         </AppText>
         <View style={{ backgroundColor: theme.surface, borderRadius: radii.cardLg, overflow: 'hidden', ...theme.cardShadow }}>
+          <View style={{ padding: 13, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: theme.border }}>
+            <AppText weight={700} size={14.5} color={theme.ink}>
+              Your name
+            </AppText>
+            <AppText weight={600} size={11.5} color={theme.textTertiary} style={{ marginTop: 1 }}>
+              Shown next to everything you log
+            </AppText>
+            <TextInput
+              value={myNameDraft}
+              onChangeText={setMyNameDraft}
+              onEndEditing={() => setMyName(myNameDraft)}
+              onSubmitEditing={() => setMyName(myNameDraft)}
+              placeholder="e.g. Dad"
+              placeholderTextColor={theme.textTertiary}
+              returnKeyType="done"
+              style={{
+                marginTop: 8,
+                backgroundColor: theme.bg,
+                borderRadius: 12,
+                paddingVertical: 10,
+                paddingHorizontal: 14,
+                fontFamily: 'Nunito_800ExtraBold',
+                fontSize: 16,
+                color: theme.ink,
+              }}
+            />
+          </View>
           <Pressable
             onPress={() => setUnits(settings.units === 'ml' ? 'oz' : 'ml')}
             style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 13, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: theme.border }}

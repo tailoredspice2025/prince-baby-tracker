@@ -6,9 +6,12 @@ export function eventTime(e: TimelineEvent): string {
   return 'time' in e ? e.time : e.endTime ?? e.startTime;
 }
 
-/** Title / time / byline used by timeline rows on Home and the day log. */
-export function eventRowFor(e: TimelineEvent, caregivers: Caregiver[]) {
-  const caregiverName = (id: string) => caregivers.find((c) => c.id === id)?.name.split(' · ')[0] ?? 'Caregiver';
+/** Title / time / byline used by timeline rows on Home and the day log.
+ * Pass `meId` (this device's caregiver id) so your own entries read
+ * "logged by you" rather than a name you have to disambiguate. */
+export function eventRowFor(e: TimelineEvent, caregivers: Caregiver[], meId?: string) {
+  const caregiverName = (id: string) =>
+    id && id === meId ? 'you' : caregivers.find((c) => c.id === id)?.name.split(' · ')[0] ?? 'you';
   let title = '';
   if (e.type === 'bottle') title = `Bottle · ${(e as FeedEvent).quantityMl ?? ''} ml`;
   else if (e.type === 'solids') title = `Solids${(e as FeedEvent).food ? ` · ${(e as FeedEvent).food}` : ''}`;

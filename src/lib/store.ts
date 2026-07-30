@@ -22,8 +22,10 @@ import {
 } from '../types/models';
 import {
   demoBaby,
-  demoCaregivers,
+  DEMO_CAREGIVER_IDS,
   demoEvents,
+  ME_CAREGIVER_ID,
+  meCaregiver,
   demoHistoryEvents,
   demoMeasurements,
   demoMedications,
@@ -129,6 +131,9 @@ interface AppState {
   setFeedReminder: (enabled: boolean, hours?: number) => void;
   toggleVoicePermission: (key: keyof VoicePermissions) => void;
   addCaregiver: (c: Omit<Caregiver, 'id' | 'familyId'>) => void;
+  /** The name shown next to everything this device logs. */
+  myName: () => string;
+  setMyName: (name: string) => void;
   // Family sync lifecycle
   initFamilySync: () => void;
   createFamilyAndLink: (myName: string) => Promise<void>;
@@ -150,8 +155,10 @@ export const useStore = create<AppState>()(
   myUid: null,
   babies: [demoBaby],
   activeBabyId: demoBaby.id,
-  currentCaregiverId: 'cg-mom',
-  caregivers: demoCaregivers,
+  // This device logs as its own caregiver from the start — never the demo
+  // mum/dad/nanny (which made entries show an attribution nobody chose).
+  currentCaregiverId: ME_CAREGIVER_ID,
+  caregivers: [meCaregiver()],
   events: demoEvents,
   measurements: demoMeasurements,
   vaccines: demoVaccines,
@@ -407,6 +414,29 @@ export const useStore = create<AppState>()(
   addCaregiver: (c) =>
     set((s) => ({ caregivers: [...s.caregivers, { id: uid('cg'), familyId: 'demo-family', ...c }] })),
 
+  myName: () => {
+    const s = get();
+    return s.caregivers.find((c) => c.id === s.currentCaregiverId)?.name ?? 'You';
+  },
+
+  /** Renames this device's caregiver. Syncs when a family is linked so the
+   * other parent sees the new name against past and future entries. */
+  setMyName: (name) => {
+    const trimmed = name.trim() || 'You';
+    const meId = get().currentCaregiverId;
+    let updated: Caregiver | undefined;
+    set((s) => ({
+      caregivers: s.caregivers.some((c) => c.id === meId)
+        ? s.caregivers.map((c) => {
+            if (c.id !== meId) return c;
+            updated = { ...c, name: trimmed };
+            return updated;
+          })
+        : [...s.caregivers, (updated = { ...meCaregiver(trimmed), id: meId })],
+    }));
+    if (updated && get().familyId) syncWrite('caregivers', updated);
+  },
+
   // ——— Family sync lifecycle ———————————————————————————————————————————
 
   /** Reconnects live sync on app start when this device is already linked. */
@@ -648,11 +678,17 @@ export const useStore = create<AppState>()(
     {
       name: 'denbaby',
       storage: createJSONStorage(() => AsyncStorage),
-      version: 2,
+      version: 3,
       // v0 → v1: installs persisted before the Trends screen existed only
       // have the 3-event demo seed; append the generated demo history so
       // trends have data, without touching anything the user logged.
       // v1 → v2: family-sync fields added; default to unlinked.
+      // v2 → v3: this device gets its own caregiver identity instead of
+      // logging as the demo "Mom". Solo installs had demo mum/dad/nanny in
+      // caregivers[] and currentCaregiverId 'cg-mom', so entries showed an
+      // attribution the user never chose. Family-linked installs are left
+      // alone — their caregivers come from the cloud and their id is the
+      // auth uid.
       migrate: (persisted: any, version) => {
         if (version < 1 && persisted?.events && !persisted.events.some((e: any) => String(e.id).startsWith('ev-h-'))) {
           persisted.events = [...persisted.events, ...demoHistoryEvents];
@@ -660,6 +696,18 @@ export const useStore = create<AppState>()(
         if (version < 2) {
           persisted.familyId = persisted.familyId ?? null;
           persisted.myUid = persisted.myUid ?? null;
+        }
+        if (version < 3 && !persisted?.familyId) {
+          persisted.currentCaregiverId = ME_CAREGIVER_ID;
+          const kept = (persisted.caregivers ?? []).filter(
+            (c: any) => c && !DEMO_CAREGIVER_IDS.includes(c.id) && c.id !== ME_CAREGIVER_ID
+          );
+          persisted.caregivers = [meCaregiver(), ...kept];
+          // re-attribute anything logged as a demo caregiver to this device,
+          // so the timeline reads consistently instead of naming strangers
+          persisted.events = (persisted.events ?? []).map((e: any) =>
+            e && DEMO_CAREGIVER_IDS.includes(e.loggedBy) ? { ...e, loggedBy: ME_CAREGIVER_ID } : e
+          );
         }
         return persisted;
       },

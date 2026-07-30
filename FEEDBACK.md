@@ -80,7 +80,16 @@ need to touch iOS Settings anymore. *(Original report below.)*
 - The bottle + baby face sits small in the middle with too much coral padding.
 - Want: scale it up to fill more of the icon's real estate.
 
-### No way to say who *you* are — entries attributed to a random caregiver
+### ✅ FIXED — No way to say who *you* are
+
+**Fixed:** onboarding now asks "Your name", editable any time in Profile →
+Your name. This device logs as its own caregiver (`cg-me`), never the demo
+mum/dad/nanny. Your own entries read "logged by you"; others show their name.
+Migration v2→v3 re-points existing solo installs (and re-attributes anything
+logged as a demo caregiver). Family-linked installs untouched. *(Original
+report below.)*
+
+
 
 - Entries show "logged by Mom" (or similar) but you never chose that, and
   can't tell whether it's meant to be mum or dad.
