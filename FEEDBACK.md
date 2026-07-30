@@ -60,4 +60,19 @@ need to touch iOS Settings anymore. *(Original report below.)*
 - General: make it obvious where a just-logged event appears (the "Today"
   timeline) — the confirmation toast could point to it.
 
+### Edit-entry sheet is unusable
+
+- Tapping **Edit** on an entry opens the sheet, but the **keyboard covers the
+  fields and the Save button** — can't see what you're editing or reach Save.
+- Tapping anywhere else **dismisses and reverts** to the original value
+  (changes lost).
+- Needs: keyboard-avoiding layout, always-visible Save, and no
+  discard-on-outside-tap while editing.
+
+### Event time is typed text — want a picker
+
+- The time of an entry is free text you have to type.
+- Want: a **time picker/scroller**, and/or **default to the current iPhone
+  time** when logging.
+
 _(Add new testing feedback above this line as it comes in.)_
