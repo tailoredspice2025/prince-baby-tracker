@@ -75,4 +75,9 @@ need to touch iOS Settings anymore. *(Original report below.)*
 - Want: a **time picker/scroller**, and/or **default to the current iPhone
   time** when logging.
 
+### App icon — bottle/baby is too small
+
+- The bottle + baby face sits small in the middle with too much coral padding.
+- Want: scale it up to fill more of the icon's real estate.
+
 _(Add new testing feedback above this line as it comes in.)_
