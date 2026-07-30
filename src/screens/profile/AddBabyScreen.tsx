@@ -5,6 +5,8 @@ import { useNavigation } from '@react-navigation/native';
 import { AppText } from '../../components/AppText';
 import { PrimaryButton } from '../../components/Button';
 import { FormField } from '../../components/FormField';
+import { DateField } from '../../components/DateField';
+import { Segmented } from '../../components/Segmented';
 import { useStore } from '../../lib/store';
 import { useTheme } from '../../theme/ThemeProvider';
 
@@ -13,16 +15,15 @@ export function AddBabyScreen() {
   const navigation = useNavigation();
   const addBaby = useStore((s) => s.addBaby);
   const [name, setName] = useState('');
-  const [dob, setDob] = useState('');
+  const [dob, setDob] = useState<Date>(new Date());
   const [weight, setWeight] = useState('');
   const [length, setLength] = useState('');
   const [sex, setSex] = useState<'male' | 'female'>('male');
 
   const save = () => {
-    const parsedDob = dob ? new Date(dob) : new Date();
     addBaby({
       name: name || 'Baby',
-      dob: isNaN(parsedDob.getTime()) ? new Date().toISOString().slice(0, 10) : parsedDob.toISOString().slice(0, 10),
+      dob: dob.toISOString().slice(0, 10),
       birthWeightKg: parseFloat(weight) || 3.3,
       birthLengthCm: parseFloat(length) || 50,
       sex,
@@ -38,7 +39,7 @@ export function AddBabyScreen() {
         </AppText>
         <View style={{ gap: 12 }}>
           <FormField label="Name" value={name} onChangeText={setName} placeholder="Baby's name" />
-          <FormField label="Born" value={dob} onChangeText={setDob} placeholder="e.g. 2026-07-01" />
+          <DateField label="Born" value={dob} onChange={setDob} maximumDate={new Date()} />
           <View style={{ flexDirection: 'row', gap: 12 }}>
             <View style={{ flex: 1 }}>
               <FormField label="Birth weight (kg)" value={weight} onChangeText={(t) => setWeight(t.replace(/[^0-9.]/g, ''))} placeholder="3.3" keyboardType="numeric" />
@@ -51,25 +52,14 @@ export function AddBabyScreen() {
             <AppText weight={800} size={11} color={theme.textTertiary} letterSpacing={1} uppercase style={{ marginBottom: 8 }}>
               Sex
             </AppText>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              {([
+            <Segmented
+              options={[
                 { key: 'male', label: 'Boy' },
                 { key: 'female', label: 'Girl' },
-              ] as const).map((opt) => {
-                const active = sex === opt.key;
-                return (
-                  <Pressable
-                    key={opt.key}
-                    onPress={() => setSex(opt.key)}
-                    style={{ flex: 1, alignItems: 'center', paddingVertical: 9, borderRadius: 999, backgroundColor: active ? theme.ink : '#F0E4D2' }}
-                  >
-                    <AppText weight={active ? 800 : 700} size={13.5} color={active ? '#F5E9DB' : theme.textSecondary}>
-                      {opt.label}
-                    </AppText>
-                  </Pressable>
-                );
-              })}
-            </View>
+              ] as const}
+              value={sex}
+              onChange={setSex}
+            />
           </View>
         </View>
         <View style={{ flex: 1, minHeight: 24 }} />

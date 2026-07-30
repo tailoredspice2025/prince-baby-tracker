@@ -7,6 +7,7 @@ import { SmallPlusIcon } from '../../components/icons';
 import { canUseAppLock } from '../../lib/appLock';
 import { isFirebaseConfigured } from '../../lib/firestoreSync';
 import { Toggle } from '../../components/Toggle';
+import { Segmented } from '../../components/Segmented';
 import { useStore } from '../../lib/store';
 import { useTheme } from '../../theme/ThemeProvider';
 import { radii, pastels, PastelKey } from '../../theme/tokens';
@@ -334,32 +335,16 @@ export function ProfileScreen() {
             <AppText weight={700} size={14.5} color={theme.ink} style={{ marginBottom: 10 }}>
               Appearance
             </AppText>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              {([
+            <Segmented
+              options={[
                 { key: 'light', label: 'Light' },
                 { key: 'dark', label: 'Dark' },
                 { key: 'system', label: 'Auto' },
-              ] as const).map((opt) => {
-                const active = (settings.themePreference ?? 'light') === opt.key;
-                return (
-                  <Pressable
-                    key={opt.key}
-                    onPress={() => setThemePreference(opt.key)}
-                    style={{
-                      flex: 1,
-                      alignItems: 'center',
-                      paddingVertical: 8,
-                      borderRadius: 999,
-                      backgroundColor: active ? theme.ink : '#F0E4D2',
-                    }}
-                  >
-                    <AppText weight={active ? 800 : 700} size={13} color={active ? '#F5E9DB' : theme.textSecondary}>
-                      {opt.label}
-                    </AppText>
-                  </Pressable>
-                );
-              })}
-            </View>
+              ] as const}
+              value={settings.themePreference ?? 'light'}
+              onChange={setThemePreference}
+              compact
+            />
           </View>
           <Pressable
             onPress={() => navigation.navigate('VoicePermissions')}
@@ -394,27 +379,17 @@ export function ProfileScreen() {
               />
             </View>
             {(settings.feedReminderEnabled ?? false) && (
-              <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
-                {[2, 3, 4].map((h) => {
-                  const active = (settings.feedReminderHours ?? 3) === h;
-                  return (
-                    <Pressable
-                      key={h}
-                      onPress={() => setFeedReminder(true, h)}
-                      style={{
-                        flex: 1,
-                        alignItems: 'center',
-                        paddingVertical: 7,
-                        borderRadius: 999,
-                        backgroundColor: active ? theme.ink : '#F0E4D2',
-                      }}
-                    >
-                      <AppText weight={active ? 800 : 700} size={12.5} color={active ? '#F5E9DB' : theme.textSecondary}>
-                        every {h} h
-                      </AppText>
-                    </Pressable>
-                  );
-                })}
+              <View style={{ marginTop: 10 }}>
+                <Segmented
+                  options={[
+                    { key: '2', label: 'every 2 h' },
+                    { key: '3', label: 'every 3 h' },
+                    { key: '4', label: 'every 4 h' },
+                  ] as const}
+                  value={String(settings.feedReminderHours ?? 3) as '2' | '3' | '4'}
+                  onChange={(k) => setFeedReminder(true, parseInt(k, 10))}
+                  compact
+                />
               </View>
             )}
           </View>

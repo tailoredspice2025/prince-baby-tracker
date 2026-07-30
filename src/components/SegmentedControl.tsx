@@ -24,13 +24,16 @@ export function SegmentedControl<T extends string>({
             style={{
               flex: 1,
               alignItems: 'center',
-              backgroundColor: active ? theme.ink : theme.surface,
+              // coral (not theme.ink) for the selected pill: in dark mode ink
+              // is near-white, so ink + light text made the selected option
+              // invisible on Growth/Trends.
+              backgroundColor: active ? theme.coral : theme.surface,
               borderRadius: 999,
               paddingVertical: 9,
               ...(active ? {} : theme.cardShadow),
             }}
           >
-            <AppText weight={active ? 800 : 700} size={13.5} color={active ? '#F5E9DB' : theme.textSecondary}>
+            <AppText weight={active ? 900 : 700} size={13.5} color={active ? '#FFFFFF' : theme.textSecondary}>
               {opt.label}
             </AppText>
           </Pressable>

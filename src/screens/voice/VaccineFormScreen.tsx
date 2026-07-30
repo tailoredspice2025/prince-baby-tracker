@@ -7,6 +7,7 @@ import { AppText } from '../../components/AppText';
 import { MicIcon } from '../../components/icons';
 import { PrimaryButton } from '../../components/Button';
 import { FormField } from '../../components/FormField';
+import { Segmented } from '../../components/Segmented';
 import { useStore } from '../../lib/store';
 import { useTheme } from '../../theme/ThemeProvider';
 import { radii } from '../../theme/tokens';
@@ -149,24 +150,16 @@ export function VaccineFormScreen() {
 
         {/* mode toggle (hidden when pre-filled from voice — that's always a given dose) */}
         {!parsed && (
-          <View style={{ flexDirection: 'row', gap: 8, marginBottom: 18 }}>
-            {([
-              { key: 'appointment', label: 'Upcoming appointment' },
-              { key: 'given', label: 'Log a given dose' },
-            ] as const).map((opt) => {
-              const active = mode === opt.key;
-              return (
-                <Pressable
-                  key={opt.key}
-                  onPress={() => setMode(opt.key)}
-                  style={{ flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: 999, backgroundColor: active ? theme.ink : '#F0E4D2' }}
-                >
-                  <AppText weight={active ? 800 : 700} size={12.5} color={active ? '#F5E9DB' : theme.textSecondary}>
-                    {opt.label}
-                  </AppText>
-                </Pressable>
-              );
-            })}
+          <View style={{ marginBottom: 18 }}>
+            <Segmented
+              options={[
+                { key: 'appointment', label: 'Upcoming appointment' },
+                { key: 'given', label: 'Log a given dose' },
+              ] as const}
+              value={mode}
+              onChange={setMode}
+              compact
+            />
           </View>
         )}
 

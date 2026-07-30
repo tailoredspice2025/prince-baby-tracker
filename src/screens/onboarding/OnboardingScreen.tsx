@@ -6,6 +6,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { AppText } from '../../components/AppText';
 import { CameraIcon } from '../../components/icons';
 import { PrimaryButton, TextLink } from '../../components/Button';
+import { DateField } from '../../components/DateField';
+import { Segmented } from '../../components/Segmented';
 import { useStore } from '../../lib/store';
 import { isFirebaseConfigured } from '../../lib/firestoreSync';
 import { useTheme } from '../../theme/ThemeProvider';
@@ -51,7 +53,7 @@ export function OnboardingScreen() {
   const setMyName = useStore((s) => s.setMyName);
   const [myName, setMyNameInput] = useState('');
   const [name, setName] = useState('Prince');
-  const [born, setBorn] = useState('March 8, 2026');
+  const [born, setBorn] = useState<Date>(new Date());
   const [weight, setWeight] = useState('3.4');
   const [length, setLength] = useState('51');
   const [sex, setSex] = useState<'male' | 'female'>('male');
@@ -73,12 +75,9 @@ export function OnboardingScreen() {
     // whoever is setting the app up is the first caregiver — everything they
     // log is attributed to this name
     if (myName.trim()) setMyName(myName);
-    // "Born" is free text (e.g. "March 8, 2026" or "2026-03-08") — keep the
-    // seeded dob only if it can't be parsed as a date.
-    const parsedDob = new Date(born);
     completeOnboarding({
       name: name || 'Prince',
-      ...(isNaN(parsedDob.getTime()) ? {} : { dob: parsedDob.toISOString().slice(0, 10) }),
+      dob: born.toISOString().slice(0, 10),
       birthWeightKg: parseFloat(weight) || 3.4,
       birthLengthCm: parseFloat(length) || 51,
       sex,
@@ -140,7 +139,7 @@ export function OnboardingScreen() {
             placeholder="e.g. Dad"
           />
           <FieldCard label="Name" value={name} onChangeText={setName} placeholder="Baby's name" />
-          <FieldCard label="Born" value={born} onChangeText={setBorn} placeholder="Date of birth" />
+          <DateField label="Born" value={born} onChange={setBorn} maximumDate={new Date()} />
           <View style={{ flexDirection: 'row', gap: 12 }}>
             <FieldCard label="Birth weight" value={`${weight} kg`} onChangeText={(t) => setWeight(t.replace(/[^0-9.]/g, ''))} keyboardType="numeric" style={{ flex: 1 }} />
             <FieldCard label="Length" value={`${length} cm`} onChangeText={(t) => setLength(t.replace(/[^0-9.]/g, ''))} keyboardType="numeric" style={{ flex: 1 }} />
@@ -149,31 +148,14 @@ export function OnboardingScreen() {
             <AppText weight={800} size={11} color={theme.textTertiary} letterSpacing={1} uppercase style={{ marginBottom: 8 }}>
               Sex
             </AppText>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              {([
+            <Segmented
+              options={[
                 { key: 'male', label: 'Boy' },
                 { key: 'female', label: 'Girl' },
-              ] as const).map((opt) => {
-                const active = sex === opt.key;
-                return (
-                  <Pressable
-                    key={opt.key}
-                    onPress={() => setSex(opt.key)}
-                    style={{
-                      flex: 1,
-                      alignItems: 'center',
-                      paddingVertical: 9,
-                      borderRadius: 999,
-                      backgroundColor: active ? theme.ink : '#F0E4D2',
-                    }}
-                  >
-                    <AppText weight={active ? 800 : 700} size={13.5} color={active ? '#F5E9DB' : theme.textSecondary}>
-                      {opt.label}
-                    </AppText>
-                  </Pressable>
-                );
-              })}
-            </View>
+              ] as const}
+              value={sex}
+              onChange={setSex}
+            />
           </View>
         </View>
 
