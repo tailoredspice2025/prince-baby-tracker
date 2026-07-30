@@ -3,6 +3,29 @@
 Run this before every release. Check items off in the app on a real device.
 Add new stories as features land — treat it as a living document.
 
+## 0. ⛔ HARD GATE — do this before every submission (no exceptions)
+
+**Never submit a build you have not launched yourself on a real device.**
+"Build finished ✓" from EAS only means it *compiled* — it does NOT mean it
+*launches*. A missing framework or bad native link only fails at launch, and
+no build step checks that. (This is exactly what got build 3 rejected under
+Guideline 2.1(a): it crashed on launch because a native framework wasn't
+embedded — invisible in the dev/simulator build, fatal in the production one.)
+
+- [ ] `eas build` + `eas submit` finished
+- [ ] Installed the **exact production build** from **TestFlight** on a real
+      iPhone/iPad
+- [ ] Opened it and reached the **Home screen** (not a white/black screen, no
+      instant close)
+- [ ] Ran the smoke test below on that TestFlight build
+- [ ] ONLY THEN: App Store Connect → select the build → Add for Review
+
+Dev builds (`expo run:ios`, simulator, Expo Go) are a **different artifact**
+than the shipped `.ipa` — passing in dev tells you nothing about the store
+build. Test the thing you actually ship.
+
+---
+
 **Legend**
 - 📱 = needs a **real device** (Face ID, notifications timing, voice, camera)
 - 👥 = needs **two devices** (Family Sync)

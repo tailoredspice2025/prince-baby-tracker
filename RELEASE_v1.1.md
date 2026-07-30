@@ -24,6 +24,13 @@ npx eas-cli submit --platform ios --latest        # 4. upload to App Store Conne
 
 Step 2 only ever needs to run once — skip it on later releases.
 
+### ⛔ Then the hard gate — TEST THE BUILD BEFORE RESUBMITTING
+Wait ~15 min for processing, install the build from **TestFlight** on a real
+device, and **confirm it launches to the Home screen**. Only then select the
+build in App Store Connect and Add for Review. "Build finished" ≠ "app runs"
+— skipping this is what got build 3 rejected (crash on launch). See
+RELEASE_QA.md §0.
+
 ## Release day — App Store Connect (browser)
 
 1. **Apps → DenBaby → + Version** → enter `1.1`.
