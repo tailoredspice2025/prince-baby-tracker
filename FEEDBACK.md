@@ -27,7 +27,15 @@ is fixed yet — this is the running to-do from device testing.
 
 ---
 
-### 🔴 HIGH — Dark mode wrongly forces the stripped-down "Night Mode" screen
+### ✅ FIXED — Dark mode wrongly forced the stripped-down "Night Mode" screen
+
+**Fixed:** colour theme is now user-controlled (Settings → Appearance:
+Light / Dark / Auto, default **Light**), fully decoupled from the night-
+feeding screen. The minimal `NightHomeView` now shows only during an active
+sleep session at night — never just because the phone is in dark mode. No
+need to touch iOS Settings anymore. *(Original report below.)*
+
+
 
 - **Symptom:** on the home screen only *night feed + diaper* appear, there's
   no timeline/list of what was logged, bottle defaults to 120ml with no edit,

@@ -10,7 +10,7 @@ import { PickerType, QuickLogPicker } from '../../components/QuickLogPicker';
 import { TimelineRow } from '../../components/TimelineRow';
 import { VoiceBar } from '../../components/VoiceBar';
 import { useStore } from '../../lib/store';
-import { useTheme } from '../../theme/ThemeProvider';
+import { useTheme, useNightFeedingView } from '../../theme/ThemeProvider';
 import { ageString, clockTime, durationLabel, relativeTime } from '../../lib/time';
 import { eventRowFor } from '../../lib/eventRow';
 import { DiaperEvent, FeedEvent, MedicineEvent, SleepEvent, TimelineEvent } from '../../types/models';
@@ -47,9 +47,12 @@ export function HomeScreen() {
   const toggleSleep = useStore((s) => s.toggleSleep);
   const setEditingEvent = useStore((s) => s.setEditingEvent);
   const voiceEnabled = useStore((s) => s.settings.voiceLoggingEnabled);
+  const nightFeedingView = useNightFeedingView();
   const [pickerType, setPickerType] = useState<PickerType | null>(null);
 
-  if (theme.mode === 'night') return <NightHomeView />;
+  // The minimal night-feeding screen shows only during an active sleep
+  // session at night — NOT just because the app is in dark colours.
+  if (nightFeedingView) return <NightHomeView />;
 
   const now = new Date();
   const babyEvents = useMemo(() => events.filter((e) => e.babyId === baby.id), [events, baby.id]);

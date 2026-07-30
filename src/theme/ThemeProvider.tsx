@@ -50,29 +50,37 @@ const nightTheme: AppTheme = {
 
 const ThemeContext = createContext<AppTheme>(lightTheme);
 
-/** Night mode triggers automatically on a running sleep session during
- * night hours (8pm-6am), or when the system is in dark mode — per the
- * 1g spec: "Trigger: automatic on a running sleep session during night
- * hours, or system dark mode." */
 function isNightHours(date: Date) {
   const h = date.getHours();
   return h >= 20 || h < 6;
 }
 
-export function useComputedNightMode() {
-  const systemScheme = useColorScheme();
+/**
+ * The minimal night-feeding home screen (NightHomeView) is a SEPARATE
+ * concern from the colour theme. It appears only during an active sleep
+ * session in night hours (8pm–6am), or when explicitly previewed — NOT
+ * merely because the phone or app is in dark colours. (Previously any
+ * phone in system dark mode was forced into this stripped screen.)
+ */
+export function useNightFeedingView() {
   const runningSleepSession = useStore((s) => s.runningSleepSession);
-  return useMemo(() => {
-    if (systemScheme === 'dark') return true;
-    if (runningSleepSession && isNightHours(new Date())) return true;
-    return false;
-  }, [systemScheme, runningSleepSession]);
+  const forceNight = useStore((s) => s.settings.forceNightPreview);
+  return useMemo(
+    () => !!forceNight || (!!runningSleepSession && isNightHours(new Date())),
+    [forceNight, runningSleepSession]
+  );
 }
 
+/**
+ * Colour theme is user-controlled via Settings → Appearance:
+ *   'light' (default) · 'dark' · 'system' (follow the phone).
+ * Dark colours no longer trigger the night-feeding screen.
+ */
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const isNight = useComputedNightMode();
-  const forceNight = useStore((s) => s.settings.forceNightPreview);
-  const theme = forceNight || isNight ? nightTheme : lightTheme;
+  const pref = useStore((s) => s.settings.themePreference) ?? 'light';
+  const systemScheme = useColorScheme();
+  const isDark = pref === 'dark' || (pref === 'system' && systemScheme === 'dark');
+  const theme = isDark ? nightTheme : lightTheme;
   return <ThemeContext.Provider value={theme}>{children}</ThemeContext.Provider>;
 }
 

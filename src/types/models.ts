@@ -159,6 +159,9 @@ export interface Settings {
   units: Units;
   voiceLoggingEnabled: boolean;
   voicePermissions: VoicePermissions;
+  // Colour theme, chosen in Settings → Appearance. Optional so installs
+  // persisted before the toggle existed stay valid; undefined = 'light'.
+  themePreference?: 'light' | 'dark' | 'system';
   forceNightPreview?: boolean;
   // Optional so installs persisted before the feature existed stay valid;
   // treat undefined as disabled / 3 h.

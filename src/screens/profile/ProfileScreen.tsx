@@ -32,6 +32,7 @@ export function ProfileScreen() {
   const medications = useStore((s) => s.medications).filter((m) => m.babyId === baby.id);
   const settings = useStore((s) => s.settings);
   const setUnits = useStore((s) => s.setUnits);
+  const setThemePreference = useStore((s) => s.setThemePreference);
   const setVoiceLoggingEnabled = useStore((s) => s.setVoiceLoggingEnabled);
   const setFeedReminder = useStore((s) => s.setFeedReminder);
   const setAppLockEnabled = useStore((s) => s.setAppLockEnabled);
@@ -295,6 +296,37 @@ export function ProfileScreen() {
               {settings.units === 'ml' ? 'ml · kg · cm' : 'oz · lb · in'}
             </AppText>
           </Pressable>
+          <View style={{ padding: 13, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: theme.border }}>
+            <AppText weight={700} size={14.5} color={theme.ink} style={{ marginBottom: 10 }}>
+              Appearance
+            </AppText>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              {([
+                { key: 'light', label: 'Light' },
+                { key: 'dark', label: 'Dark' },
+                { key: 'system', label: 'Auto' },
+              ] as const).map((opt) => {
+                const active = (settings.themePreference ?? 'light') === opt.key;
+                return (
+                  <Pressable
+                    key={opt.key}
+                    onPress={() => setThemePreference(opt.key)}
+                    style={{
+                      flex: 1,
+                      alignItems: 'center',
+                      paddingVertical: 8,
+                      borderRadius: 999,
+                      backgroundColor: active ? theme.ink : '#F0E4D2',
+                    }}
+                  >
+                    <AppText weight={active ? 800 : 700} size={13} color={active ? '#F5E9DB' : theme.textSecondary}>
+                      {opt.label}
+                    </AppText>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
           <Pressable
             onPress={() => navigation.navigate('VoicePermissions')}
             style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 13, paddingHorizontal: 16, borderBottomWidth: 1, borderBottomColor: theme.border }}

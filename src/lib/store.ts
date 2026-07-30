@@ -123,6 +123,7 @@ interface AppState {
   addMedication: (m: Omit<Medication, 'id' | 'babyId'>) => void;
   addMilestone: (m: Omit<Milestone, 'id' | 'babyId' | 'achieved'>) => void;
   setUnits: (u: Settings['units']) => void;
+  setThemePreference: (p: NonNullable<Settings['themePreference']>) => void;
   setVoiceLoggingEnabled: (v: boolean) => void;
   setAppLockEnabled: (v: boolean) => void;
   setFeedReminder: (enabled: boolean, hours?: number) => void;
@@ -376,6 +377,7 @@ export const useStore = create<AppState>()(
   },
 
   setUnits: (u) => set((s) => ({ settings: { ...s.settings, units: u } })),
+  setThemePreference: (p) => set((s) => ({ settings: { ...s.settings, themePreference: p } })),
   setVoiceLoggingEnabled: (v) => set((s) => ({ settings: { ...s.settings, voiceLoggingEnabled: v } })),
   setAppLockEnabled: (v) => set((s) => ({ settings: { ...s.settings, appLockEnabled: v } })),
 
