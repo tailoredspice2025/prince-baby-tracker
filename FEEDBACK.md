@@ -27,4 +27,29 @@ is fixed yet — this is the running to-do from device testing.
 
 ---
 
+### 🔴 HIGH — Dark mode wrongly forces the stripped-down "Night Mode" screen
+
+- **Symptom:** on the home screen only *night feed + diaper* appear, there's
+  no timeline/list of what was logged, bottle defaults to 120ml with no edit,
+  and it's unclear where recorded events go.
+- **Root cause:** `useComputedNightMode()` in `src/theme/ThemeProvider.tsx`
+  returns true whenever `systemScheme === 'dark'`. So any phone set to Dark
+  appearance is permanently shown `NightHomeView` (the minimal 3am feeding
+  screen) instead of the full home + "Today" timeline.
+- **Why it matters:** many users keep their phone in dark mode 24/7 — they'd
+  never see the real app. This made the app look completely broken.
+- **Fix direction:** decouple *dark colour theme* from *night-feeding mode*.
+  Dark mode → dark colours but the FULL app (all quick-log tiles + timeline).
+  Reserve the minimal NightHomeView for genuine night hours + an active sleep
+  session (or a manual "night mode" toggle) — not merely system dark mode.
+- **Workaround for testing now:** set the iPhone to Light appearance
+  (Settings → Display & Brightness → Light).
+
+### Related (surfaced by the night-mode issue, verify in day/light mode)
+
+- Bottle quick-log defaults to 120ml — confirm the **long-press amount
+  picker** and **tap-to-edit** are discoverable in the full (light) home view.
+- General: make it obvious where a just-logged event appears (the "Today"
+  timeline) — the confirmation toast could point to it.
+
 _(Add new testing feedback above this line as it comes in.)_
