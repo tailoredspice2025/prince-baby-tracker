@@ -4,6 +4,38 @@ Real-world testing notes. Newest first.
 
 ---
 
+## From TestFlight build 15 testing — 30 Jul 2026 → **open, to fix as a batch**
+
+| # | Issue | Status |
+|---|---|---|
+| 1 | Add-measurement fields are clunky — the keypad only opens if you tap a narrow strip at the far left of the box | ⬜ open |
+
+**#1 diagnosis (done, fix pending).** `AddMeasurementScreen.tsx:20`: the
+`TextInput` sits in a `flexDirection: 'row'` with **no `flex: 1`** and
+`padding: 0`. A row lays children out at their content width, and an empty
+input whose placeholder is a single `0` is about one character wide — so the
+only touchable region is a sliver on the left. The label, the unit suffix and
+all the surrounding white space aren't touchable at all, which is why tapping
+the obvious target does nothing.
+
+Fix it as a **class, not an instance** — this is the same mistake as fixing the
+120 ml bottle default while solids, nappy and medicine kept theirs:
+
+- `flex: 1` on the input plus real vertical padding, so the hit area fills the
+  row and is tall enough to hit.
+- Wrap the whole card in a `Pressable` that focuses the input through a ref, so
+  tapping **anywhere** in the field opens the keypad.
+- Do it once in a shared field component and adopt it everywhere.
+
+Candidates to re-check when fixing (a `TextInput` only shrinks like this when
+it's inside a **row** — the ones laid out in a column are already full width,
+so this list needs filtering, not blanket editing): `FormField.tsx`,
+`EventEditSheet.tsx`, `ProfileScreen.tsx`, `OnboardingScreen.tsx`.
+
+_(Add further build-15 feedback under this table as it comes in.)_
+
+---
+
 ## From TestFlight build 11 — 30 Jul 2026 → all fixed in **build 12**
 
 | # | Issue | Status |
