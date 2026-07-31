@@ -7,6 +7,7 @@ import { AppText } from '../../components/AppText';
 import { MicIcon } from '../../components/icons';
 import { PrimaryButton } from '../../components/Button';
 import { FormField } from '../../components/FormField';
+import { DateField } from '../../components/DateField';
 import { Segmented } from '../../components/Segmented';
 import { useStore } from '../../lib/store';
 import { useTheme } from '../../theme/ThemeProvider';
@@ -73,6 +74,7 @@ export function VaccineFormScreen() {
   const theme = useTheme();
   const navigation = useNavigation();
   const route = useRoute<any>();
+  const baby = useStore((s) => s.activeBaby());
   const voiceDraft = useStore((s) => s.voiceDraft);
   const addVaccine = useStore((s) => s.addVaccine);
   const closeVoiceSheet = useStore((s) => s.closeVoiceSheet);
@@ -90,11 +92,6 @@ export function VaccineFormScreen() {
 
   const [name, setName] = useState(parsed?.name ?? '');
   const [dose, setDose] = useState(parsed?.doseLabel ?? '');
-  const [date, setDate] = useState(
-    parsed?.date
-      ? new Date(parsed.date).toLocaleDateString([], { month: 'short', day: 'numeric' })
-      : new Date().toLocaleDateString([], { month: 'short', day: 'numeric' })
-  );
   const [site, setSite] = useState('');
   const [batch, setBatch] = useState('');
   const [clinic, setClinic] = useState('');
@@ -107,6 +104,10 @@ export function VaccineFormScreen() {
     d.setHours(10, 0, 0, 0);
     return d;
   });
+  // Date a dose was actually given. Was hardcoded to `new Date()`, so a jab
+  // from the red book could only ever be recorded as "today" — which is the
+  // main reason anyone types vaccine history in at all.
+  const [givenAt, setGivenAt] = useState(() => (parsed?.date ? new Date(parsed.date) : new Date()));
 
   const save = () => {
     if (mode === 'appointment') {
@@ -125,7 +126,7 @@ export function VaccineFormScreen() {
         name: name || 'Vaccine',
         doseLabel: dose || '—',
         status: 'done',
-        date: new Date().toISOString(),
+        date: givenAt.toISOString(),
         site: site || undefined,
         batchNo: batch || undefined,
         clinic: clinic || undefined,
@@ -180,12 +181,14 @@ export function VaccineFormScreen() {
             <View style={{ flex: 1 }}>
               <FormField label="Dose" value={dose} onChangeText={setDose} placeholder="e.g. 3 of 5" fromVoice={parsed?.fields.doseLabel} />
             </View>
-            {!isAppt && (
-              <View style={{ flex: 1 }}>
-                <FormField label="Date" value={date} onChangeText={setDate} placeholder="Today" fromVoice={parsed?.fields.date} />
-              </View>
-            )}
           </View>
+
+          {/* Real picker, and actually saved. This was a free-text field
+              bound to a `date` state that `save()` never read — anything
+              typed here was discarded and the dose was stamped "today". */}
+          {!isAppt && (
+            <DateField label="Date given" value={givenAt} onChange={setGivenAt} minimumDate={new Date(baby.dob)} maximumDate={new Date()} />
+          )}
 
           {isAppt && (
             <>

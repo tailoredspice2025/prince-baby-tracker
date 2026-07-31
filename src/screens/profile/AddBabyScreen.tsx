@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { AppText } from '../../components/AppText';
@@ -33,7 +33,8 @@ export function AddBabyScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }}>
-      <ScrollView contentContainerStyle={{ padding: 20, flexGrow: 1 }}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+      <ScrollView contentContainerStyle={{ padding: 20, flexGrow: 1 }} keyboardShouldPersistTaps="handled">
         <AppText weight={900} size={26} color={theme.ink} style={{ marginBottom: 18 }}>
           Add another baby
         </AppText>
@@ -65,6 +66,7 @@ export function AddBabyScreen() {
         <View style={{ flex: 1, minHeight: 24 }} />
         <PrimaryButton label="Add baby" onPress={save} disabled={!name} />
       </ScrollView>
+    </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

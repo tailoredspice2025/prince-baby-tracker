@@ -4,16 +4,16 @@ Real-world testing notes. Newest first.
 
 ---
 
-## From TestFlight build 15 testing — 30 Jul 2026 → **open, to fix as a batch**
+## From TestFlight build 15 testing — 30 Jul 2026 → all fixed in **build 16**
 
 | # | Issue | Status |
 |---|---|---|
-| 1 | Add-measurement fields are clunky — the keypad only opens if you tap a narrow strip at the far left of the box | ⬜ open |
-| 2 | No way to add a measurement for a specific date — and no way to edit or delete one afterwards | ⬜ open |
-| 3 | Save button hides behind the keyboard — you have to tap around to dismiss it first. **Affects every form in the app except the edit sheet** | ⬜ open |
-| 4 | **Every dated record except timeline events stamps "today" and can't be backdated** — measurements, vaccines given, sickness, medication, milestones | ⬜ open |
+| 1 | Add-measurement fields clunky — keypad only opened on a strip at the far left | ✅ tap anywhere in the field; `flex: 1` + real padding, fixed in the shared `FormField` too |
+| 2 | No date on measurements; no edit or delete | ✅ date picker (floored at DOB, capped at today), History list on Growth, tap to edit, delete with undo |
+| 3 | Save button hidden behind the keyboard on 10 of 11 forms | ✅ shared `FormScreen` scaffold + `KeyboardAvoidingView` everywhere; verified 0 screens left uncovered |
+| 4 | Every dated record except events stamped "today" | ✅ `DateField` adopted in all five forms; update+delete added for measurement, sickness, medication, milestone |
 
-**#1 diagnosis (done, fix pending).** `AddMeasurementScreen.tsx:20`: the
+**#1 diagnosis.** `AddMeasurementScreen.tsx:20`: the
 `TextInput` sits in a `flexDirection: 'row'` with **no `flex: 1`** and
 `padding: 0`. A row lays children out at their content width, and an empty
 input whose placeholder is a single `0` is about one character wide — so the
@@ -35,7 +35,7 @@ it's inside a **row** — the ones laid out in a column are already full width,
 so this list needs filtering, not blanket editing): `FormField.tsx`,
 `EventEditSheet.tsx`, `ProfileScreen.tsx`, `OnboardingScreen.tsx`.
 
-**#2 diagnosis (done, fix pending).** `AddMeasurementScreen.tsx:47` hardcodes
+**#2 diagnosis.** `AddMeasurementScreen.tsx:47` hardcodes
 `date: new Date().toISOString()`. There is no date field on the form. Traced
 through the chain, the damage is bigger than the missing control:
 
@@ -63,13 +63,13 @@ built, the feature only works if you're holding the phone at the scales.
   `GrowthScreen.tsx:31` sorts by date, so backdated entries must land in the
   right place in the curve, not just at the end.
 
-**#3 diagnosis (done, fix pending). This is build 10's issue #6 again.**
+**#3 diagnosis. This was build 10's issue #6 again.**
 That was reported as "edit sheet unusable, keyboard hid Save". It was fixed in
 `EventEditSheet` and **never swept for elsewhere** — the same mistake as fixing
 the 120 ml bottle default while solids, nappy and medicine kept theirs. Third
 time this pattern has cost a build.
 
-Swept properly. `KeyboardAvoidingView` is present in exactly one file:
+Swept properly. Before the fix, `KeyboardAvoidingView` was present in exactly one file:
 
 | Screen | KeyboardAvoidingView |
 |---|---|
@@ -141,7 +141,11 @@ rather than merely a wrong date.
 baby app that's a real gap — you log the 3am feed at 7am. Consider a "time"
 row in the quick-log long-press picker.
 
-_(Add further build-15 feedback under this table as it comes in.)_
+**All four fixed in build 16.** Post-fix sweep confirms every screen with an
+input is now covered by `FormScreen` or `KeyboardAvoidingView`, and `DateField`
+is adopted in all five add forms.
+
+_(Add new testing feedback above this line as it comes in.)_
 
 ---
 

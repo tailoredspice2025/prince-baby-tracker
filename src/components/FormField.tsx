@@ -1,9 +1,17 @@
-import React from 'react';
-import { TextInput, View } from 'react-native';
+import React, { useRef } from 'react';
+import { Pressable, TextInput, View } from 'react-native';
 import { AppText } from './AppText';
 import { useTheme } from '../theme/ThemeProvider';
 import { radii } from '../theme/tokens';
 
+/**
+ * Tapping anywhere in the card focuses the input.
+ *
+ * The input used to carry `padding: 0`, so its touch target was one line of
+ * text tall — well under the 44pt minimum — and the label and the surrounding
+ * space weren't touchable at all. You had to hit the text itself to get a
+ * keyboard, which reads as the field being broken.
+ */
 export function FormField({
   label,
   value,
@@ -22,8 +30,12 @@ export function FormField({
   keyboardType?: 'default' | 'numeric';
 }) {
   const theme = useTheme();
+  const inputRef = useRef<TextInput>(null);
+
   return (
-    <View
+    <Pressable
+      onPress={() => inputRef.current?.focus()}
+      accessibilityRole="none"
       style={{
         backgroundColor: theme.surface,
         borderRadius: radii.card,
@@ -41,14 +53,24 @@ export function FormField({
         {fromVoice && <AppText size={11}>🎙️</AppText>}
       </View>
       <TextInput
+        ref={inputRef}
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
         placeholderTextColor={theme.textTertiary}
         multiline={multiline}
         keyboardType={keyboardType}
-        style={{ fontFamily: 'Nunito_800ExtraBold', fontSize: multiline ? 15 : 18, color: value ? theme.ink : theme.textTertiary, padding: 0, marginTop: 2 }}
+        returnKeyType={multiline ? undefined : 'done'}
+        style={{
+          fontFamily: 'Nunito_800ExtraBold',
+          fontSize: multiline ? 15 : 18,
+          color: value ? theme.ink : theme.textTertiary,
+          paddingVertical: 6,
+          marginTop: 2,
+          minHeight: multiline ? 72 : undefined,
+          textAlignVertical: multiline ? 'top' : 'center',
+        }}
       />
-    </View>
+    </Pressable>
   );
 }

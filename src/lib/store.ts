@@ -118,6 +118,17 @@ interface AppState {
   updateEvent: (id: string, patch: Partial<TimelineEvent>) => void;
   deleteEvent: (id: string) => void;
   addMeasurement: (m: Omit<Measurement, 'id' | 'babyId'>) => void;
+  /** Measurements, sickness, medication and milestones were add-only: a
+   * mistyped weight sat in the growth curve forever. Every record type that
+   * can be created can now be corrected and removed. */
+  updateMeasurement: (id: string, patch: Partial<Measurement>) => void;
+  deleteMeasurement: (id: string) => void;
+  updateSicknessEpisode: (id: string, patch: Partial<SicknessEpisode>) => void;
+  deleteSicknessEpisode: (id: string) => void;
+  updateMedication: (id: string, patch: Partial<Medication>) => void;
+  deleteMedication: (id: string) => void;
+  updateMilestone: (id: string, patch: Partial<Milestone>) => void;
+  deleteMilestone: (id: string) => void;
   addVaccine: (v: Omit<Vaccine, 'id' | 'babyId'>) => void;
   updateVaccine: (id: string, patch: Partial<Vaccine>) => void;
   deleteVaccine: (id: string) => void;
@@ -347,6 +358,80 @@ export const useStore = create<AppState>()(
     const measurement: Measurement = { id: uid('m'), babyId, ...m };
     set((s) => ({ measurements: [...s.measurements, measurement] }));
     syncWrite('measurements', measurement);
+  },
+
+  updateMeasurement: (id, patch) =>
+    set((s) => ({
+      measurements: s.measurements.map((m) => {
+        if (m.id !== id) return m;
+        const updated = { ...m, ...patch };
+        syncWrite('measurements', updated);
+        return updated;
+      }),
+    })),
+
+  deleteMeasurement: (id) => {
+    const removed = get().measurements.find((m) => m.id === id);
+    set((s) => ({ measurements: s.measurements.filter((m) => m.id !== id) }));
+    syncDelete('measurements', id);
+    if (removed) {
+      get().pushToast({
+        message: 'Measurement deleted',
+        onUndo: () => {
+          set((s) => ({ measurements: [...s.measurements, removed] }));
+          syncWrite('measurements', removed);
+        },
+      });
+    }
+  },
+
+  updateSicknessEpisode: (id, patch) =>
+    set((s) => ({
+      sickness: s.sickness.map((e) => {
+        if (e.id !== id) return e;
+        const updated = { ...e, ...patch };
+        syncWrite('sickness', updated);
+        return updated;
+      }),
+    })),
+
+  deleteSicknessEpisode: (id) => {
+    set((s) => ({ sickness: s.sickness.filter((e) => e.id !== id) }));
+    syncDelete('sickness', id);
+    get().pushToast({ message: 'Episode deleted' });
+  },
+
+  updateMedication: (id, patch) =>
+    set((s) => ({
+      medications: s.medications.map((m) => {
+        if (m.id !== id) return m;
+        const updated = { ...m, ...patch };
+        syncWrite('medications', updated);
+        scheduleMedicationReminder(updated).catch(() => {});
+        return updated;
+      }),
+    })),
+
+  deleteMedication: (id) => {
+    set((s) => ({ medications: s.medications.filter((m) => m.id !== id) }));
+    syncDelete('medications', id);
+    get().pushToast({ message: 'Medicine deleted' });
+  },
+
+  updateMilestone: (id, patch) =>
+    set((s) => ({
+      milestonesAchieved: s.milestonesAchieved.map((m) => {
+        if (m.id !== id) return m;
+        const updated = { ...m, ...patch };
+        syncWrite('milestones', updated);
+        return updated;
+      }),
+    })),
+
+  deleteMilestone: (id) => {
+    set((s) => ({ milestonesAchieved: s.milestonesAchieved.filter((m) => m.id !== id) }));
+    syncDelete('milestones', id);
+    get().pushToast({ message: 'Memory deleted' });
   },
 
   addVaccine: (v) => {

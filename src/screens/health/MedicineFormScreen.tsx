@@ -1,11 +1,12 @@
 import React, { useMemo, useState } from 'react';
-import { ScrollView, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { AppText } from '../../components/AppText';
 import { MicIcon } from '../../components/icons';
 import { PrimaryButton } from '../../components/Button';
 import { FormField } from '../../components/FormField';
+import { DateField } from '../../components/DateField';
+import { FormScreen } from '../../components/FormScreen';
 import { useStore } from '../../lib/store';
 import { useTheme } from '../../theme/ThemeProvider';
 
@@ -24,6 +25,7 @@ function guessMedName(transcript: string): string | undefined {
 export function MedicineFormScreen() {
   const theme = useTheme();
   const navigation = useNavigation();
+  const baby = useStore((s) => s.activeBaby());
   const voiceDraft = useStore((s) => s.voiceDraft);
   const addMedication = useStore((s) => s.addMedication);
   const closeVoiceSheet = useStore((s) => s.closeVoiceSheet);
@@ -35,6 +37,7 @@ export function MedicineFormScreen() {
   const [dose, setDose] = useState('');
   const [schedule, setSchedule] = useState('as needed');
   const [notes, setNotes] = useState('');
+  const [givenAt, setGivenAt] = useState(() => new Date());
 
   const save = () => {
     addMedication({
@@ -43,15 +46,15 @@ export function MedicineFormScreen() {
       schedule,
       prn: schedule.toLowerCase().includes('need'),
       ongoing: !schedule.toLowerCase().includes('need'),
-      lastGiven: new Date().toISOString(),
+      lastGiven: givenAt.toISOString(),
     });
     closeVoiceSheet();
     navigation.goBack();
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }}>
-      <ScrollView contentContainerStyle={{ padding: 20, flexGrow: 1 }}>
+    <FormScreen actions={<PrimaryButton label="Save to health record" onPress={save} />}>
+      <>
         <AppText weight={900} size={26} color={theme.ink} style={{ marginBottom: 4 }}>
           Log medicine
         </AppText>
@@ -69,15 +72,14 @@ export function MedicineFormScreen() {
         )}
 
         <View style={{ gap: 12, marginBottom: 18 }}>
+          <DateField label="Last given" value={givenAt} onChange={setGivenAt} minimumDate={new Date(baby.dob)} maximumDate={new Date()} />
           <FormField label="Medicine" value={name} onChangeText={setName} placeholder="e.g. Vitamin D drops" fromVoice={!!guessedName} />
           <FormField label="Dose" value={dose} onChangeText={setDose} placeholder="e.g. 2.5 ml" />
           <FormField label="Schedule" value={schedule} onChangeText={setSchedule} placeholder="daily 6 PM / as needed" />
           <FormField label="Notes" value={notes} onChangeText={setNotes} placeholder="Reaction, reason, next dose…" multiline />
         </View>
 
-        <View style={{ flex: 1, minHeight: 12 }} />
-        <PrimaryButton label="Save to health record" onPress={save} />
-      </ScrollView>
-    </SafeAreaView>
+      </>
+    </FormScreen>
   );
 }

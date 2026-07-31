@@ -116,6 +116,46 @@ export function GrowthScreen() {
           </AppText>
         </Pressable>
 
+        {/* History — the only route to correcting or removing an entry. A
+            mistyped weight used to sit in the curve permanently. */}
+        {babyMeasurements.length > 0 && (
+          <View style={{ marginTop: 18 }}>
+            <AppText weight={900} size={15} color={theme.ink} style={{ marginBottom: 8 }}>
+              History
+            </AppText>
+            {[...babyMeasurements].reverse().map((m) => (
+              <Pressable
+                key={m.id}
+                onPress={() => navigation.navigate('AddMeasurement', { measurementId: m.id })}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 10,
+                  paddingVertical: 11,
+                  borderBottomWidth: 1,
+                  borderBottomColor: theme.border,
+                }}
+              >
+                <AppText weight={800} size={13.5} color={theme.ink} style={{ width: 96 }}>
+                  {new Date(m.date).toLocaleDateString([], { day: 'numeric', month: 'short', year: '2-digit' })}
+                </AppText>
+                <AppText weight={700} size={13} color={theme.textSecondary} style={{ flex: 1 }}>
+                  {[
+                    m.weightKg != null ? `${m.weightKg} kg` : null,
+                    m.heightCm != null ? `${m.heightCm} cm` : null,
+                    m.headCm != null ? `${m.headCm} cm head` : null,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </AppText>
+                <AppText weight={700} size={12} color={theme.textTertiary}>
+                  Edit ›
+                </AppText>
+              </Pressable>
+            ))}
+          </View>
+        )}
+
         <AppText weight={700} size={11} color={theme.textTertiary} center style={{ marginTop: 16, paddingHorizontal: 10 }}>
           For your records only — not medical advice. Talk to your pediatrician about your baby's growth.
         </AppText>

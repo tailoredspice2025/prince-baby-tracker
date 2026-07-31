@@ -5,25 +5,20 @@ Summary only. Detail lives in `FEEDBACK.md` (build-15 items) and
 
 ---
 
-## 1 · Dates & correcting mistakes  ← biggest theme
-*Detail: `FEEDBACK.md` #4*
+## 1 · Dates & correcting mistakes — ✅ done in build 16
+*Detail: `FEEDBACK.md` #2, #4*
 
-- Measurements, vaccines-given, sickness, medication and milestones all stamp
-  **today** and can't be backdated
-- Measurements are worst: the growth chart derives age from that date, so the
-  **WHO percentile is wrong**
-- No update/delete for measurement, sickness, medication, milestone
-- `DateField` exists but is used by **none** of the five add forms
-- Decide: should quick-log tiles let you set a past time at log time?
-- ✅ Trends themselves are correct — events carry real timestamps
+- `DateField` now on all five add forms, floored at DOB and capped at today
+- Update + delete added for measurement, sickness, medication, milestone
+- Growth has a History list — tap to edit, delete with undo
+- Still open: should quick-log tiles let you set a past time **at log time**?
+  (today you log then edit — recoverable, but logging after the fact is normal)
 
-## 2 · Forms & input
+## 2 · Forms & input — ✅ done in build 16
 *Detail: `FEEDBACK.md` #1, #3*
 
-- Save button sits behind the keyboard on **10 of 11 forms** (Onboarding
-  included — first screen a reviewer sees)
-- Measurement fields: keypad only opens on a sliver at the far left
-- Fix once via a shared form wrapper + shared field, not per screen
+- Shared `FormScreen` scaffold; every screen with an input is now covered
+- Tapping anywhere in a field opens the keypad
 
 ## 3 · Voice logging — v1.1
 *Detail: `BACKLOG.md`. Hidden in v1.0 behind `FEATURES.voiceLogging`*
@@ -48,7 +43,11 @@ Summary only. Detail lives in `FEEDBACK.md` (build-15 items) and
 
 ---
 
-## Shipped in build 15 (pending your device test)
+## Shipped in build 16 (pending your device test)
+Everything below, plus: dates on every record · measurement history with edit
+and delete · keyboard never covers a save button · tap-anywhere fields
+
+## Shipped in build 15
 Sleep crash fix · sleep start/end shown and editable · edit sheet field-aware
 for all six event types · night view removed · moon = light/dark · voice hidden
 · `UIBackgroundModes` removed · App Lock Face ID loop fixed · ESLint +

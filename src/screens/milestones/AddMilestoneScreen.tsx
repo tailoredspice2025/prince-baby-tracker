@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Image, Pressable, ScrollView, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Image, Pressable, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { AppText } from '../../components/AppText';
 import { PrimaryButton } from '../../components/Button';
 import { FormField } from '../../components/FormField';
+import { DateField } from '../../components/DateField';
+import { FormScreen } from '../../components/FormScreen';
 import { CameraIcon } from '../../components/icons';
 import { useStore } from '../../lib/store';
 import { useTheme } from '../../theme/ThemeProvider';
@@ -19,6 +20,7 @@ export function AddMilestoneScreen() {
   const [name, setName] = useState('');
   const [emoji, setEmoji] = useState('✨');
   const [photoUri, setPhotoUri] = useState<string | undefined>(undefined);
+  const [date, setDate] = useState(() => new Date());
 
   const pickPhoto = async () => {
     const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -36,16 +38,17 @@ export function AddMilestoneScreen() {
     addMilestone({
       name: name || 'New memory',
       emoji: emoji || '✨',
-      ageLabel: ageString(baby.dob),
-      date: new Date().toISOString(),
+      // Age at the time of the memory, not the age today.
+      ageLabel: ageString(baby.dob, date),
+      date: date.toISOString(),
       photoUri,
     });
     navigation.goBack();
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }}>
-      <ScrollView contentContainerStyle={{ padding: 20, flexGrow: 1 }}>
+    <FormScreen actions={<PrimaryButton label="Save memory" onPress={save} />}>
+      <>
         <AppText weight={900} size={26} color={theme.ink} style={{ marginBottom: 18 }}>
           Add memory
         </AppText>
@@ -78,10 +81,9 @@ export function AddMilestoneScreen() {
           </Pressable>
           <FormField label="What happened" value={name} onChangeText={setName} placeholder="e.g. First giggle" />
           <FormField label="Emoji" value={emoji} onChangeText={setEmoji} placeholder="✨" />
+          <DateField label="When it happened" value={date} onChange={setDate} minimumDate={new Date(baby.dob)} maximumDate={new Date()} />
         </View>
-        <View style={{ flex: 1, minHeight: 24 }} />
-        <PrimaryButton label="Save memory" onPress={save} />
-      </ScrollView>
-    </SafeAreaView>
+      </>
+    </FormScreen>
   );
 }

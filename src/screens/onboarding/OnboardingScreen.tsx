@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Image, Pressable, ScrollView, TextInput, View } from 'react-native';
+import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
@@ -87,6 +87,7 @@ export function OnboardingScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }} edges={['top']}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView contentContainerStyle={{ padding: 24, paddingTop: 24, flexGrow: 1 }} keyboardShouldPersistTaps="handled">
         <View style={{ flexDirection: 'row', gap: 6, marginBottom: 34 }}>
           <View style={{ height: 5, flex: 1, borderRadius: 3, backgroundColor: theme.coral }} />
@@ -185,6 +186,7 @@ export function OnboardingScreen() {
           <TextLink label="Invite a caregiver later" onPress={submit} />
         )}
       </ScrollView>
+    </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

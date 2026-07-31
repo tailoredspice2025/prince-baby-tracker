@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { AppText } from '../../components/AppText';
@@ -36,6 +36,7 @@ export function JoinFamilyScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }}>
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView contentContainerStyle={{ padding: 24, flexGrow: 1 }} keyboardShouldPersistTaps="handled">
         <AppText weight={900} size={28} color={theme.ink} style={{ marginTop: 12 }}>
           Join your family
@@ -79,6 +80,7 @@ export function JoinFamilyScreen() {
           </AppText>
         </Pressable>
       </ScrollView>
+    </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

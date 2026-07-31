@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
-import { ScrollView, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { AppText } from '../../components/AppText';
 import { MicIcon } from '../../components/icons';
 import { PrimaryButton } from '../../components/Button';
 import { FormField } from '../../components/FormField';
+import { DateField } from '../../components/DateField';
+import { FormScreen } from '../../components/FormScreen';
 import { useStore } from '../../lib/store';
 import { useTheme } from '../../theme/ThemeProvider';
 
 export function SicknessFormScreen() {
   const theme = useTheme();
   const navigation = useNavigation();
+  const baby = useStore((s) => s.activeBaby());
   const voiceDraft = useStore((s) => s.voiceDraft);
   const addSicknessEpisode = useStore((s) => s.addSicknessEpisode);
   const closeVoiceSheet = useStore((s) => s.closeVoiceSheet);
@@ -21,12 +23,13 @@ export function SicknessFormScreen() {
   const [title, setTitle] = useState('');
   const [temp, setTemp] = useState('');
   const [notes, setNotes] = useState('');
+  const [startDate, setStartDate] = useState(() => new Date());
 
   const save = () => {
     addSicknessEpisode({
       title: title || (temp ? `Fever · ${temp}°C` : 'Symptom'),
       emoji: '🌡️',
-      startDate: new Date().toISOString(),
+      startDate: startDate.toISOString(),
       notes: notes || undefined,
       resolved: false,
     });
@@ -35,8 +38,8 @@ export function SicknessFormScreen() {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }}>
-      <ScrollView contentContainerStyle={{ padding: 20, flexGrow: 1 }}>
+    <FormScreen actions={<PrimaryButton label="Save to health record" onPress={save} />}>
+      <>
         <AppText weight={900} size={26} color={theme.ink} style={{ marginBottom: 4 }}>
           Log sickness
         </AppText>
@@ -54,14 +57,14 @@ export function SicknessFormScreen() {
         )}
 
         <View style={{ gap: 12, marginBottom: 18 }}>
+          {/* Symptoms usually get typed up a day or two later, not the moment
+              they start — so the start date is picked, not assumed. */}
+          <DateField label="Started" value={startDate} onChange={setStartDate} minimumDate={new Date(baby.dob)} maximumDate={new Date()} />
           <FormField label="Symptom" value={title} onChangeText={setTitle} placeholder="e.g. Mild fever" />
           <FormField label="Temperature" value={temp} onChangeText={setTemp} placeholder="°C" keyboardType="numeric" />
           <FormField label="Notes" value={notes} onChangeText={setNotes} placeholder="Medicine given, when it started…" multiline />
         </View>
-
-        <View style={{ flex: 1, minHeight: 12 }} />
-        <PrimaryButton label="Save to health record" onPress={save} />
-      </ScrollView>
-    </SafeAreaView>
+      </>
+    </FormScreen>
   );
 }
