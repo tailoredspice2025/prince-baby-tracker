@@ -10,6 +10,7 @@ Real-world testing notes. Newest first.
 |---|---|---|
 | 1 | Add-measurement fields are clunky — the keypad only opens if you tap a narrow strip at the far left of the box | ⬜ open |
 | 2 | No way to add a measurement for a specific date — and no way to edit or delete one afterwards | ⬜ open |
+| 3 | Save button hides behind the keyboard — you have to tap around to dismiss it first. **Affects every form in the app except the edit sheet** | ⬜ open |
 
 **#1 diagnosis (done, fix pending).** `AddMeasurementScreen.tsx:20`: the
 `TextInput` sits in a `flexDirection: 'row'` with **no `flex: 1`** and
@@ -60,6 +61,44 @@ built, the feature only works if you're holding the phone at the scales.
 - Re-check that the chart re-sorts correctly once dates can be out of order:
   `GrowthScreen.tsx:31` sorts by date, so backdated entries must land in the
   right place in the curve, not just at the end.
+
+**#3 diagnosis (done, fix pending). This is build 10's issue #6 again.**
+That was reported as "edit sheet unusable, keyboard hid Save". It was fixed in
+`EventEditSheet` and **never swept for elsewhere** — the same mistake as fixing
+the 120 ml bottle default while solids, nappy and medicine kept theirs. Third
+time this pattern has cost a build.
+
+Swept properly. `KeyboardAvoidingView` is present in exactly one file:
+
+| Screen | KeyboardAvoidingView |
+|---|---|
+| `components/EventEditSheet.tsx` | ✅ |
+| `screens/growth/AddMeasurementScreen.tsx` | ❌ *(reported)* |
+| `screens/onboarding/OnboardingScreen.tsx` | ❌ **← reviewer-facing, do first** |
+| `screens/profile/ProfileScreen.tsx` | ❌ |
+| `screens/health/MedicineFormScreen.tsx` | ❌ |
+| `screens/health/SicknessFormScreen.tsx` | ❌ |
+| `screens/milestones/AddMilestoneScreen.tsx` | ❌ |
+| `screens/onboarding/JoinFamilyScreen.tsx` | ❌ |
+| `screens/profile/AddBabyScreen.tsx` | ❌ |
+| `screens/profile/InviteCaregiverScreen.tsx` | ❌ |
+| `screens/voice/VaccineFormScreen.tsx` | ❌ |
+
+**Onboarding is the one that matters most** — it's the first screen an App
+Store reviewer sees, and a Continue button behind the keyboard is how a review
+stalls. Not fatal (tapping elsewhere dismisses the keyboard) but it's the worst
+possible place for it.
+
+**A sweep for the raw `TextInput` component finds only 5 of these.** The other
+seven use the shared `FormField`, so they're invisible to the obvious grep.
+When sweeping for a class, follow the abstraction as well as the primitive.
+
+**Fix — once, not eleven times:**
+- Build a `FormScreen` wrapper (`KeyboardAvoidingView` + `ScrollView` with
+  `keyboardShouldPersistTaps="handled"` + a pinned action row) modelled on what
+  `EventEditSheet` already does, and adopt it across all ten screens.
+- Add `KeyboardAvoidingView`/`keyboardShouldPersistTaps` to the pre-merge
+  checklist for any new screen containing an input.
 
 _(Add further build-15 feedback under this table as it comes in.)_
 
