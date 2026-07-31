@@ -4,9 +4,12 @@ Deferred work, with the reasoning kept so nobody has to rediscover it.
 
 ---
 
-## Voice logging — deferred to v1.1
+## Voice logging — deferred, UNSCHEDULED
 
-**Status: hidden in v1.0.** `FEATURES.voiceLogging = false` in
+**Not a priority until raised.** Explicitly kept out of 1.1, which is Family
+Sync only. Nothing below is scheduled work.
+
+**Status: hidden.** `FEATURES.voiceLogging = false` in
 `src/lib/features.ts`. All screens, the parser and the store paths are still in
 the tree and still compile; flipping that one boolean brings the UI back.
 

@@ -38,15 +38,23 @@ Summary only. Detail lives in `FEEDBACK.md` (build-15 items) and
 - "Remind me daily" toggle + time picker; medicines tappable to edit or delete
 - Reminders now cancel when switched off, not just reschedule
 
-## 6 · Voice logging — v1.1
-*Detail: `BACKLOG.md`. Hidden in v1.0 behind `FEATURES.voiceLogging`*
+## 6 · Voice logging — UNSCHEDULED, not a priority
+*Detail: `BACKLOG.md`. Hidden behind `FEATURES.voiceLogging`*
 
 - **Capture doesn't work on device** — fix first, alone, nothing else counts
   until a spoken phrase reaches the parser
 - Then: open-ended sleep poisons Trends · time parsing wrong · spoken values
   dropped · "Edit" button dead · no undo · silent permission failures
 
-## 7 · Loose ends
+## 7 · Family Sync (v1.1)
+*Detail: `RELEASE_v1.1.md`*
+
+- Code complete and Firebase-verified; runbook corrected for the v1.0 cycle
+- ⛔ **Blocker:** seeded demo data would upload and sync to both parents —
+  clear it on completing onboarding first
+- Order: 1.0 approved → 1.0.1 (build 17) → 1.1
+
+## 8 · Loose ends
 - Night-feeding screen: hidden in v1.0, needs its own honest control if it
   returns (`FEATURES.nightFeedingView`)
 - `SleepEvent.wokeCount` — modelled, never used: surface it or delete it
@@ -54,7 +62,7 @@ Summary only. Detail lives in `FEEDBACK.md` (build-15 items) and
   document the choice
 - At v1.1: update the App Store privacy label (Family Sync collects data)
 
-## 8 · Yours, outside the repo
+## 9 · Yours, outside the repo
 - ~~App Store description: "coming soon" line for voice~~ — dropped by
   decision; the listing now makes no forward-looking claims at all
 - Resolution Center: reply explaining the crash fix (NOT "What's New" —
