@@ -31,7 +31,15 @@ Summary only. Detail lives in `FEEDBACK.md` (build-15 items) and
 - `ThemedDateTimePicker` wrapper always passes `themeVariant`; no bare
   `DateTimePicker` remains in the codebase
 
-## 5 · Voice logging — v1.1
+## 5 · Reminders — partly open
+*Detail: `FEEDBACK.md` #7–#9*
+
+- ✅ "due today" banner now clears once logged; bell opens Health
+- ⬜ **No UI to set, edit or add a medicine reminder** — `reminderTime` is read
+  in three places and written in none; `updateMedication`/`deleteMedication`
+  exist in the store with no screen calling them
+
+## 6 · Voice logging — v1.1
 *Detail: `BACKLOG.md`. Hidden in v1.0 behind `FEATURES.voiceLogging`*
 
 - **Capture doesn't work on device** — fix first, alone, nothing else counts
@@ -39,7 +47,7 @@ Summary only. Detail lives in `FEEDBACK.md` (build-15 items) and
 - Then: open-ended sleep poisons Trends · time parsing wrong · spoken values
   dropped · "Edit" button dead · no undo · silent permission failures
 
-## 6 · Loose ends
+## 7 · Loose ends
 - Night-feeding screen: hidden in v1.0, needs its own honest control if it
   returns (`FEATURES.nightFeedingView`)
 - `SleepEvent.wokeCount` — modelled, never used: surface it or delete it
@@ -47,7 +55,7 @@ Summary only. Detail lives in `FEEDBACK.md` (build-15 items) and
   document the choice
 - At v1.1: update the App Store privacy label (Family Sync collects data)
 
-## 7 · Yours, outside the repo
+## 8 · Yours, outside the repo
 - ~~App Store description: "coming soon" line for voice~~ — dropped by
   decision; the listing now makes no forward-looking claims at all
 - Resolution Center: reply explaining the crash fix (NOT "What's New" —
@@ -59,7 +67,8 @@ Summary only. Detail lives in `FEEDBACK.md` (build-15 items) and
 
 ## Staged in build 17 — built and verified, NOT submitted
 Back control on every modal screen · date pickers readable whatever the phone
-theme. Ready whenever you want to ship 1.0.1.
+theme · vitamin banner clears once logged · bell opens Health.
+Ready whenever you want to ship 1.0.1.
 
 ## Shipped in build 16
 Everything below, plus: dates on every record · measurement history with edit

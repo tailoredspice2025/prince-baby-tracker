@@ -10,6 +10,9 @@ Real-world testing notes. Newest first.
 |---|---|---|
 | 5 | Vaccine appointment picker: the time is invisible in light mode | ✅ `ThemedDateTimePicker` wrapper passes `themeVariant`; all six pickers swapped, zero bare ones left |
 | 6 | No back/cancel on Add memory — had to close the app or swipe by chance | ✅ shared `ModalHeader` (back chevron + title) on all nine modal screens, built into `FormScreen` |
+| 7 | Vitamin D "due today" banner reappears even after logging it | ✅ banner checks `lastGiven`; logging a dose now sets it |
+| 8 | Bell icon top-right does nothing | ✅ opens Health, where reminders live |
+| 9 | **No way to set, edit or add a medicine reminder** | ⬜ open — see below |
 
 **#5 diagnosis.** The app has **six** `DateTimePicker`
 instances and **`themeVariant` is set on none of them**:
@@ -57,6 +60,36 @@ The codebase already has the right pattern: `DayTimelineScreen` draws a
 reviewer — someone who opens "Add measurement", decides not to add one, and
 looks for a way back. Worth pulling forward if build 16 needs a respin for any
 other reason.
+
+**#7 + #8 diagnosis.** `DayHomeView.tsx:103` selected the due medicine with
+`ongoing && reminderTime` and never looked at `lastGiven`, so the banner
+returned on every launch no matter how many doses were logged. The other half:
+`logQuickEvent('medicine')` wrote a medicine *event* and never touched
+`medication.lastGiven`, so the field that would clear the banner was never
+written. Both fixed. The bell had no `onPress` — a styled circle.
+
+**#9 — the real gap.** `reminderTime` is **read** in three places
+(`HealthScreen` displays it, `notifications.ts` schedules from it, the Home
+banner reads it) and **written in none**. `MedicineFormScreen` doesn't capture
+it. The only medications with reminders are the demo-seeded ones, so a user
+cannot create a reminder, change its time, or add a second.
+
+`updateMedication` / `deleteMedication` were added to the store in build 16 and
+**no screen references them** — medications are add-only in the UI, exactly as
+measurements were.
+
+Note the App Store description says "medicines with daily reminders". The
+reminders do fire, but only for seeded data — worth closing this gap before
+anyone reads that line and goes looking.
+
+**Fix (not done):**
+- Reminder time picker on `MedicineFormScreen`, optional, with a "remind me
+  daily" toggle.
+- A medicines list on Health that opens an existing medication for editing —
+  time, dose, schedule, stop reminding, delete. Wire up the store actions that
+  already exist.
+- Re-check `scheduleMedicationReminder` cancels the old notification when a
+  time changes, or you'll stack duplicates.
 
 _(Add new build-16 feedback above this line.)_
 

@@ -100,7 +100,15 @@ export function DayHomeView() {
     ? `Awake ${durationLabel(now.getTime() - new Date(lastSleep.endTime).getTime())}`
     : 'Tap to start sleep';
 
-  const dueMed = medications.find((m) => m.ongoing && m.reminderTime);
+  // Only due if it hasn't already been given today. This used to be
+  // `ongoing && reminderTime` with no reference to `lastGiven`, so the banner
+  // reappeared on every launch however many times you'd logged the dose.
+  const dueMed = medications.find((m) => {
+    if (!m.ongoing || !m.reminderTime) return false;
+    if (!m.lastGiven) return true;
+    const given = new Date(m.lastGiven);
+    return !(given.getFullYear() === now.getFullYear() && given.getMonth() === now.getMonth() && given.getDate() === now.getDate());
+  });
 
   // Scoped to today so the "Today" heading is truthful — this is where a
   // just-logged entry shows up, which wasn't obvious before.
@@ -146,7 +154,16 @@ export function DayHomeView() {
             >
               <SleepIcon size={17} color={theme.textSecondary} />
             </Pressable>
-            <Pressable style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: theme.surface, alignItems: 'center', justifyContent: 'center', ...theme.cardShadow }}>
+            {/* Had no onPress at all — a styled circle that did nothing.
+                Health is where reminders actually live: vaccines due and
+                medicines with daily reminders. */}
+            <Pressable
+              onPress={() => navigation.navigate('Health')}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="Reminders"
+              style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: theme.surface, alignItems: 'center', justifyContent: 'center', ...theme.cardShadow }}
+            >
               <BellIcon />
             </Pressable>
           </View>

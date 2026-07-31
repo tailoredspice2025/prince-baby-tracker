@@ -321,7 +321,18 @@ export const useStore = create<AppState>()(
       const name = opts?.name ?? last?.name ?? 'Vitamin D drops';
       const dose = opts?.dose ?? (opts?.name ? '' : last?.dose ?? '400 IU');
       const ev: MedicineEvent = { id: uid('ev'), babyId, type: 'medicine', time: now, name, dose, loggedBy, inputMethod: 'tap' };
-      set((st) => ({ events: [ev, ...st.events] }));
+      // Mark the matching ongoing medication as given, so the "due today"
+      // banner on Home actually clears. Logging a dose used to write the event
+      // and leave `lastGiven` untouched, so nothing could ever mark it done.
+      set((st) => ({
+        events: [ev, ...st.events],
+        medications: st.medications.map((m) => {
+          if (m.babyId !== babyId || !m.ongoing || m.name !== name) return m;
+          const updated = { ...m, lastGiven: now };
+          syncWrite('medications', updated);
+          return updated;
+        }),
+      }));
       syncWrite('events', ev);
       get().pushToast({ message: `${name} logged`, onUndo: () => set((st) => ({ events: st.events.filter((e) => e.id !== ev.id) })) });
     }
