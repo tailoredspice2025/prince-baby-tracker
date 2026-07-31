@@ -2,8 +2,9 @@ import React, { useMemo, useState } from 'react';
 import { Platform, Pressable, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import { ThemedDateTimePicker } from '../../components/ThemedDateTimePicker';
 import { AppText } from '../../components/AppText';
+import { ModalHeader } from '../../components/ModalHeader';
 import { MicIcon } from '../../components/icons';
 import { PrimaryButton } from '../../components/Button';
 import { FormField } from '../../components/FormField';
@@ -33,7 +34,7 @@ function AppointmentDateTime({ value, onChange }: { value: Date; onChange: (d: D
         </AppText>
       </Pressable>
       {Platform.OS === 'ios' && iosOpen && (
-        <DateTimePicker
+        <ThemedDateTimePicker
           value={value}
           mode="datetime"
           display="spinner"
@@ -42,7 +43,7 @@ function AppointmentDateTime({ value, onChange }: { value: Date; onChange: (d: D
         />
       )}
       {Platform.OS === 'android' && androidStep && (
-        <DateTimePicker
+        <ThemedDateTimePicker
           value={value}
           mode={androidStep}
           display="default"
@@ -145,9 +146,7 @@ export function VaccineFormScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }}>
       <ScrollView contentContainerStyle={{ padding: 20, flexGrow: 1 }} keyboardShouldPersistTaps="handled">
-        <AppText weight={900} size={26} color={theme.ink} style={{ marginBottom: 14 }}>
-          {isAppt ? 'Vaccine appointment' : 'Log vaccine'}
-        </AppText>
+        <ModalHeader title={isAppt ? 'Vaccine appointment' : 'Log vaccine'} />
 
         {/* mode toggle (hidden when pre-filled from voice — that's always a given dose) */}
         {!parsed && (

@@ -4,14 +4,14 @@ Real-world testing notes. Newest first.
 
 ---
 
-## From TestFlight build 16 testing — 30 Jul 2026 → **open**
+## From TestFlight build 16 testing — 30 Jul 2026 → fixed, staged in **build 17**
 
 | # | Issue | Status |
 |---|---|---|
-| 5 | Vaccine appointment picker: the time is invisible in light mode | ⬜ open |
-| 6 | No back/cancel on Add memory — had to close the app or swipe by chance. **All nine modal screens** | ⬜ open |
+| 5 | Vaccine appointment picker: the time is invisible in light mode | ✅ `ThemedDateTimePicker` wrapper passes `themeVariant`; all six pickers swapped, zero bare ones left |
+| 6 | No back/cancel on Add memory — had to close the app or swipe by chance | ✅ shared `ModalHeader` (back chevron + title) on all nine modal screens, built into `FormScreen` |
 
-**#5 diagnosis (done, fix pending).** The app has **six** `DateTimePicker`
+**#5 diagnosis.** The app has **six** `DateTimePicker`
 instances and **`themeVariant` is set on none of them**:
 
 `DateField.tsx` ×2 · `EventEditSheet.tsx` ×2 · `VaccineFormScreen.tsx` ×2
@@ -33,7 +33,7 @@ prop; Android ignores it), and use that wrapper everywhere so a raw
 a note in `AUDIT.md` — **any third-party control that renders its own text must
 be told which theme it's in.**
 
-**#6 diagnosis (done, fix pending).** `RootNavigator.tsx:25` sets
+**#6 diagnosis.** `RootNavigator.tsx:25` sets
 `headerShown: false` for the whole stack, and **none of the nine modal screens
 draw their own exit control**:
 

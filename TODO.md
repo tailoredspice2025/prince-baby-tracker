@@ -20,20 +20,16 @@ Summary only. Detail lives in `FEEDBACK.md` (build-15 items) and
 - Shared `FormScreen` scaffold; every screen with an input is now covered
 - Tapping anywhere in a field opens the keypad
 
-## 3 · Getting out of screens — open
+## 3 · Getting out of screens — ✅ staged in build 17
 *Detail: `FEEDBACK.md` #6*
 
-- **No back or cancel on any of the nine modal screens** — the only exit is
-  finishing the task or an undiscoverable swipe
-- Add a header row to the shared `FormScreen`; fix once
-- Most likely of the open items to trip up a reviewer
+- Shared `ModalHeader` (back chevron + title) on all nine modal screens
 
-## 4 · Theming third-party controls — open
+## 4 · Theming third-party controls — ✅ staged in build 17
 *Detail: `FEEDBACK.md` #5*
 
-- iOS date/time pickers render invisible text when the app theme and the phone
-  theme disagree — `themeVariant` is set on none of the six instances
-- Fix once via a themed wrapper, not six edits
+- `ThemedDateTimePicker` wrapper always passes `themeVariant`; no bare
+  `DateTimePicker` remains in the codebase
 
 ## 5 · Voice logging — v1.1
 *Detail: `BACKLOG.md`. Hidden in v1.0 behind `FEATURES.voiceLogging`*
@@ -61,7 +57,11 @@ Summary only. Detail lives in `FEEDBACK.md` (build-15 items) and
 
 ---
 
-## Shipped in build 16 (pending your device test)
+## Staged in build 17 — built and verified, NOT submitted
+Back control on every modal screen · date pickers readable whatever the phone
+theme. Ready whenever you want to ship 1.0.1.
+
+## Shipped in build 16
 Everything below, plus: dates on every record · measurement history with edit
 and delete · keyboard never covers a save button · tap-anywhere fields
 

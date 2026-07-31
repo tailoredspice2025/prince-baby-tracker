@@ -47,11 +47,8 @@ export function AddMilestoneScreen() {
   };
 
   return (
-    <FormScreen actions={<PrimaryButton label="Save memory" onPress={save} />}>
+    <FormScreen title="Add memory" actions={<PrimaryButton label="Save memory" onPress={save} />}>
       <>
-        <AppText weight={900} size={26} color={theme.ink} style={{ marginBottom: 18 }}>
-          Add memory
-        </AppText>
         <View style={{ gap: 12 }}>
           <Pressable
             onPress={pickPhoto}

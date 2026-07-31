@@ -3,6 +3,7 @@ import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollVie
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { AppText } from '../../components/AppText';
+import { ModalHeader } from '../../components/ModalHeader';
 import { PrimaryButton } from '../../components/Button';
 import { FormField } from '../../components/FormField';
 import { useStore } from '../../lib/store';
@@ -38,6 +39,7 @@ export function JoinFamilyScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView contentContainerStyle={{ padding: 24, flexGrow: 1 }} keyboardShouldPersistTaps="handled">
+        <ModalHeader title="Join a family" />
         <AppText weight={900} size={28} color={theme.ink} style={{ marginTop: 12 }}>
           Join your family
         </AppText>

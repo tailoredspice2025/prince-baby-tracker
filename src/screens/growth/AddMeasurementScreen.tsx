@@ -95,6 +95,7 @@ export function AddMeasurementScreen() {
 
   return (
     <FormScreen
+      title={editingId ? 'Edit measurement' : 'Add measurement'}
       actions={
         <View style={{ gap: 10 }}>
           <PrimaryButton label={editingId ? 'Save changes' : 'Save measurement'} onPress={save} disabled={nothingEntered} />
@@ -108,9 +109,6 @@ export function AddMeasurementScreen() {
         </View>
       }
     >
-      <AppText weight={900} size={26} color={theme.ink} style={{ marginBottom: 4 }}>
-        {editingId ? 'Edit measurement' : 'Add measurement'}
-      </AppText>
       <AppText weight={700} size={13.5} color={theme.textSecondary} style={{ marginBottom: 18 }}>
         Leave any field blank to skip it
       </AppText>

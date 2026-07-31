@@ -3,6 +3,7 @@ import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollVie
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { AppText } from '../../components/AppText';
+import { ModalHeader } from '../../components/ModalHeader';
 import { PrimaryButton } from '../../components/Button';
 import { FormField } from '../../components/FormField';
 import { useStore } from '../../lib/store';
@@ -61,6 +62,7 @@ export function InviteCaregiverScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView contentContainerStyle={{ padding: 20, flexGrow: 1 }} keyboardShouldPersistTaps="handled">
+        <ModalHeader title="Invite caregiver" />
         <AppText weight={900} size={26} color={theme.ink} style={{ marginBottom: 6 }}>
           Invite a caregiver
         </AppText>

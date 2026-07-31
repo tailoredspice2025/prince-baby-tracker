@@ -60,6 +60,24 @@ the expected outcome first; if it can't be stated precisely, stop and trace.
 
 ---
 
+## Third-party controls colour themselves
+
+Any control that renders its own text — date pickers, native segmented
+controls, system sheets — takes its colours from the **device's** appearance,
+not from the app's theme. When the user has the app in Light while the phone is
+in Dark, that control draws light text on a light card and disappears.
+
+This has now shipped twice: the segmented control in build 11 ("says Boy and
+blank") and every `DateTimePicker` in build 16. Both times the fix was applied
+to the reported instance and never swept.
+
+**Rule: a third-party control must be told which theme it is in, and the way to
+guarantee that is a wrapper.** `Segmented` and `ThemedDateTimePicker` exist so
+the bare component is never used directly. If you reach for a raw
+`DateTimePicker`, that's the bug.
+
+---
+
 ## The two statuses — there is no third
 
 Every link in every audit gets exactly one of these. Never leave a link out.

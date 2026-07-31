@@ -3,6 +3,7 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'rea
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { AppText } from '../../components/AppText';
+import { ModalHeader } from '../../components/ModalHeader';
 import { PrimaryButton } from '../../components/Button';
 import { FormField } from '../../components/FormField';
 import { DateField } from '../../components/DateField';
@@ -35,6 +36,7 @@ export function AddBabyScreen() {
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView contentContainerStyle={{ padding: 20, flexGrow: 1 }} keyboardShouldPersistTaps="handled">
+        <ModalHeader title="Add a baby" />
         <AppText weight={900} size={26} color={theme.ink} style={{ marginBottom: 18 }}>
           Add another baby
         </AppText>

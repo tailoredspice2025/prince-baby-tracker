@@ -38,11 +38,8 @@ export function SicknessFormScreen() {
   };
 
   return (
-    <FormScreen actions={<PrimaryButton label="Save to health record" onPress={save} />}>
+    <FormScreen title="Log sickness" actions={<PrimaryButton label="Save to health record" onPress={save} />}>
       <>
-        <AppText weight={900} size={26} color={theme.ink} style={{ marginBottom: 4 }}>
-          Log sickness
-        </AppText>
         {fromVoice ? (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 18 }}>
             <View style={{ width: 22, height: 22, borderRadius: 11, backgroundColor: theme.coral, alignItems: 'center', justifyContent: 'center' }}>

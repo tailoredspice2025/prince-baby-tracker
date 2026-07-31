@@ -2,6 +2,7 @@ import React from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../theme/ThemeProvider';
+import { ModalHeader } from './ModalHeader';
 
 /**
  * Keyboard-safe scaffold for every screen that contains a text input.
@@ -17,9 +18,14 @@ import { useTheme } from '../theme/ThemeProvider';
 export function FormScreen({
   children,
   actions,
+  title,
 }: {
   children: React.ReactNode;
   actions?: React.ReactNode;
+  /** Renders a back control above the content. Pass it on every modal screen —
+   * without one the only exit is finishing the task or an undiscoverable
+   * swipe. */
+  title?: string;
 }) {
   const theme = useTheme();
   return (
@@ -30,6 +36,7 @@ export function FormScreen({
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="interactive"
         >
+          {title && <ModalHeader title={title} />}
           {children}
         </ScrollView>
         {actions && <View style={{ paddingHorizontal: 20, paddingTop: 8, paddingBottom: 12 }}>{actions}</View>}

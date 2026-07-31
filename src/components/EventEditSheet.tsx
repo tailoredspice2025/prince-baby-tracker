@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, TextInput, View } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import { ThemedDateTimePicker } from './ThemedDateTimePicker';
 import { AppText } from './AppText';
 import { Segmented } from './Segmented';
 import { useStore } from '../lib/store';
@@ -229,7 +229,7 @@ export function EventEditSheet() {
 
             {Platform.OS === 'ios' && picking && (
               <View style={{ backgroundColor: fieldBg, borderRadius: 18, marginBottom: 12 }}>
-                <DateTimePicker
+                <ThemedDateTimePicker
                   value={picking === 'end' ? endDate : startDate}
                   mode="time"
                   display="spinner"
@@ -238,7 +238,7 @@ export function EventEditSheet() {
               </View>
             )}
             {Platform.OS === 'android' && picking && (
-              <DateTimePicker
+              <ThemedDateTimePicker
                 value={picking === 'end' ? endDate : startDate}
                 mode="time"
                 display="default"

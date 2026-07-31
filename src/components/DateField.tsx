@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Platform, Pressable, View } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
+import { ThemedDateTimePicker } from './ThemedDateTimePicker';
 import { AppText } from './AppText';
 import { useTheme } from '../theme/ThemeProvider';
 import { radii } from '../theme/tokens';
@@ -35,7 +35,7 @@ export function DateField({
         </AppText>
       </Pressable>
       {Platform.OS === 'ios' && open && (
-        <DateTimePicker
+        <ThemedDateTimePicker
           value={value}
           mode="date"
           display="spinner"
@@ -45,7 +45,7 @@ export function DateField({
         />
       )}
       {Platform.OS === 'android' && open && (
-        <DateTimePicker
+        <ThemedDateTimePicker
           value={value}
           mode="date"
           display="default"

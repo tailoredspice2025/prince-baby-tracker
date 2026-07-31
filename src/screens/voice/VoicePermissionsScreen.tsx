@@ -2,6 +2,7 @@ import React from 'react';
 import { ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppText } from '../../components/AppText';
+import { ModalHeader } from '../../components/ModalHeader';
 import { Toggle } from '../../components/Toggle';
 import { useStore } from '../../lib/store';
 import { useTheme } from '../../theme/ThemeProvider';
@@ -29,9 +30,7 @@ export function VoicePermissionsScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }}>
       <ScrollView contentContainerStyle={{ padding: 20 }}>
-        <AppText weight={900} size={26} color={theme.ink} style={{ marginBottom: 4 }}>
-          Voice logging
-        </AppText>
+        <ModalHeader title="Voice logging" />
         <AppText weight={700} size={13.5} color={theme.textSecondary} style={{ marginBottom: 18 }}>
           Choose what can be logged by speaking
         </AppText>
