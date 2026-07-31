@@ -52,10 +52,12 @@ Summary only. Detail lives in `FEEDBACK.md` (build-15 items) and
 - At v1.1: update the App Store privacy label (Family Sync collects data)
 
 ## 7 · Yours, outside the repo
-- App Store description: "coming soon" line for voice
+- ~~App Store description: "coming soon" line for voice~~ — dropped by
+  decision; the listing now makes no forward-looking claims at all
 - Resolution Center: reply explaining the crash fix (NOT "What's New" —
   that field only shows on updates, not a first release)
-- Privacy policy site: check it doesn't describe voice logging
+- ✅ Privacy policy: voice and Family Sync marked "not in the current
+  version" (docs/index.html, live via GitHub Pages)
 
 ---
 
