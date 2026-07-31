@@ -11,6 +11,7 @@ Real-world testing notes. Newest first.
 | 1 | Add-measurement fields are clunky — the keypad only opens if you tap a narrow strip at the far left of the box | ⬜ open |
 | 2 | No way to add a measurement for a specific date — and no way to edit or delete one afterwards | ⬜ open |
 | 3 | Save button hides behind the keyboard — you have to tap around to dismiss it first. **Affects every form in the app except the edit sheet** | ⬜ open |
+| 4 | **Every dated record except timeline events stamps "today" and can't be backdated** — measurements, vaccines given, sickness, medication, milestones | ⬜ open |
 
 **#1 diagnosis (done, fix pending).** `AddMeasurementScreen.tsx:20`: the
 `TextInput` sits in a `flexDirection: 'row'` with **no `flex: 1`** and
@@ -99,6 +100,46 @@ When sweeping for a class, follow the abstraction as well as the primitive.
   `EventEditSheet` already does, and adopt it across all ten screens.
 - Add `KeyboardAvoidingView`/`keyboardShouldPersistTaps` to the pre-merge
   checklist for any new screen containing an input.
+
+**#4 — full CDSE audit of every dated record.** Prompted by "I want to make
+sure all stats have a date for trends to be correct". Supersedes #2, which is
+one row of this table.
+
+**Trends themselves are correct.** `computeDailyStats` reads only
+`TimelineEvent`s, which do capture real timestamps and are editable. The date
+problem is in every *other* dated record.
+
+| Record | Capture | Derive → Surface | Editable |
+|---|---|---|---|
+| Bottle / solids / pump / nappy / medicine events | ⚠️ stamps *now*; no backdating in the log flow | ✅ daily buckets → Trends | ✅ time editable |
+| Sleep | ✅ real start + end | ✅ duration, midnight split | ✅ (build 14) |
+| **Measurement** | ❌ `new Date()` | ❌ age = `date − dob` → **wrong WHO percentile** | ❌ no update/delete |
+| **Vaccine (given)** | ❌ `VaccineFormScreen:128` stamps today | ❌ wrong date in the history | ✅ |
+| Vaccine (appointment) | ✅ picker, `minimumDate` = now — correct for a future booking | ✅ drives the 48h/24h/2h reminders | ✅ |
+| **Sickness episode** | ❌ `startDate: new Date()`, and `endDate` is never captured | ❌ episode length unknowable | ❌ no update/delete |
+| **Medication** | ❌ `lastGiven: new Date()` | ❌ | ❌ no update/delete |
+| **Milestone** | ❌ `date: new Date()` | ❌ "achieved" is always today | ❌ no update/delete |
+
+**Two systemic causes, both worth fixing once rather than per screen:**
+
+1. **`DateField` is used by ZERO of the five add forms.** The component exists
+   — built for date of birth — and its only consumers are Onboarding and
+   Add-baby. Every form here hardcodes `new Date()` instead. The control was
+   built and never adopted.
+2. **Four of eight record types have no update or delete path at all**
+   (measurement, sickness, medication, milestone). Only events and vaccines can
+   be corrected. Same rule as `AUDIT.md`: a stored field that can't be
+   corrected is a bug.
+
+**Priority within this item:** vaccines and measurements first — both are
+records parents transcribe from the red book *after the fact*, which is the
+primary use case, and measurements additionally produce a **wrong percentile**
+rather than merely a wrong date.
+
+**Also worth deciding:** timeline events can't be backdated at log time either
+(tap now → stamped now, correctable only afterwards in the edit sheet). For a
+baby app that's a real gap — you log the 3am feed at 7am. Consider a "time"
+row in the quick-log long-press picker.
 
 _(Add further build-15 feedback under this table as it comes in.)_
 
