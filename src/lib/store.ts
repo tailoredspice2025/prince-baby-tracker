@@ -51,6 +51,7 @@ import { pendingIds, startFamilySync, stopFamilySync, syncDelete, syncWrite, upl
 import { eventTime } from './eventRow';
 import {
   cancelFeedReminder,
+  cancelMedicationReminder,
   cancelVaccineReminders,
   ensureNotificationPermissions,
   rescheduleFeedReminder,
@@ -426,6 +427,7 @@ export const useStore = create<AppState>()(
   deleteMedication: (id) => {
     set((s) => ({ medications: s.medications.filter((m) => m.id !== id) }));
     syncDelete('medications', id);
+    cancelMedicationReminder(id).catch(() => {});
     get().pushToast({ message: 'Medicine deleted' });
   },
 

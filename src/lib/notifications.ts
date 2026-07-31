@@ -19,9 +19,21 @@ export async function ensureNotificationPermissions(): Promise<boolean> {
   return req.granted;
 }
 
+/** Cancels a medication's daily reminder — when it's turned off, deleted, or
+ * marked no longer ongoing. Without this, clearing a reminder left the
+ * previously scheduled notification firing forever. */
+export async function cancelMedicationReminder(medId: string) {
+  await Notifications.cancelScheduledNotificationAsync(`med-${medId}`).catch(() => {});
+}
+
 /** Schedules a repeating daily reminder for an ongoing medication with a reminderTime ("HH:mm"). */
 export async function scheduleMedicationReminder(med: Medication) {
-  if (!med.reminderTime) return;
+  // Always clear first: the id is stable so a reschedule overwrites, but a
+  // medication that has *lost* its reminder must not keep the old one.
+  if (!med.reminderTime || !med.ongoing) {
+    await cancelMedicationReminder(med.id);
+    return;
+  }
   const [hour, minute] = med.reminderTime.split(':').map(Number);
   await Notifications.scheduleNotificationAsync({
     identifier: `med-${med.id}`,

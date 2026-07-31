@@ -12,7 +12,7 @@ Real-world testing notes. Newest first.
 | 6 | No back/cancel on Add memory — had to close the app or swipe by chance | ✅ shared `ModalHeader` (back chevron + title) on all nine modal screens, built into `FormScreen` |
 | 7 | Vitamin D "due today" banner reappears even after logging it | ✅ banner checks `lastGiven`; logging a dose now sets it |
 | 8 | Bell icon top-right does nothing | ✅ opens Health, where reminders live |
-| 9 | **No way to set, edit or add a medicine reminder** | ⬜ open — see below |
+| 9 | No way to set, edit or add a medicine reminder | ✅ "Remind me daily" toggle + time picker on the medicine form; tap any medicine on Health to edit or delete it |
 
 **#5 diagnosis.** The app has **six** `DateTimePicker`
 instances and **`themeVariant` is set on none of them**:
@@ -68,7 +68,7 @@ returned on every launch no matter how many doses were logged. The other half:
 `medication.lastGiven`, so the field that would clear the banner was never
 written. Both fixed. The bell had no `onPress` — a styled circle.
 
-**#9 — the real gap.** `reminderTime` is **read** in three places
+**#9 diagnosis.** `reminderTime` is **read** in three places
 (`HealthScreen` displays it, `notifications.ts` schedules from it, the Home
 banner reads it) and **written in none**. `MedicineFormScreen` doesn't capture
 it. The only medications with reminders are the demo-seeded ones, so a user
@@ -82,14 +82,17 @@ Note the App Store description says "medicines with daily reminders". The
 reminders do fire, but only for seeded data — worth closing this gap before
 anyone reads that line and goes looking.
 
-**Fix (not done):**
-- Reminder time picker on `MedicineFormScreen`, optional, with a "remind me
-  daily" toggle.
-- A medicines list on Health that opens an existing medication for editing —
-  time, dose, schedule, stop reminding, delete. Wire up the store actions that
-  already exist.
-- Re-check `scheduleMedicationReminder` cancels the old notification when a
-  time changes, or you'll stack duplicates.
+**Fixed in build 17:** "Remind me daily" toggle plus a time picker on the
+medicine form; medicines on Health are tappable and open for editing or
+deletion, finally calling the `updateMedication`/`deleteMedication` the store
+has had since build 16. Asking for a reminder marks the medicine ongoing, since
+a daily reminder on a PRN medicine makes no sense.
+
+Rescheduling was already safe — `scheduleMedicationReminder` uses a stable
+`med-{id}` identifier, so a retime overwrites rather than stacking. But nothing
+cancelled when a reminder was switched **off**: the old notification would have
+kept firing forever. Added `cancelMedicationReminder`, called on delete and
+whenever a medicine loses its reminder or stops being ongoing.
 
 _(Add new build-16 feedback above this line.)_
 

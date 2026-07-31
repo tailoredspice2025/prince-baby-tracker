@@ -31,13 +31,12 @@ Summary only. Detail lives in `FEEDBACK.md` (build-15 items) and
 - `ThemedDateTimePicker` wrapper always passes `themeVariant`; no bare
   `DateTimePicker` remains in the codebase
 
-## 5 · Reminders — partly open
+## 5 · Reminders — ✅ staged in build 17
 *Detail: `FEEDBACK.md` #7–#9*
 
-- ✅ "due today" banner now clears once logged; bell opens Health
-- ⬜ **No UI to set, edit or add a medicine reminder** — `reminderTime` is read
-  in three places and written in none; `updateMedication`/`deleteMedication`
-  exist in the store with no screen calling them
+- "due today" banner clears once logged; bell opens Health
+- "Remind me daily" toggle + time picker; medicines tappable to edit or delete
+- Reminders now cancel when switched off, not just reschedule
 
 ## 6 · Voice logging — v1.1
 *Detail: `BACKLOG.md`. Hidden in v1.0 behind `FEATURES.voiceLogging`*
@@ -67,7 +66,8 @@ Summary only. Detail lives in `FEEDBACK.md` (build-15 items) and
 
 ## Staged in build 17 — built and verified, NOT submitted
 Back control on every modal screen · date pickers readable whatever the phone
-theme · vitamin banner clears once logged · bell opens Health.
+theme · vitamin banner clears once logged · bell opens Health · medicine
+reminders can be set, retimed, added and deleted.
 Ready whenever you want to ship 1.0.1.
 
 ## Shipped in build 16

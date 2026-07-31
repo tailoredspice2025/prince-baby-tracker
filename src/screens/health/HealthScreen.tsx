@@ -168,17 +168,24 @@ export function HealthScreen() {
           Medicine
         </AppText>
         <SectionCard>
+          {/* Tap to edit — dose, schedule, reminder time, or delete. The store
+              has had updateMedication/deleteMedication since build 16 with no
+              screen calling them. */}
           {medications.map((m, i) => (
             <Row key={m.id} last={i === medications.length - 1}>
-              <View style={{ flex: 1 }}>
+              <Pressable
+                onPress={() => navigation.navigate('MedicineForm', { medicationId: m.id })}
+                style={{ flex: 1 }}
+              >
                 <AppText weight={800} size={14.5} color={theme.ink}>
                   {m.name}
                 </AppText>
                 <AppText weight={600} size={12} color={theme.textSecondary}>
                   {m.dose} · {m.schedule}
                   {m.ongoing ? ' · ongoing' : m.lastGiven ? ` · last ${new Date(m.lastGiven).toLocaleDateString([], { month: 'short', day: 'numeric' })}` : ''}
+                  {' · tap to edit'}
                 </AppText>
-              </View>
+              </Pressable>
               {m.reminderTime ? (
                 <View style={{ backgroundColor: '#F3E3BC', borderRadius: 999, paddingVertical: 4, paddingHorizontal: 10 }}>
                   <AppText weight={800} size={11} color="#A57F2C">
