@@ -20,14 +20,22 @@ Summary only. Detail lives in `FEEDBACK.md` (build-15 items) and
 - Shared `FormScreen` scaffold; every screen with an input is now covered
 - Tapping anywhere in a field opens the keypad
 
-## 3 · Theming third-party controls — open
+## 3 · Getting out of screens — open
+*Detail: `FEEDBACK.md` #6*
+
+- **No back or cancel on any of the nine modal screens** — the only exit is
+  finishing the task or an undiscoverable swipe
+- Add a header row to the shared `FormScreen`; fix once
+- Most likely of the open items to trip up a reviewer
+
+## 4 · Theming third-party controls — open
 *Detail: `FEEDBACK.md` #5*
 
 - iOS date/time pickers render invisible text when the app theme and the phone
   theme disagree — `themeVariant` is set on none of the six instances
 - Fix once via a themed wrapper, not six edits
 
-## 4 · Voice logging — v1.1
+## 5 · Voice logging — v1.1
 *Detail: `BACKLOG.md`. Hidden in v1.0 behind `FEATURES.voiceLogging`*
 
 - **Capture doesn't work on device** — fix first, alone, nothing else counts
@@ -35,7 +43,7 @@ Summary only. Detail lives in `FEEDBACK.md` (build-15 items) and
 - Then: open-ended sleep poisons Trends · time parsing wrong · spoken values
   dropped · "Edit" button dead · no undo · silent permission failures
 
-## 5 · Loose ends
+## 6 · Loose ends
 - Night-feeding screen: hidden in v1.0, needs its own honest control if it
   returns (`FEATURES.nightFeedingView`)
 - `SleepEvent.wokeCount` — modelled, never used: surface it or delete it
@@ -43,7 +51,7 @@ Summary only. Detail lives in `FEEDBACK.md` (build-15 items) and
   document the choice
 - At v1.1: update the App Store privacy label (Family Sync collects data)
 
-## 6 · Yours, outside the repo
+## 7 · Yours, outside the repo
 - App Store description: "coming soon" line for voice
 - Resolution Center: reply explaining the crash fix (NOT "What's New" —
   that field only shows on updates, not a first release)

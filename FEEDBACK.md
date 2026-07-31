@@ -9,6 +9,7 @@ Real-world testing notes. Newest first.
 | # | Issue | Status |
 |---|---|---|
 | 5 | Vaccine appointment picker: the time is invisible in light mode | ⬜ open |
+| 6 | No back/cancel on Add memory — had to close the app or swipe by chance. **All nine modal screens** | ⬜ open |
 
 **#5 diagnosis (done, fix pending).** The app has **six** `DateTimePicker`
 instances and **`themeVariant` is set on none of them**:
@@ -31,6 +32,31 @@ prop; Android ignores it), and use that wrapper everywhere so a raw
 `DateTimePicker` can't be added without theming. Worth a lint rule or at least
 a note in `AUDIT.md` — **any third-party control that renders its own text must
 be told which theme it's in.**
+
+**#6 diagnosis (done, fix pending).** `RootNavigator.tsx:25` sets
+`headerShown: false` for the whole stack, and **none of the nine modal screens
+draw their own exit control**:
+
+`AddMeasurement` · `AddMilestone` · `AddBaby` · `VaccineForm` ·
+`MedicineForm` · `SicknessForm` · `InviteCaregiver` · `JoinFamily` ·
+`VoicePermissions`
+
+The only ways out are completing the action (each `save()` calls `goBack()`) or
+the iOS drag-down gesture on a modal sheet. Not literally trapped — the gesture
+works, and Android has system back — but undiscoverable, which is the same
+thing for most people. Nobody should have to find their way out by accident.
+
+The codebase already has the right pattern: `DayTimelineScreen` draws a
+`ChevronLeftIcon` back control. It was simply never applied to the modals.
+
+**Fix once:** add a header row (title + Cancel/close) to the shared
+`FormScreen` so every form gets one for free, and give the two non-form modals
+(`VoicePermissions`, `InviteCaregiver`) the same treatment. Not per screen.
+
+**Severity note:** of the open items this is the most likely to affect a
+reviewer — someone who opens "Add measurement", decides not to add one, and
+looks for a way back. Worth pulling forward if build 16 needs a respin for any
+other reason.
 
 _(Add new build-16 feedback above this line.)_
 
