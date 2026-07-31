@@ -9,6 +9,7 @@ Real-world testing notes. Newest first.
 | # | Issue | Status |
 |---|---|---|
 | 1 | Add-measurement fields are clunky — the keypad only opens if you tap a narrow strip at the far left of the box | ⬜ open |
+| 2 | No way to add a measurement for a specific date — and no way to edit or delete one afterwards | ⬜ open |
 
 **#1 diagnosis (done, fix pending).** `AddMeasurementScreen.tsx:20`: the
 `TextInput` sits in a `flexDirection: 'row'` with **no `flex: 1`** and
@@ -31,6 +32,34 @@ Candidates to re-check when fixing (a `TextInput` only shrinks like this when
 it's inside a **row** — the ones laid out in a column are already full width,
 so this list needs filtering, not blanket editing): `FormField.tsx`,
 `EventEditSheet.tsx`, `ProfileScreen.tsx`, `OnboardingScreen.tsx`.
+
+**#2 diagnosis (done, fix pending).** `AddMeasurementScreen.tsx:47` hardcodes
+`date: new Date().toISOString()`. There is no date field on the form. Traced
+through the chain, the damage is bigger than the missing control:
+
+| Link | State |
+|---|---|
+| Capture | ❌ date never captured — every entry is stamped "today" |
+| Derive | ❌ `GrowthChart` plots against **age** (`date − dob`), so a backdated weight lands at the wrong age |
+| Surface | ❌ the point sits at the wrong place on the WHO curve, so **the percentile shown is wrong** — the whole purpose of the screen. The "+X g since last measurement" caption is also meaningless when everything shares one timestamp. |
+| Editable | ❌ the store has `addMeasurement` only — **no update, no delete** — and nothing in Growth is tappable. A mistyped 65 kg is in the chart permanently. |
+
+Backdating is the primary use case, not an edge case: weights come from clinic
+and health-visitor appointments and get typed up later from the red book. As
+built, the feature only works if you're holding the phone at the scales.
+
+**Fix:**
+- Put the existing `DateField` (already built for date of birth) on the form,
+  defaulting to today, **capped at today and floored at the baby's date of
+  birth** — a measurement before birth or in the future is always wrong.
+  `addMeasurement` already takes a `date`, so only the UI needs adding.
+- Add `updateMeasurement` and `deleteMeasurement` to the store, with the same
+  `syncWrite` / `syncDelete` treatment the events get.
+- Make the Growth screen list measurements and open an edit sheet on tap,
+  mirroring `EventEditSheet` — every stored field visible and correctable.
+- Re-check that the chart re-sorts correctly once dates can be out of order:
+  `GrowthScreen.tsx:31` sorts by date, so backdated entries must land in the
+  right place in the curve, not just at the end.
 
 _(Add further build-15 feedback under this table as it comes in.)_
 
