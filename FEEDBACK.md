@@ -4,6 +4,38 @@ Real-world testing notes. Newest first.
 
 ---
 
+## From TestFlight build 16 testing — 30 Jul 2026 → **open**
+
+| # | Issue | Status |
+|---|---|---|
+| 5 | Vaccine appointment picker: the time is invisible in light mode | ⬜ open |
+
+**#5 diagnosis (done, fix pending).** The app has **six** `DateTimePicker`
+instances and **`themeVariant` is set on none of them**:
+
+`DateField.tsx` ×2 · `EventEditSheet.tsx` ×2 · `VaccineFormScreen.tsx` ×2
+
+On iOS the picker colours its own text from the **device's** appearance, while
+the card behind it is coloured by the **app's** Appearance setting. Phone in
+dark mode + app in Light = light text on a white card, i.e. invisible. The
+reverse (phone light, app Dark) hides it too.
+
+This is the same root cause as build 11's "says Boy and blank" — a control
+coloured by one system sitting inside a container coloured by another. Fixed
+then for the segmented control only, not swept. **Fourth time this
+instance-not-class pattern has cost a build.**
+
+**Fix once:** wrap `DateTimePicker` in a small themed component that always
+passes `themeVariant={theme.mode === 'night' ? 'dark' : 'light'}` (iOS-only
+prop; Android ignores it), and use that wrapper everywhere so a raw
+`DateTimePicker` can't be added without theming. Worth a lint rule or at least
+a note in `AUDIT.md` — **any third-party control that renders its own text must
+be told which theme it's in.**
+
+_(Add new build-16 feedback above this line.)_
+
+---
+
 ## From TestFlight build 15 testing — 30 Jul 2026 → all fixed in **build 16**
 
 | # | Issue | Status |
