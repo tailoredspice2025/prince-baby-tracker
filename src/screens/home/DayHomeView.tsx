@@ -168,9 +168,14 @@ export function DayHomeView() {
             </Pressable>
           </View>
 
+          {/* Logs the medicine this banner NAMES, not whatever was taken last.
+              It used to call logQuickEvent('medicine') bare, which reuses the
+              most recent medicine event's name — so once you'd logged anything
+              else, tapping "Vitamin D drops · due" logged that other medicine
+              instead, `lastGiven` never matched, and the banner never cleared. */}
           {dueMed && (
             <Pressable
-              onPress={() => logQuickEvent('medicine')}
+              onPress={() => logQuickEvent('medicine', { name: dueMed.name, dose: dueMed.dose })}
               style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#F3E3BC', borderRadius: 16, paddingVertical: 11, paddingHorizontal: 14, marginBottom: 14 }}
             >
               <ClockIcon />

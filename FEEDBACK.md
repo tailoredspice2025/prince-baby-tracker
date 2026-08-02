@@ -10,7 +10,7 @@ Real-world testing notes. Newest first.
 |---|---|---|
 | 5 | Vaccine appointment picker: the time is invisible in light mode | ✅ `ThemedDateTimePicker` wrapper passes `themeVariant`; all six pickers swapped, zero bare ones left |
 | 6 | No back/cancel on Add memory — had to close the app or swipe by chance | ✅ shared `ModalHeader` (back chevron + title) on all nine modal screens, built into `FormScreen` |
-| 7 | Vitamin D "due today" banner reappears even after logging it | ✅ banner checks `lastGiven`; logging a dose now sets it |
+| 7 | Vitamin D "due today" banner reappears even after logging it | ✅ **build 18** — banner now logs the medicine it *names*; build 17's fix was incomplete |
 | 8 | Bell icon top-right does nothing | ✅ opens Health, where reminders live |
 | 9 | No way to set, edit or add a medicine reminder | ✅ "Remind me daily" toggle + time picker on the medicine form; tap any medicine on Health to edit or delete it |
 
@@ -61,7 +61,20 @@ reviewer — someone who opens "Add measurement", decides not to add one, and
 looks for a way back. Worth pulling forward if build 16 needs a respin for any
 other reason.
 
-**#7 + #8 diagnosis.** `DayHomeView.tsx:103` selected the due medicine with
+**#7 reopened in build 17, fixed in build 18.** Build 17 made the banner check
+`lastGiven` and made logging stamp it — but the banner's own tap called
+`logQuickEvent('medicine')` **bare**, and that reuses the *most recent medicine
+event's* name (`store.ts:321`). So once any other medicine had been logged —
+the long-press picker offers five — tapping a banner that said "Vitamin D
+drops" logged that other medicine instead. The name never matched, `lastGiven`
+was never stamped on the due medication, and the banner stayed exactly as
+before. The banner now passes its own `name` and `dose`.
+
+Worth naming the pattern: the fix was verified by reading the two functions I
+changed, not by asking what the button actually does. The button had a third
+behaviour neither function revealed on its own.
+
+**#7 + #8 original diagnosis.** `DayHomeView.tsx:103` selected the due medicine with
 `ongoing && reminderTime` and never looked at `lastGiven`, so the banner
 returned on every launch no matter how many doses were logged. The other half:
 `logQuickEvent('medicine')` wrote a medicine *event* and never touched
