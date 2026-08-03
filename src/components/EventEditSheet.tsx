@@ -6,6 +6,7 @@ import { Segmented } from './Segmented';
 import { useStore } from '../lib/store';
 import { useTheme } from '../theme/ThemeProvider';
 import { durationLabel } from '../lib/time';
+import { IMPLAUSIBLE_SLEEP_MS, resolveSleepRange } from '../lib/sleepEdit';
 import { DiaperEvent, FeedEvent, MedicineEvent, SleepEvent, TimelineEvent } from '../types/models';
 
 /** Applies a picked time's hours/minutes onto the event's original date, so
@@ -91,23 +92,9 @@ export function EventEditSheet() {
   // A sleep that ends "earlier" than it starts crossed midnight — the common
   // case for a night sleep — so roll the end forward rather than showing a
   // negative duration.
-  const resolvedEnd = () => {
-    const s = new Date(withTimeOfDay((event as SleepEvent).startTime, startDate));
-    // The end is always rebuilt from the START's date, never from its own.
-    //
-    // The previous version kept the end on whatever date it already had and
-    // added 24h whenever it landed before the start. That ratcheted: drag the
-    // wake time earlier once and the end jumped to the next day, where it
-    // stayed — every later edit changed only the time of day, so an 8-minute
-    // nap was stuck reading "24h 8m" with no way back. Anchoring to the start
-    // recomputes from scratch, so a bad edit is always recoverable.
-    const e = new Date(s);
-    e.setHours(endDate.getHours(), endDate.getMinutes(), 0, 0);
-    if (e <= s) e.setDate(e.getDate() + 1); // genuinely crossed midnight
-    return { start: s, end: e };
-  };
+  const resolvedEnd = () => resolveSleepRange((event as SleepEvent).startTime, startDate, endDate);
   const sleepMs = isSleep ? resolvedEnd().end.getTime() - resolvedEnd().start.getTime() : 0;
-  const sleepTooLong = isSleep && sleepMs > 18 * 3600 * 1000;
+  const sleepTooLong = isSleep && sleepMs > IMPLAUSIBLE_SLEEP_MS;
 
   const close = () => {
     setPicking(null);

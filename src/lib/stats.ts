@@ -105,8 +105,15 @@ export function computeDailyStats(
     if (e.babyId !== babyId) continue;
     if (e.type === 'sleep') {
       const start = new Date(e.startTime);
-      const end = e.endTime ? new Date(e.endTime) : asOf;
-      if (end > start) addSleepSpan(map, start, end);
+      // A stored sleep with no end is MALFORMED, not "still asleep". A live
+      // session arrives separately as `runningSleep` below. This used to read
+      // a missing end as `asOf`, so one such record credited a full 24h to
+      // every day between its start and today — silently inflating the daily
+      // average, the trend chart and the weekly summary.
+      if (e.endTime) {
+        const end = new Date(e.endTime);
+        if (end > start) addSleepSpan(map, start, end);
+      }
       ensure(map, localDayKey(start)).sleepSessions += 1;
       continue;
     }

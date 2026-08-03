@@ -48,7 +48,10 @@ review button.
 - [ ] `git reset --hard origin/<branch>` done — local now equals the repo
       (this is what prevents the recurring stale-file / merge-conflict mess)
 - [ ] `npm install` ran clean
-- [ ] ⛔ **`npm run verify` passes with 0 errors** (`eslint` + `tsc --noEmit`).
+- [ ] ⛔ **`npm run verify` passes with 0 errors** (`eslint` + `tsc --noEmit` +
+      **`vitest`**). The tests are one per bug that actually reached a build —
+      sleep in Trends, the midnight ratchet, what a sleep row shows, and the
+      seeded-data strip. They exist so none of those can return quietly.
       Lint is not cosmetic here: `react-hooks/rules-of-hooks` is the rule that
       catches the build-11 crash class — a hook called after an early `return`
       changes the hook count between renders and kills the app. TypeScript

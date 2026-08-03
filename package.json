@@ -38,7 +38,8 @@
     "@types/react": "~19.2.2",
     "eslint": "^9.39.5",
     "eslint-config-expo": "^10.0.0",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "vitest": "^4.1.10"
   },
   "scripts": {
     "start": "expo start",
@@ -47,7 +48,8 @@
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "verify": "npm run lint && npm run typecheck"
+    "verify": "npm run lint && npm run typecheck && npm run test",
+    "test": "vitest run"
   },
   "private": true
 }

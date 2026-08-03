@@ -101,6 +101,26 @@ Anything else — "looks correct", "should work", "the wiring is right" — is
 
 ---
 
+## Pure logic gets a test, not an argument
+
+Every bug that did real damage lived in pure logic: sleep credited 24h a day to
+every date, the midnight guard ratcheting a nap to 24h 8m, a wrong WHO
+percentile from an assumed date. All of it testable without a phone — and none
+of it was tested, because the project had no test runner at all until it was in
+production.
+
+`src/lib/__tests__/regression.test.ts` now holds one test per shipped bug, and
+`npm run verify` runs it. **When a bug is found in logic, the fix includes a
+test that fails without it.** If the logic lives inside a component and can't be
+tested, extract it — that is why `resolveSleepRange` moved out of
+`EventEditSheet`.
+
+Writing the test also catches the thing reading the code doesn't: the
+open-ended-sleep bug was believed to be voice-only and therefore dormant. The
+test proved it was still live in `stats.ts`, reachable by any malformed record.
+
+---
+
 ## Rule: what can't be executed from here goes at the TOP
 
 The agent runs in a container with no phone, no App Store, no real Firebase
