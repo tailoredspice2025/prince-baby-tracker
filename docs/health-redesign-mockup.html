@@ -1,0 +1,108 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { width:390px; background:#FBF4EC; font-family: -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+         -webkit-font-smoothing:antialiased; padding:0 0 24px; }
+  .wrap { padding:18px 20px 0; }
+  h1 { font-size:26px; font-weight:800; color:#43382F; letter-spacing:-.4px; margin-bottom:2px; }
+  .sub { font-size:13px; font-weight:600; color:#9B8B7D; margin-bottom:18px; }
+  h2 { font-size:17px; font-weight:800; color:#43382F; margin:22px 0 10px; }
+  .card { background:#fff; border-radius:22px; padding:4px 16px; box-shadow:0 6px 20px rgba(67,56,47,.06); }
+  .row { display:flex; align-items:center; gap:11px; padding:13px 0; border-bottom:1px solid #F2E8DA; }
+  .row:last-child { border-bottom:none; }
+  .ic { width:34px; height:34px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:16px; flex:none; }
+  .g { flex:1; min-width:0; }
+  .t { font-size:14.5px; font-weight:700; color:#43382F; }
+  .s { font-size:12px; font-weight:600; color:#9B8B7D; margin-top:1px; line-height:1.35; }
+  .pill { font-size:10.5px; font-weight:800; padding:4px 9px; border-radius:99px; white-space:nowrap; }
+  .chev { color:#B39F8D; font-size:13px; font-weight:700; }
+  .add { display:flex; align-items:center; justify-content:center; gap:7px; border:2px dashed #E0CDB4;
+         border-radius:18px; padding:12px; font-size:13.5px; font-weight:800; color:#A98F73; margin-top:10px; }
+  .open { border:2px solid #E98862; }
+  .temps { display:flex; gap:5px; margin-top:7px; }
+  .temp { background:#FBF4EC; border-radius:8px; padding:3px 7px; font-size:10.5px; font-weight:700; color:#7C6E5F; }
+  .hot { background:#F7D6DC; color:#A04E63; }
+  .note { font-size:11px; font-weight:600; color:#B39F8D; margin-top:9px; text-align:center; }
+</style></head>
+<body><div class="wrap">
+
+  <h1>Health</h1>
+  <div class="sub">Emma · 4 months, 2 weeks</div>
+
+  <h2>Illness</h2>
+  <div class="card">
+    <div class="row open" style="border-bottom:none; border-radius:16px; padding:13px 12px; margin:6px 0;">
+      <div class="ic" style="background:#F7D6DC">🌡️</div>
+      <div class="g">
+        <div class="t">Mild fever <span style="color:#C96F4A">· day 2, ongoing</span></div>
+        <div class="s">Started Tue 2 Aug · Calpol ×3 · rash on tummy</div>
+        <div class="temps">
+          <span class="temp">37.9°</span><span class="temp hot">38.4°</span><span class="temp">38.1°</span><span class="temp">37.6°</span>
+        </div>
+      </div>
+      <div class="chev">›</div>
+    </div>
+    <div class="row">
+      <div class="ic" style="background:#DCE8CE">🤧</div>
+      <div class="g">
+        <div class="t">Cold &amp; cough</div>
+        <div class="s">12–18 Jul · 6 days · no medicine given · resolved</div>
+      </div>
+      <div class="chev">›</div>
+    </div>
+  </div>
+  <div class="add">＋ Log an illness</div>
+
+  <h2>Medicines</h2>
+  <div class="card">
+    <div class="row">
+      <div class="ic" style="background:#F3E3BC">💊</div>
+      <div class="g">
+        <div class="t">Vitamin D drops</div>
+        <div class="s">400 IU · every day · last given today 6:04 PM</div>
+      </div>
+      <span class="pill" style="background:#F3E3BC;color:#7A5E20">6:00 PM ⏰</span>
+    </div>
+    <div class="row">
+      <div class="ic" style="background:#F3E3BC">💊</div>
+      <div class="g">
+        <div class="t">Calpol</div>
+        <div class="s">2.5 ml · as needed · 3 doses for “Mild fever”</div>
+      </div>
+      <span class="pill" style="background:#F0E9DF;color:#9B8B7D">as needed</span>
+    </div>
+  </div>
+  <div class="add">＋ Add a medicine</div>
+
+  <h2>Vaccines</h2>
+  <div class="card">
+    <div class="row">
+      <div class="ic" style="background:#CFE7F2">💉</div>
+      <div class="g">
+        <div class="t">DTaP · dose 3</div>
+        <div class="s">Mon 8 Sep, 10:30 AM · Dr Rao, Sunrise Pediatrics</div>
+      </div>
+      <span class="pill" style="background:#CFE7F2;color:#2E5A70">in 5 weeks</span>
+    </div>
+    <div class="row">
+      <div class="ic" style="background:#DCE8CE">💉</div>
+      <div class="g">
+        <div class="t">DTaP · dose 2</div>
+        <div class="s">Given 12 May · left thigh · no reaction</div>
+      </div>
+      <span class="pill" style="background:#DCE8CE;color:#43602A">done ✓</span>
+    </div>
+    <div class="row">
+      <div class="ic" style="background:#DCE8CE">💉</div>
+      <div class="g">
+        <div class="t">Rotavirus · dose 2</div>
+        <div class="s">Given 12 May · oral</div>
+      </div>
+      <span class="pill" style="background:#DCE8CE;color:#43602A">done ✓</span>
+    </div>
+  </div>
+  <div class="add">＋ Add a vaccine or appointment</div>
+
+  <div class="note">Tap any entry to edit or delete it</div>
+</div></body></html>
