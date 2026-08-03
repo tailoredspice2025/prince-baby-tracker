@@ -60,6 +60,13 @@ hidden by a seeded Vitamin D medicine always existing.
 5. **`+` sheet labels match the screens they open.** It currently reads "Add
    measurement · Log vaccine · Log sickness · Log medicine · Add memory" —
    mixed verbs, and "Log medicine" opens the screen that *creates* a medicine.
+6. **iPad layout.** `supportsTablet` is on, so the listing needs iPad
+   screenshots, but the app just stretches the phone layout: each tile becomes
+   ~480pt wide, the text stays phone-sized, and half the screen is empty. Fix
+   is small — cap the content at ~776pt centred and scale type and spacing by
+   ~1.25 above the tablet breakpoint. Until it ships, only the
+   `ipad-13-current` screenshots can be uploaded (see
+   `tools/store-screenshots/README.md`).
 
 ## 7 · Health redesign — the model change
 *After 19. Do this BEFORE Family Sync — sync carries whatever model exists, and
