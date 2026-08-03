@@ -91,7 +91,7 @@ Improvements → Analytics Data → newest `DenBaby-*.ips`) and fix before resub
 
 | # | What bit us | Permanent fix (in place) |
 |---|---|---|
-| 1 | Build number collisions (autoIncrement + remote source BOTH kept producing duplicate numbers across `git reset --hard`) | **Explicit, committed build number.** `autoIncrement` is OFF and `appVersionSource` is `local`; the build number is exactly `ios.buildNumber` in app.json. Before each production build, bump that number in the repo and push — deterministic and visible in git, no magic. Current: **12** (builds 3, 4 & 11 already exist in ASC). |
+| 1 | Build number collisions (autoIncrement + remote source BOTH kept producing duplicate numbers across `git reset --hard`) | **Explicit, committed build number.** `autoIncrement` is OFF and `appVersionSource` is `local`; the build number is exactly `ios.buildNumber` in app.json. Before each production build, bump that number in the repo and push — deterministic and visible in git, no magic. Current: **18** for v1.0.1 (build 16 is the live 1.0.0). |
 | 2 | — | (see #1) |
 | 3 | `git reset --hard` discarded local auto-bumps → duplicate numbers | committed explicit number survives reset — it IS the repo value |
 | 4 | Stale local `app.json`/`eas.json` → repeated merge conflicts | always `git reset --hard origin/<branch>` before building (golden rule 1) |
@@ -111,7 +111,10 @@ Improvements → Analytics Data → newest `DenBaby-*.ips`) and fix before resub
 
 ## Version numbering
 
-- Current live line: **1.0.0**. Resubmissions of a rejected 1.0 stay 1.0.0
-  (attach the new build to the existing 1.0 record).
+- **1.0.0 (build 16) is LIVE on the App Store.** Once a version is released you
+  cannot attach another build to it — the next release needs its own version
+  record. So 1.0.1 = build 18, created in App Store Connect via **+ Version**.
+- Bump `version` in app.json the same way as the build number: explicitly, in
+  the repo, committed. Never by hand on the Mac at build time.
 - **Family Sync = 1.1** later: bump `version` in app.json to `1.1.0`, set the
   Firebase EAS env vars, then follow `RELEASE_v1.1.md`.
