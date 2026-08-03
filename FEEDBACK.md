@@ -107,6 +107,45 @@ cancelled when a reminder was switched **off**: the old notification would have
 kept firing forever. Added `cancelMedicationReminder`, called on delete and
 whenever a medicine loses its reminder or stops being ongoing.
 
+**#10 — end-to-end check of default data and notifications (build 18).**
+Asked for after the Vitamin D reminder turned out to be seeded, not set.
+
+**Notification logic is sound.** `scheduleVaccineReminders` cancels first,
+requires `status === 'due'` **and** an `appointmentAt`, and skips any offset
+already in the past — the seeded "due" DTaP has no `appointmentAt`, so it never
+fired. Feed reminders are off unless enabled. Exactly **one** phantom
+notification existed: `med-1` Vitamin D drops, armed daily at 18:00 by
+`App.tsx` on every launch.
+
+**The seed data itself was the serious finding — 1,565 records ship on every
+install**, re-attributed to the parent's own baby the moment they name it:
+
+| Seeded | Why it matters |
+|---|---|
+| 2 vaccines marked **given** (DTaP dose 2, Rotavirus dose 2, "12 May", site + reaction) | a vaccination record for doses never administered |
+| 1 fever episode, 38.1°C, "after vaccines, paracetamol ×2" | a clinical event that never happened |
+| Fabricated weights | drive the **WHO percentile** shown to the parent |
+| ~12 weeks of feeds / sleeps / nappies | fabricated history in every Trend |
+| 3 milestones with dates | first smile, roll-over, laugh |
+| 2 medications | one arming the 18:00 alarm |
+
+**Profile → "Export for pediatrician"** builds its PDF from
+`{ baby, measurements, vaccines, sickness, medications }` — the same arrays. A
+parent could hand a clinician a document stating their baby received DTaP and
+Rotavirus on a date nothing happened. That is the reason this stopped being a
+tidiness issue.
+
+**Fix.** `SEEDED_RECORD_IDS` in `demoData.ts` enumerates every seeded id.
+`completeOnboarding` strips them and cancels their reminders; persist migration
+**v3 → v4** does the same for installs that onboarded earlier. Matched by exact
+id, never by prefix — `uid('ev')` produces ids starting `ev-`, so a prefix check
+would delete real entries too. Verified: 1,565 seeded ids all matched, zero
+generated ids falsely matched, user records survive, "upcoming milestone"
+templates correctly kept.
+
+A new install now opens empty, which is the honest behaviour — the empty states
+already exist.
+
 _(Add new build-16 feedback above this line.)_
 
 ---

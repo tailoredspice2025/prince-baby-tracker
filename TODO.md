@@ -50,8 +50,8 @@ Summary only. Detail lives in `FEEDBACK.md` (build-15 items) and
 *Detail: `RELEASE_v1.1.md`*
 
 - Code complete and Firebase-verified; runbook corrected for the v1.0 cycle
-- ⛔ **Blocker:** seeded demo data would upload and sync to both parents —
-  clear it on completing onboarding first
+- ✅ **Blocker cleared in build 18** — seeded data is stripped at onboarding,
+  so there is nothing fabricated to upload
 - Order: 1.0 approved → 1.0.1 (build 17) → 1.1
 
 ## 8 · Loose ends

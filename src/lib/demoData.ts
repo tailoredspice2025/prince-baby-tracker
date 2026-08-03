@@ -306,3 +306,29 @@ export const demoSettings: Settings = {
 };
 
 export { FAMILY_ID, BABY_ID, daysAgoISO };
+
+/**
+ * Every id the app ships with as sample data.
+ *
+ * These records exist so the screens aren't empty during development. They
+ * must never survive into real use: the seed includes two vaccines marked
+ * *given*, a fever episode, and invented weights that drive the WHO percentile
+ * curve — and "Export for pediatrician" builds its PDF from exactly those
+ * arrays. A parent could hand a clinician a document stating their baby had
+ * DTaP and Rotavirus on a date nothing happened.
+ *
+ * Matched by exact id, never by prefix: `uid('ev')` produces `ev-<timestamp>`,
+ * which a `startsWith('ev-')` check would delete along with the seed.
+ */
+export const SEEDED_RECORD_IDS: ReadonlySet<string> = new Set<string>([
+  ...demoEvents.map((e) => e.id),
+  ...demoMeasurements.map((m) => m.id),
+  ...demoVaccines.map((v) => v.id),
+  ...demoSickness.map((s) => s.id),
+  ...demoMedications.map((m) => m.id),
+  ...demoMilestonesAchieved.map((m) => m.id),
+]);
+
+/** Ids of seeded records that arm a notification, so they can be cancelled. */
+export const SEEDED_MEDICATION_IDS = demoMedications.map((m) => m.id);
+export const SEEDED_VACCINE_IDS = demoVaccines.map((v) => v.id);

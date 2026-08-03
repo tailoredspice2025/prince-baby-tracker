@@ -3,7 +3,7 @@
 Everything is pre-staged on this branch. When v1.0 is approved and released,
 the whole v1.1 release is the steps below, in order.
 
-## ⛔ Blocker — settle this before 1.1 ships
+## ✅ Blocker cleared in build 18
 
 **Seeded demo data would sync to both parents.** `familySync.ts:132`
 (`uploadLocalData`) pushes every document in each collection with no filtering,

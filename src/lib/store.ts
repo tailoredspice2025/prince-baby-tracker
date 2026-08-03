@@ -34,6 +34,9 @@ import {
   demoSettings,
   demoSickness,
   demoVaccines,
+  SEEDED_MEDICATION_IDS,
+  SEEDED_RECORD_IDS,
+  SEEDED_VACCINE_IDS,
 } from './demoData';
 import {
   createFamily,
@@ -58,6 +61,29 @@ import {
   scheduleMedicationReminder,
   scheduleVaccineReminders,
 } from './notifications';
+
+/** Drops every seeded sample record, keeping anything the user logged.
+ * Matched by exact id — a prefix check would also delete real entries, since
+ * `uid('ev')` produces ids beginning `ev-`. `milestonesUpcoming` stays: those
+ * are suggestions to aim at, not records of things that happened. */
+function stripSeededRecords(s: {
+  events: TimelineEvent[];
+  measurements: Measurement[];
+  vaccines: Vaccine[];
+  sickness: SicknessEpisode[];
+  medications: Medication[];
+  milestonesAchieved: Milestone[];
+}) {
+  const keep = <T extends { id: string }>(rows: T[]) => rows.filter((r) => !SEEDED_RECORD_IDS.has(r.id));
+  return {
+    events: keep(s.events),
+    measurements: keep(s.measurements),
+    vaccines: keep(s.vaccines),
+    sickness: keep(s.sickness),
+    medications: keep(s.medications),
+    milestonesAchieved: keep(s.milestonesAchieved),
+  };
+}
 
 function uid(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
@@ -204,9 +230,18 @@ export const useStore = create<AppState>()(
   },
 
   completeOnboarding: (baby) => {
+    // Sample data must not survive into real use. It includes two vaccines
+    // marked *given*, a fever episode and invented weights that drive the WHO
+    // percentile curve — and "Export for pediatrician" builds its PDF from
+    // those same arrays, so a parent could hand a clinician a record of
+    // vaccinations that never happened. It also carries a Vitamin D
+    // medication that armed a daily 18:00 notification nobody set.
+    SEEDED_MEDICATION_IDS.forEach((id) => cancelMedicationReminder(id).catch(() => {}));
+    SEEDED_VACCINE_IDS.forEach((id) => cancelVaccineReminders(id).catch(() => {}));
     set((s) => ({
       onboarded: true,
       babies: s.babies.map((b) => (b.id === s.activeBabyId ? { ...b, ...baby } : b)),
+      ...stripSeededRecords(s),
     }));
     const updated = get().activeBaby();
     syncWrite('babies', updated);
@@ -795,7 +830,7 @@ export const useStore = create<AppState>()(
     {
       name: 'denbaby',
       storage: createJSONStorage(() => AsyncStorage),
-      version: 3,
+      version: 4,
       // v0 → v1: installs persisted before the Trends screen existed only
       // have the 3-event demo seed; append the generated demo history so
       // trends have data, without touching anything the user logged.
@@ -825,6 +860,16 @@ export const useStore = create<AppState>()(
           persisted.events = (persisted.events ?? []).map((e: any) =>
             e && DEMO_CAREGIVER_IDS.includes(e.loggedBy) ? { ...e, loggedBy: ME_CAREGIVER_ID } : e
           );
+        }
+        if (version < 4) {
+          // Installs that onboarded before build 18 still carry the sample
+          // data — including the two "given" vaccines and the 18:00 Vitamin D
+          // alarm. Remove it by exact id so anything genuinely logged stays.
+          for (const col of ['events', 'measurements', 'vaccines', 'sickness', 'medications', 'milestonesAchieved'] as const) {
+            persisted[col] = (persisted[col] ?? []).filter((r: any) => r && !SEEDED_RECORD_IDS.has(r.id));
+          }
+          SEEDED_MEDICATION_IDS.forEach((id) => cancelMedicationReminder(id).catch(() => {}));
+          SEEDED_VACCINE_IDS.forEach((id) => cancelVaccineReminders(id).catch(() => {}));
         }
         return persisted;
       },
