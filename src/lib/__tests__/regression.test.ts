@@ -3,8 +3,9 @@ import { computeDailyStats } from '../stats';
 import { eventRowFor, sleepDurationMs, sleepRange } from '../eventRow';
 import { resolveSleepRange } from '../sleepEdit';
 import { durationLabel } from '../time';
-import { SEEDED_RECORD_IDS, demoEvents, demoMeasurements, demoVaccines, demoMilestonesUpcoming } from '../demoData';
-import { Caregiver, SleepEvent, TimelineEvent } from '../../types/models';
+import { SEEDED_RECORD_IDS, demoEvents, demoMeasurements, demoVaccines, demoMedications, demoMilestonesUpcoming } from '../demoData';
+import { remindersToArm } from '../bootReminders';
+import { Caregiver, Medication, SleepEvent, TimelineEvent } from '../../types/models';
 
 /**
  * One test per bug that actually reached a real build. These are not written
@@ -96,5 +97,42 @@ describe('seeded sample data must never reach a real parent (build 18)', () => {
 
   it('keeps the upcoming-milestone suggestions, which are not records', () => {
     expect(demoMilestonesUpcoming.some((m) => SEEDED_RECORD_IDS.has(m.id))).toBe(false);
+  });
+});
+
+describe('launch must not arm a reminder nobody set (build 19)', () => {
+  it('arms nothing before the store has rehydrated', () => {
+    // The store's initial state IS the demo seed, and persist fills it in from
+    // AsyncStorage asynchronously. App.tsx armed reminders from that first
+    // snapshot, so every launch scheduled a daily 18:00 "Vitamin D drops"
+    // notification the parent never created.
+    const armed = remindersToArm(false, demoMedications, demoVaccines);
+    expect(armed.medications).toEqual([]);
+    expect(armed.vaccines).toEqual([]);
+  });
+
+  it('never arms a seeded medicine even once hydrated', () => {
+    // Build 18's migration cancels it on the version bump, but the migration
+    // runs once and this code runs on every launch — so the cancel was being
+    // undone the next time the app opened.
+    const armed = remindersToArm(true, demoMedications, demoVaccines);
+    expect(armed.medications.some((m) => m.name === 'Vitamin D drops')).toBe(false);
+    expect(armed.medications).toEqual([]);
+    expect(armed.vaccines).toEqual([]);
+  });
+
+  it('still arms a medicine the parent actually added', () => {
+    const mine: Medication = {
+      id: 'med-1754212800000-421337',
+      babyId: 'b',
+      name: 'Paracetamol',
+      dose: '2.5 ml',
+      schedule: 'daily 8 PM',
+      prn: false,
+      ongoing: true,
+      reminderTime: '20:00',
+    };
+    const armed = remindersToArm(true, [...demoMedications, mine], demoVaccines);
+    expect(armed.medications).toEqual([mine]);
   });
 });

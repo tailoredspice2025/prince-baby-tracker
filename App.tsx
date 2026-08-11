@@ -25,25 +25,38 @@ import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { VoiceListeningSheet } from './src/screens/voice/VoiceListeningSheet';
 import { AppLockScreen } from './src/components/AppLockScreen';
 import { useStore } from './src/lib/store';
+import { remindersToArm } from './src/lib/bootReminders';
 import { ensureNotificationPermissions, scheduleMedicationReminder, scheduleVaccineReminders, setupNotificationChannel } from './src/lib/notifications';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 function AppInner() {
   const theme = useTheme();
-  const medications = useStore((s) => s.medications);
-  const vaccines = useStore((s) => s.vaccines);
 
   useEffect(() => {
     setupNotificationChannel();
-    // reconnect family live-sync if this device is linked (no-op otherwise)
-    useStore.getState().initFamilySync();
-    ensureNotificationPermissions().then((granted) => {
-      if (!granted) return;
-      medications.forEach((m) => scheduleMedicationReminder(m).catch(() => {}));
-      vaccines.forEach((v) => scheduleVaccineReminders(v).catch(() => {}));
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
+    // Everything below reads persisted state, so it must wait for AsyncStorage
+    // to come back. Reading it at first render meant reading the demo seed:
+    // that armed a daily 18:00 "Vitamin D drops" notification on every launch,
+    // and left a linked device unable to reconnect family sync because
+    // familyId was still null.
+    const onReady = () => {
+      const { medications, vaccines, initFamilySync } = useStore.getState();
+      initFamilySync();
+      ensureNotificationPermissions().then((granted) => {
+        if (!granted) return;
+        const arm = remindersToArm(true, medications, vaccines);
+        arm.medications.forEach((m) => scheduleMedicationReminder(m).catch(() => {}));
+        arm.vaccines.forEach((v) => scheduleVaccineReminders(v).catch(() => {}));
+      });
+    };
+
+    if (useStore.persist.hasHydrated()) {
+      onReady();
+      return;
+    }
+    return useStore.persist.onFinishHydration(onReady);
   }, []);
 
   const navTheme = {

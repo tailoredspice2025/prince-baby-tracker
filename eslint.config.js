@@ -10,7 +10,10 @@ const expoConfig = require('eslint-config-expo/flat');
 module.exports = [
   ...expoConfig,
   {
-    ignores: ['node_modules/**', 'ios/**', 'android/**', '.expo/**', 'dist/**', 'scripts/**'],
+    // `tools/` holds build-time Node scripts, not app code — they import devDeps
+    // that the app bundle never sees (playwright-core), which this config's
+    // resolver is right to flag and wrong to fail the app build over.
+    ignores: ['node_modules/**', 'ios/**', 'android/**', '.expo/**', 'dist/**', 'scripts/**', 'tools/**'],
   },
   {
     rules: {

@@ -5,6 +5,57 @@ Summary only. Detail lives in `FEEDBACK.md` (build-15 items) and
 
 ---
 
+## 0 · Where things actually are — re-baselined 3 Aug 2026
+
+| | Build | State |
+| --- | --- | --- |
+| **On the App Store** | 1.0.0 **build 16** | What every user has today |
+| **Uploaded, not submitted** | 1.0.1 **build 18** | Sitting in App Store Connect, never released |
+| **In the repo, not built** | — | Screenshot tool, and the launch-reminder fix below |
+
+**Build 17 was superseded, not shipped.** Two commits titled "Build 17"
+(`a6b13b3`, `6d5e19b` — the banner clearing and settable medicine reminders)
+actually landed *after* the build-17 bump, so they are in build 18. Nothing in
+build 17 reached anyone; treat 16 → 18 as the real jump.
+
+**Everything below §1–§5 that says "done" or "staged" is done in code and NOT
+on any phone.** The live build is 16. That is why the Vitamin D reminder still
+behaves the way it did before those fixes.
+
+### The Vitamin D reminder, precisely
+
+Three separate defects, one symptom:
+
+1. **The banner never clears.** Build 16 asks `medications.find(m => m.ongoing
+   && m.reminderTime)` with no reference to `lastGiven`, so it shows on every
+   launch forever. *Fixed in build 18 — not released.*
+2. **The banner logged the wrong thing.** Its tap called `logQuickEvent
+   ('medicine')` bare, which reuses the previous event's name. *Fixed in build
+   18 — not released.*
+3. **A real 18:00 iOS notification is armed at every launch**, from the seeded
+   `med-1` "Vitamin D drops" nobody created. **Build 18 does NOT fix this** —
+   see below.
+
+### Found while re-baselining: build 18 does not close #3
+
+`App.tsx` armed reminders in a `useEffect` that read `medications` at first
+render. The store's initial state *is* the demo seed and `persist` fills it in
+from AsyncStorage asynchronously, so that snapshot always contains `med-1`,
+whatever is actually stored. Build 18's v3→v4 migration cancels it — but the
+migration runs once, on the version bump, and this effect runs every launch.
+So build 18 cancels the notification on the first launch after updating and
+re-arms it on the second.
+
+Fixed now in `src/lib/bootReminders.ts` + `App.tsx`: nothing is armed until
+`persist.hasHydrated()`, and a seeded id is never armed at all. Three tests in
+`regression.test.ts`. The same gate also fixes family sync failing to
+reconnect on launch, which had the same cause (`familyId` still null).
+
+**This has to go into build 19.** Releasing build 18 alone would not stop the
+6pm alarm.
+
+---
+
 ## 1 · Dates & correcting mistakes — ✅ done in build 16
 *Detail: `FEEDBACK.md` #2, #4*
 
@@ -38,11 +89,14 @@ Summary only. Detail lives in `FEEDBACK.md` (build-15 items) and
 - "Remind me daily" toggle + time picker; medicines tappable to edit or delete
 - Reminders now cancel when switched off, not just reschedule
 
-## 6 · Build 19 — small, and needed because build 18 removes the seed
-*Next release, 1.0.2. Half a day.*
+## 6 · Build 19 — the one to actually release
+*Half a day. Carries everything in build 18 plus the launch-reminder fix.*
 
 Build 18 strips the sample data, which exposes gaps that were previously
 hidden by a seeded Vitamin D medicine always existing.
+
+0. ✅ **Launch no longer arms a reminder nobody set** — done, see §0. This is
+   the item that makes 19 rather than 18 the release worth submitting.
 
 1. **"Add a medicine" and "Log an illness" buttons on Health.** Vaccines have
    two add buttons; the other two sections have none. After the strip those
@@ -139,11 +193,14 @@ scheduled one first.
 
 ---
 
-## Uploaded as 1.0.1 build 18 — awaiting device test, then submit
+## Uploaded as 1.0.1 build 18 — NOT released
 Back control on every modal screen · date pickers readable whatever the phone
 theme · vitamin banner clears once logged · bell opens Health · medicine
-reminders can be set, retimed, added and deleted.
-Ready whenever you want to ship 1.0.1.
+reminders can be set, retimed, added and deleted · 1,565 seeded records
+stripped, including two vaccines marked *given*.
+
+Still sitting in App Store Connect. See §0 — shipping it alone leaves the 6pm
+Vitamin D notification in place, so build 19 is the one to release.
 
 ## Shipped in build 16
 Everything below, plus: dates on every record · measurement history with edit

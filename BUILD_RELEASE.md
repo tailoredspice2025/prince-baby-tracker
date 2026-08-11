@@ -91,7 +91,7 @@ Improvements → Analytics Data → newest `DenBaby-*.ips`) and fix before resub
 
 | # | What bit us | Permanent fix (in place) |
 |---|---|---|
-| 1 | Build number collisions (autoIncrement + remote source BOTH kept producing duplicate numbers across `git reset --hard`) | **Explicit, committed build number.** `autoIncrement` is OFF and `appVersionSource` is `local`; the build number is exactly `ios.buildNumber` in app.json. Before each production build, bump that number in the repo and push — deterministic and visible in git, no magic. Current: **18** for v1.0.1 (build 16 is the live 1.0.0). |
+| 1 | Build number collisions (autoIncrement + remote source BOTH kept producing duplicate numbers across `git reset --hard`) | **Explicit, committed build number.** `autoIncrement` is OFF and `appVersionSource` is `local`; the build number is exactly `ios.buildNumber` in app.json. Before each production build, bump that number in the repo and push — deterministic and visible in git, no magic. Current: **18** for v1.0.1 (build 16 is the live 1.0.0). Build 17 was bumped but superseded before submission — nothing shipped from it. |
 | 2 | — | (see #1) |
 | 3 | `git reset --hard` discarded local auto-bumps → duplicate numbers | committed explicit number survives reset — it IS the repo value |
 | 4 | Stale local `app.json`/`eas.json` → repeated merge conflicts | always `git reset --hard origin/<branch>` before building (golden rule 1) |
@@ -100,6 +100,7 @@ Improvements → Analytics Data → newest `DenBaby-*.ips`) and fix before resub
 | 7 | Push-notification prompt each build | saved "No, don't ask again" to eas.json |
 | 8 | Build 11 **crashed on sleep start/stop** — `HomeScreen` returned early above four `useMemo`s, so flipping the night-view flag changed the hook count mid-render | ESLint + `react-hooks/rules-of-hooks` in `npm run verify`, wired into the pre-build checklist; `HomeScreen` is now a pure switch between `DayHomeView` / `NightHomeView` so no hook can sit under a conditional return; plus a root `ErrorBoundary` so a render error degrades to a recoverable screen instead of killing the app |
 | 9 | Bug only fired **after 20:00**, so daytime testing missed it entirely | `RELEASE_QA.md` §1b "time-dependent UI" — clock-gated behaviour is tested inside its window |
+| 10 | A daily 18:00 notification nobody set, armed on **every launch** from the demo seed. `App.tsx` read `medications` at first render, before `persist` had rehydrated, so the snapshot was always the seed regardless of what was stored — and the migration that cancels it runs once, on the version bump, while the effect runs every time | `src/lib/bootReminders.ts`: nothing is armed until `persist.hasHydrated()`, and a seeded id is never armed at all. Three tests in `regression.test.ts`. **Rule: no launch-time code may read persisted state before hydration** — the initial state is the demo seed, so anything that does is reading fabricated data |
 | 10 | Sleep stored start+end but showed one timestamp and edited only the start, silently rewriting the duration behind the daily total and trend chart | `RELEASE_QA.md` §1b round-trip completeness matrix: every stored field visible and editable, and any edit touching one input of a derived value must touch all of them |
 
 ---
@@ -114,6 +115,9 @@ Improvements → Analytics Data → newest `DenBaby-*.ips`) and fix before resub
 - **1.0.0 (build 16) is LIVE on the App Store.** Once a version is released you
   cannot attach another build to it — the next release needs its own version
   record. So 1.0.1 = build 18, created in App Store Connect via **+ Version**.
+- **Build 18 is uploaded but was never submitted, and should not be** — it
+  leaves defect #10 in place, so the 6pm Vitamin D notification survives the
+  update. Release build 19 instead; it carries everything 18 has.
 - Bump `version` in app.json the same way as the build number: explicitly, in
   the repo, committed. Never by hand on the Mac at build time.
 - **Family Sync = 1.1** later: bump `version` in app.json to `1.1.0`, set the
