@@ -200,10 +200,10 @@ const b = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' })
 fs.mkdirSync('out2', { recursive: true });
 for (const [dev, w, h, s, wrapFn] of [
   ['iphone', 414, 896, 3, (x) => x],
-  // as the app behaves today on iPad: the phone layout stretched full width
-  ['ipad', 1024, 1366, 2, (x) => x],
-  // proposed for build 19: centred column, scaled up for tablet reading distance
-  ['ipadNew', 1024, 1366, 2, (x) => `<div style="zoom:1.24"><div style="max-width:776px;margin:0 auto">${x}</div></div>`],
+  // Matches src/theme/layout.ts: at or above TABLET_BREAKPOINT every scroll
+  // view is capped at CONTENT_MAX_WIDTH and centred. Keep these two in step —
+  // a screenshot showing a layout the app does not have is a 2.3.3 rejection.
+  ['ipad', 1024, 1366, 2, (x) => `<div style="max-width:700px;margin:0 auto">${x}</div>`],
 ]) {
   const p = await b.newPage({ viewport: { width: w, height: h }, deviceScaleFactor: s });
   for (const [n, html] of Object.entries(SCREENS(dev === 'iphone' ? 4 : 8))) {

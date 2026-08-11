@@ -2,6 +2,7 @@ import React from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../theme/ThemeProvider';
+import { useContentStyle } from '../theme/layout';
 import { ModalHeader } from './ModalHeader';
 
 /**
@@ -28,11 +29,12 @@ export function FormScreen({
   title?: string;
 }) {
   const theme = useTheme();
+  const contentStyle = useContentStyle();
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }} edges={['top', 'bottom']}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView
-          contentContainerStyle={{ padding: 20, paddingBottom: 16, flexGrow: 1 }}
+          contentContainerStyle={[{ padding: 20, paddingBottom: 16, flexGrow: 1 }, contentStyle]}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="interactive"
         >

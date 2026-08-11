@@ -11,6 +11,7 @@ import { Segmented } from '../../components/Segmented';
 import { useStore } from '../../lib/store';
 import { FEATURES } from '../../lib/features';
 import { useTheme } from '../../theme/ThemeProvider';
+import { useContentStyle } from '../../theme/layout';
 import { radii, pastels, PastelKey } from '../../theme/tokens';
 import { ageString } from '../../lib/time';
 import { exportPediatricianPdf } from '../../lib/pdfExport';
@@ -18,6 +19,7 @@ import { BabyAvatar } from '../../components/BabyAvatar';
 
 export function ProfileScreen() {
   const theme = useTheme();
+  const contentStyle = useContentStyle();
   const navigation = useNavigation<any>();
   const baby = useStore((s) => s.activeBaby());
   const babies = useStore((s) => s.babies);
@@ -64,7 +66,7 @@ export function ProfileScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }} edges={['top']}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 140 }} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={[{ padding: 20, paddingBottom: 140 }, contentStyle]} keyboardShouldPersistTaps="handled">
         <AppText weight={900} size={26} color={theme.ink} style={{ marginBottom: 16 }}>
           My babies
         </AppText>

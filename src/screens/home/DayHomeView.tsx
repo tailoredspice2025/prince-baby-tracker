@@ -10,8 +10,10 @@ import { PickerType, QuickLogPicker } from '../../components/QuickLogPicker';
 import { TimelineRow } from '../../components/TimelineRow';
 import { VoiceBar } from '../../components/VoiceBar';
 import { useStore } from '../../lib/store';
+import { defaultMedicine } from '../../lib/medicinePick';
 import { FEATURES } from '../../lib/features';
 import { useTheme } from '../../theme/ThemeProvider';
+import { useContentStyle } from '../../theme/layout';
 import { ageString, clockTime, durationLabel, relativeTime } from '../../lib/time';
 import { eventRowFor } from '../../lib/eventRow';
 import { DiaperEvent, FeedEvent, MedicineEvent, SleepEvent, TimelineEvent } from '../../types/models';
@@ -44,6 +46,7 @@ const EVENT_EMOJI: Record<TimelineEvent['type'], string> = {
  */
 export function DayHomeView() {
   const theme = useTheme();
+  const contentStyle = useContentStyle();
   const navigation = useNavigation<any>();
   const baby = useStore((s) => s.activeBaby());
   const events = useStore((s) => s.events);
@@ -89,6 +92,7 @@ export function DayHomeView() {
   const solids = lastByType.solids as FeedEvent | undefined;
   const pump = lastByType.pump as FeedEvent | undefined;
   const medicine = lastByType.medicine as MedicineEvent | undefined;
+  const medicineDefault = useMemo(() => defaultMedicine(babyEvents, medications, baby.id), [babyEvents, medications, baby.id]);
   const lastSleep = lastByType.sleep as SleepEvent | undefined;
 
   const sleepElapsedMs = runningSleepSession
@@ -132,7 +136,7 @@ export function DayHomeView() {
   return (
     <View style={{ flex: 1, backgroundColor: theme.bg }}>
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
-        <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 140 }}>
+        <ScrollView contentContainerStyle={[{ padding: 20, paddingBottom: 140 }, contentStyle]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 }}>
             <BabyAvatar baby={baby} size={46} fontSize={20} />
             <View style={{ flex: 1 }}>
@@ -253,8 +257,17 @@ export function DayHomeView() {
                 pastelKey={EVENT_PASTEL.medicine}
                 icon={<MedicineIcon />}
                 title="Medicine"
-                caption={medicine ? `${medicine.name} · ${relativeTime(medicine.time, now)} · hold to change` : 'Tap to log · hold to choose'}
-                onPress={() => logQuickEvent('medicine')}
+                caption={
+                  medicine
+                    ? `${medicine.name} · ${relativeTime(medicine.time, now)} · hold to change`
+                    : medicineDefault
+                    ? `${medicineDefault.name} · tap to log · hold to choose`
+                    : 'Add a medicine to start logging'
+                }
+                // With nothing to repeat, the tile opens the form instead of
+                // inventing "Vitamin D drops" — which is what it used to log
+                // for a parent who had only ever added Paracetamol.
+                onPress={() => (medicineDefault ? logQuickEvent('medicine') : navigation.navigate('MedicineForm'))}
                 onLongPress={() => setPickerType('medicine')}
               />
             </View>

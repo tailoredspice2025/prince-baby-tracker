@@ -52,6 +52,7 @@ import {
 } from './firestoreSync';
 import { pendingIds, startFamilySync, stopFamilySync, syncDelete, syncWrite, uploadLocalData } from './familySync';
 import { eventTime } from './eventRow';
+import { defaultMedicine } from './medicinePick';
 import {
   cancelFeedReminder,
   cancelMedicationReminder,
@@ -351,11 +352,16 @@ export const useStore = create<AppState>()(
       get().pushToast({ message: `Pump · ${quantityMl} ml logged`, onUndo: () => set((s) => ({ events: s.events.filter((e) => e.id !== ev.id) })) });
     } else if (type === 'medicine') {
       // Repeats whatever was last given rather than always Vitamin D, the same
-      // way bottle amounts repeat — and it stays editable afterwards.
+      // way bottle amounts repeat — and it stays editable afterwards. With
+      // nothing to repeat it logs nothing: inventing a medicine writes a drug
+      // the baby never had into a record that "Export for pediatrician" prints.
       const s = get();
-      const last = s.events.find((e) => e.babyId === babyId && e.type === 'medicine') as MedicineEvent | undefined;
-      const name = opts?.name ?? last?.name ?? 'Vitamin D drops';
-      const dose = opts?.dose ?? (opts?.name ? '' : last?.dose ?? '400 IU');
+      const pick = opts?.name ? { name: opts.name, dose: opts.dose ?? '' } : defaultMedicine(s.events, s.medications, babyId);
+      if (!pick) {
+        get().pushToast({ message: 'Add a medicine first — Health › Add a medicine' });
+        return;
+      }
+      const { name, dose } = pick;
       const ev: MedicineEvent = { id: uid('ev'), babyId, type: 'medicine', time: now, name, dose, loggedBy, inputMethod: 'tap' };
       // Mark the matching ongoing medication as given, so the "due today"
       // banner on Home actually clears. Logging a dose used to write the event

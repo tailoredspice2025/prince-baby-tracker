@@ -6,6 +6,7 @@ import { VoiceBar } from '../../components/VoiceBar';
 import { useStore } from '../../lib/store';
 import { FEATURES } from '../../lib/features';
 import { useTheme } from '../../theme/ThemeProvider';
+import { useContentStyle } from '../../theme/layout';
 import { ageString, clockTime, durationLabel, relativeTime } from '../../lib/time';
 import { FeedEvent, DiaperEvent } from '../../types/models';
 import { nightColors } from '../../theme/tokens';
@@ -17,6 +18,7 @@ function pad(n: number) {
 
 export function NightHomeView() {
   const theme = useTheme();
+  const contentStyle = useContentStyle();
   const baby = useStore((s) => s.activeBaby());
   const runningSleepSession = useStore((s) => s.runningSleepSession);
   const toggleSleep = useStore((s) => s.toggleSleep);
@@ -43,7 +45,7 @@ export function NightHomeView() {
   return (
     <View style={{ flex: 1, backgroundColor: theme.bg }}>
       <SafeAreaView style={{ flex: 1 }} edges={['top']}>
-        <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 140 }}>
+        <ScrollView contentContainerStyle={[{ padding: 20, paddingBottom: 140 }, contentStyle]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 20 }}>
             <BabyAvatar baby={baby} size={46} fontSize={20} bg={nightColors.avatarBg} color={nightColors.lavenderAccent} />
             <View style={{ flex: 1 }}>

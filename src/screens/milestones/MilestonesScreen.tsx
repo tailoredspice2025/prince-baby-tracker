@@ -6,6 +6,7 @@ import { AppText } from '../../components/AppText';
 import { SmallPlusIcon } from '../../components/icons';
 import { useStore } from '../../lib/store';
 import { useTheme } from '../../theme/ThemeProvider';
+import { useContentStyle } from '../../theme/layout';
 import { radii } from '../../theme/tokens';
 import { pastels, PastelKey } from '../../theme/tokens';
 
@@ -13,6 +14,7 @@ const CARD_COLORS: PastelKey[] = ['peach', 'lavender', 'sky', 'sage', 'rose', 's
 
 export function MilestonesScreen() {
   const theme = useTheme();
+  const contentStyle = useContentStyle();
   const navigation = useNavigation<any>();
   const baby = useStore((s) => s.activeBaby());
   const achieved = useStore((s) => s.milestonesAchieved).filter((m) => m.babyId === baby.id);
@@ -20,7 +22,7 @@ export function MilestonesScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }} edges={['top']}>
-      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60 }}>
+      <ScrollView contentContainerStyle={[{ padding: 20, paddingBottom: 60 }, contentStyle]}>
         <AppText weight={900} size={26} color={theme.ink} style={{ marginBottom: 4 }}>
           Milestones
         </AppText>

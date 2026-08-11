@@ -10,8 +10,8 @@ Summary only. Detail lives in `FEEDBACK.md` (build-15 items) and
 | | Build | State |
 | --- | --- | --- |
 | **On the App Store** | 1.0.0 **build 16** | What every user has today |
-| **Uploaded, not submitted** | 1.0.1 **build 18** | Sitting in App Store Connect, never released |
-| **In the repo, not built** | — | Screenshot tool, and the launch-reminder fix below |
+| **Uploaded, not submitted** | 1.0.1 **build 18** | Sitting in App Store Connect, never released — **do not submit** |
+| **Ready to build** | 1.0.1 **build 19** | Everything 18 has, plus §6 below. This is the one to ship |
 
 **Build 17 was superseded, not shipped.** Two commits titled "Build 17"
 (`a6b13b3`, `6d5e19b` — the banner clearing and settable medicine reminders)
@@ -51,8 +51,12 @@ Fixed now in `src/lib/bootReminders.ts` + `App.tsx`: nothing is armed until
 `regression.test.ts`. The same gate also fixes family sync failing to
 reconnect on launch, which had the same cause (`familyId` still null).
 
-**This has to go into build 19.** Releasing build 18 alone would not stop the
+**This is in build 19.** Releasing build 18 alone would not have stopped the
 6pm alarm.
+
+**Version stays 1.0.1.** A version number can only be reused while it is
+unreleased, and 1.0.1 never was — so build 19 attaches to the existing 1.0.1
+record in App Store Connect. No need to burn 1.0.2.
 
 ---
 
@@ -89,38 +93,37 @@ reconnect on launch, which had the same cause (`familyId` still null).
 - "Remind me daily" toggle + time picker; medicines tappable to edit or delete
 - Reminders now cancel when switched off, not just reschedule
 
-## 6 · Build 19 — the one to actually release
-*Half a day. Carries everything in build 18 plus the launch-reminder fix.*
+## 6 · Build 19 — ✅ done, ready to build
+*Everything build 18 has, plus the items below.*
 
-Build 18 strips the sample data, which exposes gaps that were previously
+Build 18 strips the sample data, which exposed gaps that were previously
 hidden by a seeded Vitamin D medicine always existing.
 
-0. ✅ **Launch no longer arms a reminder nobody set** — done, see §0. This is
-   the item that makes 19 rather than 18 the release worth submitting.
+0. ✅ **Launch no longer arms a reminder nobody set** — see §0. The item that
+   makes 19 rather than 18 the release worth submitting.
+1. ✅ **"Add an illness" and "Add a medicine" buttons on Health.** Vaccines had
+   two ways in and the other two sections had none; after the strip those
+   sections are empty with no visible route out. All three now share one
+   `AddButton`, and each section has an empty state that says so.
+2. ✅ **Home tile stops inventing a medicine.** `defaultMedicine()` repeats the
+   last dose given, or a single ongoing medicine — and with nothing to repeat
+   the tile opens the form instead of logging a hardcoded Vitamin D.
+3. ✅ **Long-press picker lists YOUR medicines**, ongoing first, with "Add a
+   medicine" underneath. A parent giving B, C and D separately can now choose;
+   the tile refuses to guess between them.
+4. ✅ **Sickness rows tappable to edit and delete.** `SicknessFormScreen` takes
+   an `episodeId`, and gained a "Better now" toggle that closes the episode.
+   `updateSicknessEpisode`/`deleteSicknessEpisode` finally have a caller.
+5. ✅ **`+` sheet labels match the screens they open** — all five read "Add …",
+   and the two form titles were changed to match rather than the other way
+   round.
+6. ✅ **iPad layout.** `src/theme/layout.ts`: at or above 768pt every scroll
+   view is capped at 700pt and centred. Tiles were stretching to ~480pt each
+   with the text still phone-sized. Store screenshots re-rendered to match —
+   `tools/store-screenshots/`.
 
-1. **"Add a medicine" and "Log an illness" buttons on Health.** Vaccines have
-   two add buttons; the other two sections have none. After the strip those
-   sections are empty with no way in — the only route is the **+** tab button,
-   which nobody looks for while standing in the section.
-2. **Home tile stops inventing a medicine.** `logQuickEvent('medicine')` falls
-   back to a hardcoded `'Vitamin D drops' / '400 IU'` when no dose has been
-   logged before. A new user who adds "Paracetamol" then taps the tile gets a
-   vitamin they never mentioned.
-3. **Long-press picker lists YOUR medicines**, not the hardcoded five. This is
-   what makes multiple vitamins usable — a parent giving B, C and D separately
-   currently cannot choose between them.
-4. **Sickness rows tappable to edit and delete.** `updateSicknessEpisode` and
-   `deleteSicknessEpisode` exist in the store with no screen calling them.
-5. **`+` sheet labels match the screens they open.** It currently reads "Add
-   measurement · Log vaccine · Log sickness · Log medicine · Add memory" —
-   mixed verbs, and "Log medicine" opens the screen that *creates* a medicine.
-6. **iPad layout.** `supportsTablet` is on, so the listing needs iPad
-   screenshots, but the app just stretches the phone layout: each tile becomes
-   ~480pt wide, the text stays phone-sized, and half the screen is empty. Fix
-   is small — cap the content at ~776pt centred and scale type and spacing by
-   ~1.25 above the tablet breakpoint. Until it ships, only the
-   `ipad-13-current` screenshots can be uploaded (see
-   `tools/store-screenshots/README.md`).
+**Not done, deliberately:** temperature is still glued into the sickness title
+string. That is a model change and belongs with §7, not a UI build.
 
 ## 7 · Health redesign — the model change
 *After 19. Do this BEFORE Family Sync — sync carries whatever model exists, and
@@ -193,7 +196,7 @@ scheduled one first.
 
 ---
 
-## Uploaded as 1.0.1 build 18 — NOT released
+## Uploaded as 1.0.1 build 18 — NOT released, superseded by 19
 Back control on every modal screen · date pickers readable whatever the phone
 theme · vitamin banner clears once logged · bell opens Health · medicine
 reminders can be set, retimed, added and deleted · 1,565 seeded records

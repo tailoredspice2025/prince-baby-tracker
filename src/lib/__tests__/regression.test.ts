@@ -5,6 +5,7 @@ import { resolveSleepRange } from '../sleepEdit';
 import { durationLabel } from '../time';
 import { SEEDED_RECORD_IDS, demoEvents, demoMeasurements, demoVaccines, demoMedications, demoMilestonesUpcoming } from '../demoData';
 import { remindersToArm } from '../bootReminders';
+import { defaultMedicine, medicineOptions } from '../medicinePick';
 import { Caregiver, Medication, SleepEvent, TimelineEvent } from '../../types/models';
 
 /**
@@ -134,5 +135,52 @@ describe('launch must not arm a reminder nobody set (build 19)', () => {
     };
     const armed = remindersToArm(true, [...demoMedications, mine], demoVaccines);
     expect(armed.medications).toEqual([mine]);
+  });
+});
+
+describe('the Medicine tile must not invent a medicine (build 19)', () => {
+  const med = (id: string, name: string, ongoing: boolean): Medication => ({
+    id,
+    babyId: 'b',
+    name,
+    dose: '2.5 ml',
+    schedule: ongoing ? 'daily' : 'as needed',
+    prn: !ongoing,
+    ongoing,
+  });
+  const dose = (name: string): TimelineEvent =>
+    ({ id: 'ev-x', babyId: 'b', type: 'medicine', time: at(30, 9).toISOString(), name, dose: '400 IU', loggedBy: 'cg-me', inputMethod: 'tap' }) as TimelineEvent;
+
+  it('logs nothing when the parent has added no medicine', () => {
+    // It used to fall back to a hardcoded 'Vitamin D drops' / '400 IU'. Once
+    // build 18 strips the seed, a parent who only ever added Paracetamol would
+    // get a vitamin they never mentioned written into the record that
+    // "Export for pediatrician" prints.
+    expect(defaultMedicine([], [], 'b')).toBeNull();
+  });
+
+  it('never falls back to Vitamin D for someone who takes something else', () => {
+    const pick = defaultMedicine([], [med('med-a', 'Paracetamol', true)], 'b');
+    expect(pick).toEqual({ name: 'Paracetamol', dose: '2.5 ml' });
+  });
+
+  it('repeats the last dose given, like bottle amounts do', () => {
+    const pick = defaultMedicine([dose('Calpol')], [med('med-a', 'Paracetamol', true)], 'b');
+    expect(pick?.name).toBe('Calpol');
+  });
+
+  it('refuses to guess between several vitamins', () => {
+    // B, C and D given separately: picking one of them silently would log the
+    // wrong drug, so the parent is sent to the picker instead.
+    const meds = [med('med-b', 'Vitamin B', true), med('med-c', 'Vitamin C', true), med('med-d', 'Vitamin D', true)];
+    expect(defaultMedicine([], meds, 'b')).toBeNull();
+    expect(medicineOptions(meds, 'b').map((m) => m.name)).toEqual(['Vitamin B', 'Vitamin C', 'Vitamin D']);
+  });
+
+  it('offers the parent their own medicines, not five hardcoded names', () => {
+    const meds = [med('med-old', 'Amoxicillin', false), med('med-now', 'Vitamin D', true)];
+    // ongoing first — a daily vitamin is likelier than a finished course
+    expect(medicineOptions(meds, 'b').map((m) => m.name)).toEqual(['Vitamin D', 'Amoxicillin']);
+    expect(medicineOptions(meds, 'other-baby')).toEqual([]);
   });
 });

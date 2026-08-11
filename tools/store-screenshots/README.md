@@ -27,11 +27,14 @@ Chromium is at `/opt/pw-browsers/chromium` in the build container; change
 | Folder | Size | Notes |
 | --- | --- | --- |
 | `shots/iphone-6.5` | 1242 × 2688 | 6.5" slot; also accepted for 6.7"/6.9" |
-| `shots/ipad-13-current` | 2048 × 2732 | how the app looks on iPad **today** |
-| `shots/ipad-13-proposed` | 2048 × 2732 | the centred-column tablet layout, **not shipped** |
+| `shots/ipad-13` | 2048 × 2732 | 13" iPad slot |
 
-`ipad-13-proposed` must not be uploaded until the tablet layout actually ships
-— screenshots that show a layout the app does not have are a 2.3.3 rejection.
+The iPad renders wrap the page in a 700px centred column. That is not
+decoration — it mirrors `src/theme/layout.ts`, where every scroll view is
+capped at `CONTENT_MAX_WIDTH` and centred at or above `TABLET_BREAKPOINT`.
+**Change one and change the other.** Before build 19 the app had no width cap
+at all, so the tiles stretched to ~480pt each; a screenshot showing a layout
+the app does not have is a 2.3.3 rejection.
 
 ## Keeping it honest
 

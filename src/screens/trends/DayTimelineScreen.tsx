@@ -7,6 +7,7 @@ import { TimelineRow } from '../../components/TimelineRow';
 import { ChevronLeftIcon } from '../../components/icons';
 import { useStore } from '../../lib/store';
 import { useTheme } from '../../theme/ThemeProvider';
+import { useContentStyle } from '../../theme/layout';
 import { PastelKey, pastels, radii } from '../../theme/tokens';
 import { eventRowFor, eventTime } from '../../lib/eventRow';
 import { computeDailyStats, emptyDayStats, formatHours, formatMl, localDayKey } from '../../lib/stats';
@@ -32,6 +33,7 @@ const EVENT_EMOJI: Record<TimelineEvent['type'], string> = {
 /** Full editable log for one calendar day, opened from Trends. */
 export function DayTimelineScreen() {
   const theme = useTheme();
+  const contentStyle = useContentStyle();
   const navigation = useNavigation<any>();
   const route = useRoute<RouteProp<{ DayLog: { day: string } }, 'DayLog'>>();
   const day = route.params?.day ?? localDayKey(new Date());
@@ -82,7 +84,7 @@ export function DayTimelineScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }} edges={['top']}>
-      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 140 }}>
+      <ScrollView contentContainerStyle={[{ padding: 20, paddingBottom: 140 }, contentStyle]}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 4 }}>
           <Pressable
             onPress={() => navigation.goBack()}

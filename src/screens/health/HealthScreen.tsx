@@ -6,6 +6,7 @@ import { AppText } from '../../components/AppText';
 import { AlertTriangleIcon, CheckIcon, DueClockIcon } from '../../components/icons';
 import { useStore } from '../../lib/store';
 import { useTheme } from '../../theme/ThemeProvider';
+import { useContentStyle } from '../../theme/layout';
 import { radii } from '../../theme/tokens';
 
 function SectionCard({ children }: { children: React.ReactNode }) {
@@ -14,6 +15,48 @@ function SectionCard({ children }: { children: React.ReactNode }) {
     <View style={{ backgroundColor: theme.surface, borderRadius: radii.cardLg, overflow: 'hidden', marginBottom: 18, ...theme.cardShadow }}>
       {children}
     </View>
+  );
+}
+
+/** Every section needs its own way in. Vaccines had two add buttons and the
+ * other two sections had none, which was survivable only while the demo seed
+ * guaranteed both were non-empty — after build 18 strips it, a new parent
+ * lands on an empty section with no visible route out of it. */
+function AddButton({ emoji, label, onPress }: { emoji: string; label: string; onPress: () => void }) {
+  const theme = useTheme();
+  return (
+    <Pressable
+      onPress={onPress}
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 8,
+        backgroundColor: theme.surface,
+        borderWidth: 2,
+        borderColor: '#E0CDB4',
+        borderStyle: 'dashed',
+        borderRadius: radii.cardLg,
+        paddingVertical: 14,
+        marginBottom: 18,
+      }}
+    >
+      <AppText size={15}>{emoji}</AppText>
+      <AppText weight={800} size={13.5} color="#A98F73">
+        {label}
+      </AppText>
+    </Pressable>
+  );
+}
+
+function EmptyRow({ text }: { text: string }) {
+  const theme = useTheme();
+  return (
+    <Row last>
+      <AppText weight={600} size={13} color={theme.textSecondary}>
+        {text}
+      </AppText>
+    </Row>
   );
 }
 
@@ -38,6 +81,7 @@ function Row({ children, last }: { children: React.ReactNode; last?: boolean }) 
 
 export function HealthScreen() {
   const theme = useTheme();
+  const contentStyle = useContentStyle();
   const navigation = useNavigation<any>();
   const baby = useStore((s) => s.activeBaby());
   const vaccines = useStore((s) => s.vaccines).filter((v) => v.babyId === baby.id);
@@ -51,7 +95,7 @@ export function HealthScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }} edges={['top']}>
-      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 140 }}>
+      <ScrollView contentContainerStyle={[{ padding: 20, paddingBottom: 140 }, contentStyle]}>
         <AppText weight={900} size={26} color={theme.ink} style={{ marginBottom: 16 }}>
           Health
         </AppText>
@@ -72,28 +116,9 @@ export function HealthScreen() {
         <AppText weight={900} size={15} color={theme.ink} style={{ marginBottom: 10 }}>
           Vaccines
         </AppText>
-        <Pressable
-          onPress={() => navigation.navigate('VaccineForm', { mode: 'appointment' })}
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 8,
-            backgroundColor: theme.surface,
-            borderWidth: 2,
-            borderColor: '#E0CDB4',
-            borderStyle: 'dashed',
-            borderRadius: radii.cardLg,
-            paddingVertical: 14,
-            marginBottom: 12,
-          }}
-        >
-          <AppText size={15}>📅</AppText>
-          <AppText weight={800} size={13.5} color="#A98F73">
-            Add vaccine appointment
-          </AppText>
-        </Pressable>
+        <AddButton emoji="📅" label="Add vaccine appointment" onPress={() => navigation.navigate('VaccineForm', { mode: 'appointment' })} />
         <SectionCard>
+          {vaccines.length === 0 && <EmptyRow text="No vaccines recorded yet" />}
           {vaccines.map((v, i) => {
             const done = v.status === 'done';
             const meta = done
@@ -135,9 +160,12 @@ export function HealthScreen() {
           Sickness &amp; symptoms
         </AppText>
         <SectionCard>
+          {/* Tap to edit. `updateSicknessEpisode` and `deleteSicknessEpisode`
+              have been in the store since build 16 with no screen calling
+              them, so a mistyped temperature was permanent. */}
           {sickness.map((s, i) => (
             <Row key={s.id} last={i === sickness.length - 1}>
-              <View style={{ flex: 1 }}>
+              <Pressable onPress={() => navigation.navigate('SicknessForm', { episodeId: s.id })} style={{ flex: 1 }}>
                 <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' }}>
                   <AppText weight={800} size={14.5} color={theme.ink}>
                     {s.emoji} {s.title}
@@ -147,22 +175,15 @@ export function HealthScreen() {
                     {s.endDate ? ` – ${new Date(s.endDate).toLocaleDateString([], { day: 'numeric' })}` : ''}
                   </AppText>
                 </View>
-                {!!s.notes && (
-                  <AppText weight={600} size={12} color={theme.textSecondary}>
-                    {s.notes}
-                  </AppText>
-                )}
-              </View>
+                <AppText weight={600} size={12} color={theme.textSecondary}>
+                  {[s.notes, s.resolved ? 'resolved' : 'ongoing', 'tap to edit'].filter(Boolean).join(' · ')}
+                </AppText>
+              </Pressable>
             </Row>
           ))}
-          {sickness.length === 0 && (
-            <Row last>
-              <AppText weight={600} size={13} color={theme.textSecondary}>
-                No episodes logged
-              </AppText>
-            </Row>
-          )}
+          {sickness.length === 0 && <EmptyRow text="No illnesses recorded yet" />}
         </SectionCard>
+        <AddButton emoji="🌡️" label="Add an illness" onPress={() => navigation.navigate('SicknessForm')} />
 
         <AppText weight={900} size={15} color={theme.ink} style={{ marginBottom: 10 }}>
           Medicine
@@ -171,6 +192,7 @@ export function HealthScreen() {
           {/* Tap to edit — dose, schedule, reminder time, or delete. The store
               has had updateMedication/deleteMedication since build 16 with no
               screen calling them. */}
+          {medications.length === 0 && <EmptyRow text="No medicines added yet" />}
           {medications.map((m, i) => (
             <Row key={m.id} last={i === medications.length - 1}>
               <Pressable
@@ -200,6 +222,7 @@ export function HealthScreen() {
             </Row>
           ))}
         </SectionCard>
+        <AddButton emoji="💊" label="Add a medicine" onPress={() => navigation.navigate('MedicineForm')} />
       </ScrollView>
     </SafeAreaView>
   );

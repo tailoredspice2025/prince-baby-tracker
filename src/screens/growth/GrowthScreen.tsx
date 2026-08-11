@@ -9,6 +9,7 @@ import { GrowthChart } from '../../components/GrowthChart';
 import { PlusIcon } from '../../components/icons';
 import { useStore } from '../../lib/store';
 import { useTheme } from '../../theme/ThemeProvider';
+import { useContentStyle } from '../../theme/layout';
 import { radii } from '../../theme/tokens';
 import { clockTime } from '../../lib/time';
 
@@ -22,6 +23,7 @@ const CONFIG: Record<MeasureKey, { label: string; unit: string; valueOf: (m: any
 
 export function GrowthScreen() {
   const theme = useTheme();
+  const contentStyle = useContentStyle();
   const navigation = useNavigation<any>();
   const baby = useStore((s) => s.activeBaby());
   const measurements = useStore((s) => s.measurements);
@@ -54,7 +56,7 @@ export function GrowthScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }} edges={['top']}>
-      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 140 }}>
+      <ScrollView contentContainerStyle={[{ padding: 20, paddingBottom: 140 }, contentStyle]}>
         <AppText weight={900} size={26} color={theme.ink} style={{ marginBottom: 16 }}>
           Growth
         </AppText>

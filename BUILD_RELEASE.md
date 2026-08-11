@@ -91,7 +91,7 @@ Improvements → Analytics Data → newest `DenBaby-*.ips`) and fix before resub
 
 | # | What bit us | Permanent fix (in place) |
 |---|---|---|
-| 1 | Build number collisions (autoIncrement + remote source BOTH kept producing duplicate numbers across `git reset --hard`) | **Explicit, committed build number.** `autoIncrement` is OFF and `appVersionSource` is `local`; the build number is exactly `ios.buildNumber` in app.json. Before each production build, bump that number in the repo and push — deterministic and visible in git, no magic. Current: **18** for v1.0.1 (build 16 is the live 1.0.0). Build 17 was bumped but superseded before submission — nothing shipped from it. |
+| 1 | Build number collisions (autoIncrement + remote source BOTH kept producing duplicate numbers across `git reset --hard`) | **Explicit, committed build number.** `autoIncrement` is OFF and `appVersionSource` is `local`; the build number is exactly `ios.buildNumber` in app.json. Before each production build, bump that number in the repo and push — deterministic and visible in git, no magic. Current: **19** for v1.0.1 (build 16 is the live 1.0.0). Build 17 was bumped but superseded before submission — nothing shipped from it. |
 | 2 | — | (see #1) |
 | 3 | `git reset --hard` discarded local auto-bumps → duplicate numbers | committed explicit number survives reset — it IS the repo value |
 | 4 | Stale local `app.json`/`eas.json` → repeated merge conflicts | always `git reset --hard origin/<branch>` before building (golden rule 1) |
@@ -118,6 +118,9 @@ Improvements → Analytics Data → newest `DenBaby-*.ips`) and fix before resub
 - **Build 18 is uploaded but was never submitted, and should not be** — it
   leaves defect #10 in place, so the 6pm Vitamin D notification survives the
   update. Release build 19 instead; it carries everything 18 has.
+- **1.0.1 stays 1.0.1 for build 19.** A version number is only locked once the
+  version is *released*, and 1.0.1 never was — so build 19 attaches to the
+  existing 1.0.1 record. Do not create 1.0.2.
 - Bump `version` in app.json the same way as the build number: explicitly, in
   the repo, committed. Never by hand on the Mac at build time.
 - **Family Sync = 1.1** later: bump `version` in app.json to `1.1.0`, set the

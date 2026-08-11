@@ -88,7 +88,7 @@ export function MedicineFormScreen() {
 
   return (
     <FormScreen
-      title={editingId ? 'Edit medicine' : 'Log medicine'}
+      title={editingId ? 'Edit medicine' : 'Add medicine'}
       actions={
         <View style={{ gap: 10 }}>
           <PrimaryButton label={editingId ? 'Save changes' : 'Save to health record'} onPress={save} />

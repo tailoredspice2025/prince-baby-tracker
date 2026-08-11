@@ -8,9 +8,9 @@ import { navigate } from '../navigation/navigationRef';
 
 const ITEMS: { label: string; emoji: string; route: string }[] = [
   { label: 'Add measurement', emoji: '📏', route: 'AddMeasurement' },
-  { label: 'Log vaccine', emoji: '💉', route: 'VaccineForm' },
-  { label: 'Log sickness', emoji: '🌡️', route: 'SicknessForm' },
-  { label: 'Log medicine', emoji: '💊', route: 'MedicineForm' },
+  { label: 'Add vaccine', emoji: '💉', route: 'VaccineForm' },
+  { label: 'Add illness', emoji: '🌡️', route: 'SicknessForm' },
+  { label: 'Add medicine', emoji: '💊', route: 'MedicineForm' },
   { label: 'Add memory', emoji: '✨', route: 'AddMilestone' },
 ];
 

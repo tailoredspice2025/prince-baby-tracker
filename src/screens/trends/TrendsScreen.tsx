@@ -9,6 +9,7 @@ import { TrendBarChart } from '../../components/TrendBarChart';
 import { ChevronLeftIcon } from '../../components/icons';
 import { useStore } from '../../lib/store';
 import { useTheme } from '../../theme/ThemeProvider';
+import { useContentStyle } from '../../theme/layout';
 import { radii } from '../../theme/tokens';
 import {
   DayStats,
@@ -116,6 +117,7 @@ const RANGE_OPTIONS: { key: Range; label: string }[] = [
 
 export function TrendsScreen() {
   const theme = useTheme();
+  const contentStyle = useContentStyle();
   const navigation = useNavigation<any>();
   const baby = useStore((s) => s.activeBaby());
   const events = useStore((s) => s.events);
@@ -185,7 +187,7 @@ export function TrendsScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.bg }} edges={['top']}>
-      <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 140 }}>
+      <ScrollView contentContainerStyle={[{ padding: 20, paddingBottom: 140 }, contentStyle]}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 16 }}>
           <Pressable
             onPress={() => navigation.goBack()}
