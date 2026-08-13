@@ -94,7 +94,6 @@ const demoTodayEvents: TimelineEvent[] = [
     type: 'sleep',
     startTime: todayAt(23, 20, -1),
     endTime: todayAt(6, 0),
-    wokeCount: 2,
     loggedBy: ME_CAREGIVER_ID,
     inputMethod: 'tap',
   },
@@ -191,7 +190,6 @@ function generateHistoryEvents(days = 84): TimelineEvent[] {
         type: 'sleep',
         startTime: nightStart.toISOString(),
         endTime: nightEnd.toISOString(),
-        wokeCount: rand() < 0.55 ? 1 + Math.floor(rand() * 2) : 0,
         loggedBy: pick(caregivers),
         inputMethod: 'tap',
       });
@@ -288,15 +286,15 @@ export const demoMedications: Medication[] = [
 ];
 
 export const demoMilestonesAchieved: Milestone[] = [
-  { id: 'ms-1', babyId: BABY_ID, name: 'First smile', emoji: '😊', achieved: true, ageLabel: '6 weeks', date: '2026-04-19' },
-  { id: 'ms-2', babyId: BABY_ID, name: 'First roll-over', emoji: '🔄', achieved: true, ageLabel: '3.5 mo', date: '2026-06-24' },
-  { id: 'ms-3', babyId: BABY_ID, name: 'First laugh', emoji: '😂', achieved: true, ageLabel: '3 mo', date: '2026-06-10' },
+  { id: 'ms-1', babyId: BABY_ID, name: 'First smile', emoji: '😊', ageLabel: '6 weeks', date: '2026-04-19' },
+  { id: 'ms-2', babyId: BABY_ID, name: 'First roll-over', emoji: '🔄', ageLabel: '3.5 mo', date: '2026-06-24' },
+  { id: 'ms-3', babyId: BABY_ID, name: 'First laugh', emoji: '😂', ageLabel: '3 mo', date: '2026-06-10' },
 ];
 
 export const demoMilestonesUpcoming: Milestone[] = [
-  { id: 'ms-up-1', babyId: BABY_ID, name: 'Sits with support', emoji: '🪑', achieved: false, typicalAgeRange: '~5 mo' },
-  { id: 'ms-up-2', babyId: BABY_ID, name: 'First tooth', emoji: '🦷', achieved: false, typicalAgeRange: '4–7 mo' },
-  { id: 'ms-up-3', babyId: BABY_ID, name: 'First solids', emoji: '🥄', achieved: false, typicalAgeRange: '~6 mo' },
+  { id: 'ms-up-1', babyId: BABY_ID, name: 'Sits with support', emoji: '🪑', typicalAgeRange: '~5 mo' },
+  { id: 'ms-up-2', babyId: BABY_ID, name: 'First tooth', emoji: '🦷', typicalAgeRange: '4–7 mo' },
+  { id: 'ms-up-3', babyId: BABY_ID, name: 'First solids', emoji: '🥄', typicalAgeRange: '~6 mo' },
 ];
 
 export const demoSettings: Settings = {

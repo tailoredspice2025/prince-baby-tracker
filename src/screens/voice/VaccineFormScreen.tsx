@@ -97,6 +97,7 @@ export function VaccineFormScreen() {
   const [batch, setBatch] = useState('');
   const [clinic, setClinic] = useState('');
   const [address, setAddress] = useState('');
+  const [reaction, setReaction] = useState('');
   const [notes, setNotes] = useState('');
   // default appointment: tomorrow at 10:00
   const [apptAt, setApptAt] = useState(() => {
@@ -132,6 +133,7 @@ export function VaccineFormScreen() {
         batchNo: batch || undefined,
         clinic: clinic || undefined,
         address: address || undefined,
+        reaction: reaction || undefined,
         notes: notes || undefined,
         fromVoice: !!parsed,
         voiceFields: parsed?.fields,
@@ -214,7 +216,14 @@ export function VaccineFormScreen() {
 
           <FormField label="Clinic / doctor" value={clinic} onChangeText={setClinic} placeholder="Dr. Rao · Sunrise Pediatrics" />
           <FormField label="Address" value={address} onChangeText={setAddress} placeholder="Clinic address (shown in the reminder)" />
-          <FormField label="Notes" value={notes} onChangeText={setNotes} placeholder="Any reaction, fever, notes for next visit…" multiline />
+          {/* Its own field, not a hint inside Notes. A reaction is the one
+              thing a doctor asks about at the next appointment, and both the
+              Health row and the pediatrician PDF already print `reaction` —
+              they just had no way to ever receive one. */}
+          {!isAppt && (
+            <FormField label="Reaction" value={reaction} onChangeText={setReaction} placeholder="Sore leg, mild fever, none…" />
+          )}
+          <FormField label="Notes" value={notes} onChangeText={setNotes} placeholder="Anything to remember for next visit…" multiline />
         </View>
 
         <View style={{ flex: 1, minHeight: 12 }} />

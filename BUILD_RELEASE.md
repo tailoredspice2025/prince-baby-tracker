@@ -56,6 +56,12 @@ review button.
       catches the build-11 crash class — a hook called after an early `return`
       changes the hook count between renders and kills the app. TypeScript
       cannot see it. Warnings are tolerated; **errors block the build.**
+- [ ] ⛔ **`npm run cdse` reviewed.** Reports fields that are captured and never
+      shown, shown and never fillable, or modelled and unused — the class that
+      has cost more builds here than any other. It is a report, not a gate:
+      every finding is either a gap to close or an `ALLOWED` entry with its
+      reason. It found `Vaccine.reaction` printed in the pediatrician PDF with
+      no way to enter one, after months of shipping.
 - [ ] ⛔ **Round-trip matrix in `RELEASE_QA.md` §1b** run for every event type
       (log → open → edit every field → save → reopen → check the Trends number)
 - [ ] If a new **native module** was added since last build (e.g. a picker,

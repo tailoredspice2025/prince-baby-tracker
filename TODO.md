@@ -12,7 +12,7 @@ Summary only. Detail lives in `FEEDBACK.md` (build-15 items) and
 | **On the App Store** | 1.0.0 **build 16** | What every user has today |
 | **Uploaded, not submitted** | 1.0.1 **build 18** | Sitting in App Store Connect, never released — **do not submit** |
 | **Submitted** | 1.0.1 **build 19** | Uploaded 3 Aug. Does **not** fix the daily-reminder bug below |
-| **Ready to build** | 1.0.1 **build 20** | Everything 19 has, plus the reminder fix |
+| **Ready to build** | 1.0.1 **build 20** | Everything 19 has, plus the reminder fix and the CDSE sweep findings |
 
 **Build 17 was superseded, not shipped.** Two commits titled "Build 17"
 (`a6b13b3`, `6d5e19b` — the banner clearing and settable medicine reminders)
@@ -223,7 +223,9 @@ scheduled one first.
 ## 10 · Loose ends
 - Night-feeding screen: hidden in v1.0, needs its own honest control if it
   returns (`FEATURES.nightFeedingView`)
-- `SleepEvent.wokeCount` — modelled, never used: surface it or delete it
+- ~~`SleepEvent.wokeCount` — modelled, never used~~ — deleted in build 20,
+  along with `Milestone.achieved` (milestones live in two arrays, so the flag
+  was redundant). Both found by `npm run cdse`.
 - Sleep sessions count on the start day while minutes split across midnight —
   document the choice
 - At v1.1: update the App Store privacy label (Family Sync collects data)

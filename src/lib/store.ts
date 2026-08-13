@@ -162,7 +162,7 @@ interface AppState {
   deleteVaccine: (id: string) => void;
   addSicknessEpisode: (s: Omit<SicknessEpisode, 'id' | 'babyId'>) => void;
   addMedication: (m: Omit<Medication, 'id' | 'babyId'>) => void;
-  addMilestone: (m: Omit<Milestone, 'id' | 'babyId' | 'achieved'>) => void;
+  addMilestone: (m: Omit<Milestone, 'id' | 'babyId'>) => void;
   setUnits: (u: Settings['units']) => void;
   setThemePreference: (p: NonNullable<Settings['themePreference']>) => void;
   /** Night-feeding view is opt-in — it never takes over the screen by itself. */
@@ -541,7 +541,7 @@ export const useStore = create<AppState>()(
 
   addMilestone: (m) => {
     const babyId = get().activeBabyId;
-    const milestone: Milestone = { id: uid('ms'), babyId, achieved: true, ...m };
+    const milestone: Milestone = { id: uid('ms'), babyId, ...m };
     set((s) => ({ milestonesAchieved: [milestone, ...s.milestonesAchieved] }));
     syncWrite('milestones', milestone);
   },

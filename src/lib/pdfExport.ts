@@ -38,7 +38,7 @@ export async function exportPediatricianPdf(data: {
       (v) => `<tr>
         <td>${esc(v.name)} · ${esc(v.doseLabel)}</td>
         <td>${v.status === 'done' ? 'Given' : 'Due'} ${fmtDate(v.date)}</td>
-        <td>${esc([v.site, v.reaction, v.notes].filter(Boolean).join(' · ') || '—')}</td>
+        <td>${esc([v.site, v.batchNo && `batch ${v.batchNo}`, v.reaction, v.notes].filter(Boolean).join(' · ') || '—')}</td>
       </tr>`
     )
     .join('');

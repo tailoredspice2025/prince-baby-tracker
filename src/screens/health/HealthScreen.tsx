@@ -122,7 +122,7 @@ export function HealthScreen() {
           {vaccines.map((v, i) => {
             const done = v.status === 'done';
             const meta = done
-              ? [new Date(v.date).toLocaleDateString([], { month: 'short', day: 'numeric' }), v.site, v.reaction, v.notes].filter(Boolean).join(' · ')
+              ? [new Date(v.date).toLocaleDateString([], { month: 'short', day: 'numeric' }), v.site, v.batchNo && `batch ${v.batchNo}`, v.reaction, v.notes].filter(Boolean).join(' · ')
               : v.appointmentAt
               ? `${new Date(v.appointmentAt).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })} · ${new Date(v.appointmentAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}🔔${v.clinic ? ` · ${v.clinic}` : ''}`
               : `Due ${new Date(v.date).toLocaleDateString([], { month: 'short', day: 'numeric' })}${v.notes ? ` · ${v.notes}` : ''}`;

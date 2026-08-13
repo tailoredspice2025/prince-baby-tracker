@@ -37,7 +37,6 @@ export interface SleepEvent {
   type: 'sleep';
   startTime: string; // ISO
   endTime?: string; // ISO, undefined while running
-  wokeCount?: number;
   loggedBy: string;
   inputMethod: InputMethod;
 }
@@ -126,7 +125,6 @@ export interface Milestone {
   babyId: string;
   name: string;
   emoji: string;
-  achieved: boolean;
   ageLabel?: string;
   date?: string;
   photoUri?: string;
