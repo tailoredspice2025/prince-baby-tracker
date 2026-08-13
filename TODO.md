@@ -12,7 +12,8 @@ Summary only. Detail lives in `FEEDBACK.md` (build-15 items) and
 | **On the App Store** | 1.0.0 **build 16** | What every user has today |
 | **Uploaded, not submitted** | 1.0.1 **build 18** | Sitting in App Store Connect, never released — **do not submit** |
 | **Submitted** | 1.0.1 **build 19** | Uploaded 3 Aug. Does **not** fix the daily-reminder bug below |
-| **Ready to build** | 1.0.1 **build 20** | Everything 19 has, plus the reminder fix and the CDSE sweep findings |
+| **Tested, superseded** | 1.0.1 **build 20** | Built and TestFlighted 3 Aug. Carried the reminder fix but not the `lastGiven` fix — a new medicine reminded tomorrow, not today |
+| **Ready to build** | 1.0.1 **build 21** | The one to ship |
 
 **Build 17 was superseded, not shipped.** Two commits titled "Build 17"
 (`a6b13b3`, `6d5e19b` — the banner clearing and settable medicine reminders)
@@ -100,7 +101,7 @@ Two constraints worth remembering:
 Trade-off, stated plainly: reminders lapse if the app is not opened within the
 window. That is the price of being able to skip a day at all.
 
-### Then: no notification at all for a newly added medicine — also build 20
+### Then: no notification at all for a newly added medicine — build 21
 
 Reported straight after the fix above, and a **different defect** — in capture,
 not in the scheduler.
