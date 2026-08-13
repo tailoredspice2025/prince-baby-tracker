@@ -100,6 +100,33 @@ Two constraints worth remembering:
 Trade-off, stated plainly: reminders lapse if the app is not opened within the
 window. That is the price of being able to skip a day at all.
 
+### Then: no notification at all for a newly added medicine — also build 20
+
+Reported straight after the fix above, and a **different defect** — in capture,
+not in the scheduler.
+
+`MedicineFormScreen` defaulted its "Last given" state to `Date.now()` for a
+medicine with no `existing` record, and `save()` wrote it. So every medicine
+you added was stamped as **already given today, from a dose nobody gave**.
+Since a logged dose now suppresses that day's reminder, adding "Vitamin C" at
+10am with a 6pm reminder produced silence until the next evening.
+
+The scheduler was right. The data handed to it was invented.
+
+This had been in the form since build 16 and was harmless while nothing read
+`lastGiven` for scheduling — it only made a brand-new medicine's Home banner
+say "not due", which nobody noticed. Fixing the reminder is what made a
+pre-existing fabricated capture consequential.
+
+**The general rule it belongs to:** a form that *defines* a thing must not
+record an *event* that did not happen. `lastGiven` is now undefined until a
+dose is actually logged, and the "Last given" field only appears for a
+medicine that has one. The underlying conflation — defining a medicine versus
+logging a dose — is §7 item 2.
+
+Worth noting for the same reason the seed strip mattered: both defects were
+the app inventing data on the parent's behalf.
+
 ---
 
 ## 1 · Dates & correcting mistakes — ✅ done in build 16

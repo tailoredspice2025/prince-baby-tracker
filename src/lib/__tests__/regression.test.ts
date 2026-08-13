@@ -277,3 +277,38 @@ describe('a daily reminder must stop once the dose is logged (build 20)', () => 
     expect(isMedicineReminderId('feed-reminder')).toBe(false);
   });
 });
+
+describe('a newly added medicine reminds today (build 20)', () => {
+  const fresh = (over: Partial<Medication> = {}): Medication => ({
+    id: 'med-new',
+    babyId: 'b',
+    name: 'Vitamin C',
+    dose: '5 ml',
+    schedule: 'daily 6 PM',
+    prn: false,
+    ongoing: true,
+    reminderTime: '18:00',
+    ...over,
+  });
+
+  it('reminds this evening, not tomorrow', () => {
+    // The medicine form defaulted `lastGiven` to Date.now(), so a medicine
+    // added at 10am was stamped as already taken — and a logged dose
+    // suppresses that day's reminder, so adding "Vitamin C" with a 6pm
+    // reminder produced silence until the next day.
+    const plan = plannedReminders([fresh()], at(10, 10));
+    expect(sameLocalDay(plan[0].at, at(10, 18))).toBe(true);
+  });
+
+  it('is due today the moment it is added', () => {
+    expect(isDueToday(fresh(), at(10, 10))).toBe(true);
+  });
+
+  it('a real logged dose still suppresses the same day', () => {
+    // The suppression itself must survive — this is the fix from earlier in
+    // build 20, and it must not be traded away to fix the default.
+    const given = fresh({ lastGiven: at(10, 8).toISOString() });
+    expect(isDueToday(given, at(10, 10))).toBe(false);
+    expect(plannedReminders([given], at(10, 10)).some((p) => sameLocalDay(p.at, at(10, 10)))).toBe(false);
+  });
+});

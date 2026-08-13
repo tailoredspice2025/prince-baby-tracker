@@ -44,7 +44,13 @@ export function MedicineFormScreen() {
   const [dose, setDose] = useState(existing?.dose ?? '');
   const [schedule, setSchedule] = useState(existing?.schedule ?? 'as needed');
   const [notes, setNotes] = useState('');
-  const [givenAt, setGivenAt] = useState(() => new Date(existing?.lastGiven ?? Date.now()));
+  // A medicine you have just added has NOT been given. This defaulted to
+  // `Date.now()`, so every new medicine was stamped as already taken today
+  // from a dose nobody gave — and since a logged dose suppresses that day's
+  // reminder, adding "Vitamin C" at 10am with a 6pm reminder produced silence
+  // until tomorrow. Undefined until a dose is actually logged, which
+  // `logQuickEvent` does.
+  const [givenAt, setGivenAt] = useState<Date | null>(existing?.lastGiven ? new Date(existing.lastGiven) : null);
 
   // Daily reminder. `reminderTime` used to be readable in three places and
   // writable in none — the only medications with reminders were the seeded
@@ -72,7 +78,7 @@ export function MedicineFormScreen() {
       // A reminder only makes sense for something taken regularly, so asking
       // for one marks it ongoing regardless of how the schedule is worded.
       ongoing: remind || !schedule.toLowerCase().includes('need'),
-      lastGiven: givenAt.toISOString(),
+      lastGiven: givenAt ? givenAt.toISOString() : undefined,
       reminderTime: remind ? hhmm(remindAt) : undefined,
     };
     if (editingId) updateMedication(editingId, payload);
@@ -117,7 +123,11 @@ export function MedicineFormScreen() {
         )}
 
         <View style={{ gap: 12, marginBottom: 18 }}>
-          <DateField label="Last given" value={givenAt} onChange={setGivenAt} minimumDate={new Date(baby.dob)} maximumDate={new Date()} />
+          {/* Only for a medicine that has actually been given. This screen
+              defines a medicine; doses are logged from the Home tile. */}
+          {givenAt && (
+            <DateField label="Last given" value={givenAt} onChange={setGivenAt} minimumDate={new Date(baby.dob)} maximumDate={new Date()} />
+          )}
           <FormField label="Medicine" value={name} onChangeText={setName} placeholder="e.g. Vitamin D drops" fromVoice={!!guessedName} />
           <FormField label="Dose" value={dose} onChangeText={setDose} placeholder="e.g. 2.5 ml" />
           <FormField label="Schedule" value={schedule} onChangeText={setSchedule} placeholder="daily 6 PM / as needed" />
