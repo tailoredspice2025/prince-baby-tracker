@@ -11,7 +11,8 @@ Summary only. Detail lives in `FEEDBACK.md` (build-15 items) and
 | --- | --- | --- |
 | **On the App Store** | 1.0.0 **build 16** | What every user has today |
 | **Uploaded, not submitted** | 1.0.1 **build 18** | Sitting in App Store Connect, never released — **do not submit** |
-| **Ready to build** | 1.0.1 **build 19** | Everything 18 has, plus §6 below. This is the one to ship |
+| **Submitted** | 1.0.1 **build 19** | Uploaded 3 Aug. Does **not** fix the daily-reminder bug below |
+| **Ready to build** | 1.0.1 **build 20** | Everything 19 has, plus the reminder fix |
 
 **Build 17 was superseded, not shipped.** Two commits titled "Build 17"
 (`a6b13b3`, `6d5e19b` — the banner clearing and settable medicine reminders)
@@ -57,6 +58,47 @@ reconnect on launch, which had the same cause (`familyId` still null).
 **Version stays 1.0.1.** A version number can only be reused while it is
 unreleased, and 1.0.1 never was — so build 19 attaches to the existing 1.0.1
 record in App Store Connect. No need to burn 1.0.2.
+
+### The daily reminder kept firing after the dose was logged — fixed in build 20
+
+Reported on build 19. A **different defect from the three above**, found by
+running CDSE on the field rather than the symptom:
+
+| | | |
+| --- | --- | --- |
+| **Capture** | `Medication.lastGiven` | ✅ stamped by `logQuickEvent` and the medicine form |
+| **Derive** | "due today?" | ⚠️ existed, but written **inline inside `DayHomeView`** |
+| **Surface** | Home banner | ✅ cleared correctly |
+| **Surface** | the notification | ❌ **never read `lastGiven`** |
+| **Editable** | time, on/off | ✅ |
+
+The reminder was one repeating alarm — `trigger: { hour, minute, repeats: true }`
+— which fires unconditionally. iOS cannot run code when a *local* notification
+is delivered, so "skip it, already given" cannot be decided at delivery; it has
+to be decided when scheduling. Nothing did: logging a dose stamped `lastGiven`
+and never touched the schedule.
+
+It could not have been fixed in place, either: the rule for "due today" lived
+in a component, where the scheduler had no way to read it. Same shape as the
+sleep bug in `AUDIT.md` — **logic inside a component gets exactly one caller.**
+
+**The fix.** `src/lib/medicineReminders.ts` owns the rule and both surfaces now
+ask it. Each reminder is a *dated one-shot* in a rolling window instead of a
+repeating alarm, so a single day can be dropped; `syncMedicationReminders`
+cancels everything and re-schedules the plan whenever the medicines or the
+clock change — on launch, on logging a dose, on add/edit/delete. The plan is a
+pure function of medicines + now, so there is no incremental state to drift.
+
+Two constraints worth remembering:
+- **iOS keeps only the 64 soonest pending notifications** and silently drops
+  the rest, so the window is a budget: a fortnight for one medicine, four days
+  each for ten.
+- **Upgrades must cancel the old `med-{id}` repeating alarm.** Left pending it
+  buzzes forever regardless of what is scheduled beside it —
+  `cancelAllMedicineReminders` sweeps by identifier prefix to catch it.
+
+Trade-off, stated plainly: reminders lapse if the app is not opened within the
+window. That is the price of being able to skip a day at all.
 
 ---
 

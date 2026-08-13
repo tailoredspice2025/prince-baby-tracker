@@ -6,6 +6,17 @@ import { durationLabel } from '../time';
 import { SEEDED_RECORD_IDS, demoEvents, demoMeasurements, demoVaccines, demoMedications, demoMilestonesUpcoming } from '../demoData';
 import { remindersToArm } from '../bootReminders';
 import { defaultMedicine, medicineOptions } from '../medicinePick';
+import {
+  isDueToday,
+  isMedicineReminderId,
+  MAX_WINDOW_DAYS,
+  MEDICINE_NOTIFICATION_BUDGET,
+  MIN_WINDOW_DAYS,
+  occurrenceId,
+  plannedReminders,
+  sameLocalDay,
+  windowDays,
+} from '../medicineReminders';
 import { Caregiver, Medication, SleepEvent, TimelineEvent } from '../../types/models';
 
 /**
@@ -182,5 +193,87 @@ describe('the Medicine tile must not invent a medicine (build 19)', () => {
     // ongoing first — a daily vitamin is likelier than a finished course
     expect(medicineOptions(meds, 'b').map((m) => m.name)).toEqual(['Vitamin D', 'Amoxicillin']);
     expect(medicineOptions(meds, 'other-baby')).toEqual([]);
+  });
+});
+
+describe('a daily reminder must stop once the dose is logged (build 20)', () => {
+  const med = (over: Partial<Medication> = {}): Medication => ({
+    id: 'med-a',
+    babyId: 'b',
+    name: 'Vitamin D drops',
+    dose: '400 IU',
+    schedule: 'daily 6 PM',
+    prn: false,
+    ongoing: true,
+    reminderTime: '18:00',
+    ...over,
+  });
+
+  it('cancels today once the dose is logged, and keeps tomorrow', () => {
+    // The reported bug. It was one repeating alarm, so it fired every evening
+    // whether or not the vitamin had been given that morning — iOS cannot run
+    // code when a local notification is delivered, so the skip has to happen
+    // at scheduling time.
+    const now = at(10, 9); // 9am, dose given at 8am
+    const plan = plannedReminders([med({ lastGiven: at(10, 8).toISOString() })], now);
+    expect(plan.some((p) => sameLocalDay(p.at, now))).toBe(false);
+    expect(plan.some((p) => sameLocalDay(p.at, at(11, 18)))).toBe(true);
+  });
+
+  it('still reminds today when the dose has NOT been given', () => {
+    const now = at(10, 9);
+    const plan = plannedReminders([med()], now);
+    expect(plan[0].at.getHours()).toBe(18);
+    expect(sameLocalDay(plan[0].at, now)).toBe(true);
+  });
+
+  it('never schedules a slot that has already passed today', () => {
+    // 9pm with a 6pm reminder: scheduling it would fire instantly or be
+    // dropped, and neither is a reminder.
+    const plan = plannedReminders([med()], at(10, 21));
+    expect(plan.every((p) => p.at.getTime() > at(10, 21).getTime())).toBe(true);
+    expect(sameLocalDay(plan[0].at, at(11, 18))).toBe(true);
+  });
+
+  it('yesterday\'s dose does not silence today', () => {
+    const plan = plannedReminders([med({ lastGiven: at(9, 18).toISOString() })], at(10, 9));
+    expect(sameLocalDay(plan[0].at, at(10, 18))).toBe(true);
+  });
+
+  it('stays inside the iOS 64-notification limit as medicines multiply', () => {
+    // iOS keeps only the 64 soonest pending notifications and drops the rest
+    // silently, so a fortnight each for ten vitamins would lose the tail
+    // without any error.
+    const many = Array.from({ length: 10 }, (_, i) => med({ id: `med-${i}`, name: `Vitamin ${i}` }));
+    expect(plannedReminders(many, at(10, 9)).length).toBeLessThanOrEqual(MEDICINE_NOTIFICATION_BUDGET + many.length);
+    expect(windowDays(1)).toBe(MAX_WINDOW_DAYS);
+    expect(windowDays(10)).toBeGreaterThanOrEqual(MIN_WINDOW_DAYS);
+  });
+
+  it('schedules nothing for a medicine with the reminder switched off', () => {
+    expect(plannedReminders([med({ reminderTime: undefined })], at(10, 9))).toEqual([]);
+    expect(plannedReminders([med({ ongoing: false })], at(10, 9))).toEqual([]);
+  });
+
+  it('gives the banner and the scheduler the same answer', () => {
+    // The banner cleared and the notification did not, because isDueToday
+    // lived inside DayHomeView where the scheduler could not reach it.
+    const given = med({ lastGiven: at(10, 8).toISOString() });
+    const now = at(10, 9);
+    expect(isDueToday(given, now)).toBe(false);
+    expect(plannedReminders([given], now).some((p) => sameLocalDay(p.at, now))).toBe(false);
+
+    const notGiven = med();
+    expect(isDueToday(notGiven, now)).toBe(true);
+    expect(plannedReminders([notGiven], now).some((p) => sameLocalDay(p.at, now))).toBe(true);
+  });
+
+  it('recognises the old repeating alarm so an upgrade can remove it', () => {
+    // Installs on build 19 and earlier hold a `med-{id}` repeating alarm. Left
+    // pending it buzzes forever, no matter what is scheduled alongside it.
+    expect(isMedicineReminderId('med-med-a')).toBe(true);
+    expect(isMedicineReminderId(occurrenceId('med-a', at(10, 18)))).toBe(true);
+    expect(isMedicineReminderId('vax-v1-48h')).toBe(false);
+    expect(isMedicineReminderId('feed-reminder')).toBe(false);
   });
 });

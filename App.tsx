@@ -26,7 +26,7 @@ import { VoiceListeningSheet } from './src/screens/voice/VoiceListeningSheet';
 import { AppLockScreen } from './src/components/AppLockScreen';
 import { useStore } from './src/lib/store';
 import { remindersToArm } from './src/lib/bootReminders';
-import { ensureNotificationPermissions, scheduleMedicationReminder, scheduleVaccineReminders, setupNotificationChannel } from './src/lib/notifications';
+import { ensureNotificationPermissions, syncMedicationReminders, scheduleVaccineReminders, setupNotificationChannel } from './src/lib/notifications';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -47,7 +47,10 @@ function AppInner() {
       ensureNotificationPermissions().then((granted) => {
         if (!granted) return;
         const arm = remindersToArm(true, medications, vaccines);
-        arm.medications.forEach((m) => scheduleMedicationReminder(m).catch(() => {}));
+        // Re-arms the rolling window every launch. Each medicine reminder is a
+        // dated one-shot rather than a repeating alarm — that is what lets a
+        // logged dose remove a single day — so the window needs topping up.
+        syncMedicationReminders(arm.medications).catch(() => {});
         arm.vaccines.forEach((v) => scheduleVaccineReminders(v).catch(() => {}));
       });
     };

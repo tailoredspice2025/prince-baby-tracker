@@ -1,6 +1,8 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { Medication, Vaccine } from '../types/models';
+import { isMedicineReminderId, plannedReminders } from './medicineReminders';
+import { SEEDED_MEDICATION_IDS } from './demoData';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -19,31 +21,64 @@ export async function ensureNotificationPermissions(): Promise<boolean> {
   return req.granted;
 }
 
-/** Cancels a medication's daily reminder — when it's turned off, deleted, or
- * marked no longer ongoing. Without this, clearing a reminder left the
- * previously scheduled notification firing forever. */
-export async function cancelMedicationReminder(medId: string) {
-  await Notifications.cancelScheduledNotificationAsync(`med-${medId}`).catch(() => {});
+/** Removes every medicine reminder this app has pending — dated occurrences
+ * and, importantly, the pre-build-20 `med-{id}` *repeating* alarms. An upgrade
+ * that leaves one of those behind keeps buzzing daily forever, whatever is
+ * scheduled alongside it, because a repeat cannot be skipped once armed. */
+async function cancelAllMedicineReminders() {
+  const pending = await Notifications.getAllScheduledNotificationsAsync().catch(() => []);
+  await Promise.all(
+    pending
+      .filter((n) => isMedicineReminderId(n.identifier))
+      .map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier).catch(() => {}))
+  );
 }
 
-/** Schedules a repeating daily reminder for an ongoing medication with a reminderTime ("HH:mm"). */
-export async function scheduleMedicationReminder(med: Medication) {
-  // Always clear first: the id is stable so a reschedule overwrites, but a
-  // medication that has *lost* its reminder must not keep the old one.
-  if (!med.reminderTime || !med.ongoing) {
-    await cancelMedicationReminder(med.id);
-    return;
+/** Kept for the seeded-data strip, which cancels by id before the medication
+ * itself is removed from the store. */
+export async function cancelMedicationReminder(medId: string) {
+  const pending = await Notifications.getAllScheduledNotificationsAsync().catch(() => []);
+  await Promise.all(
+    pending
+      .filter((n) => n.identifier === `med-${medId}` || n.identifier.startsWith(`med-${medId}-`))
+      .map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier).catch(() => {}))
+  );
+}
+
+/**
+ * Brings the pending medicine notifications in line with the medicines.
+ *
+ * Cancel-everything-then-schedule-the-plan rather than incremental edits: the
+ * plan is a pure function of the medicines and the clock, so there is no
+ * accumulated state to drift out of step. Call it whenever either input
+ * changes — a dose logged, a medicine added, edited or deleted, and at launch.
+ *
+ * A dose logged today removes today's notification and leaves the rest of the
+ * window intact. That is the whole fix: the old repeating alarm fired every
+ * evening regardless, because iOS cannot run code when a local notification is
+ * delivered, so "already given" has to be decided here, at scheduling time.
+ */
+export async function syncMedicationReminders(medications: Medication[], now: Date = new Date()) {
+  await cancelAllMedicineReminders();
+
+  // Sample data is allowed to be visible; it is never allowed to ring.
+  const real = medications.filter((m) => !SEEDED_MEDICATION_IDS.includes(m.id));
+
+  for (const planned of plannedReminders(real, now)) {
+    await Notifications.scheduleNotificationAsync({
+      identifier: planned.id,
+      content: {
+        title: planned.title,
+        body: planned.body,
+        sound: Platform.OS === 'ios' ? 'default' : undefined,
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DATE,
+        date: planned.at,
+        channelId: 'reminders',
+      },
+    }).catch(() => {});
   }
-  const [hour, minute] = med.reminderTime.split(':').map(Number);
-  await Notifications.scheduleNotificationAsync({
-    identifier: `med-${med.id}`,
-    content: {
-      title: `${med.name} · ${med.dose}`,
-      body: `Time for ${med.name} (${med.schedule})`,
-      sound: Platform.OS === 'ios' ? 'default' : undefined,
-    },
-    trigger: { hour, minute, repeats: true, channelId: 'reminders' } as Notifications.CalendarTriggerInput,
-  });
 }
 
 // A booked vaccine appointment nudges the parents three times: 48h, 24h,

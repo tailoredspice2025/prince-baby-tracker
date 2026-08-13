@@ -59,7 +59,7 @@ import {
   cancelVaccineReminders,
   ensureNotificationPermissions,
   rescheduleFeedReminder,
-  scheduleMedicationReminder,
+  syncMedicationReminders,
   scheduleVaccineReminders,
 } from './notifications';
 
@@ -376,6 +376,10 @@ export const useStore = create<AppState>()(
         }),
       }));
       syncWrite('events', ev);
+      // The dose is logged, so today's reminder must go. This call site simply
+      // did not exist: `lastGiven` was stamped above and the schedule was left
+      // alone, which is why the 6pm alarm arrived after a 9am vitamin.
+      syncMedicationReminders(get().medications).catch(() => {});
       get().pushToast({ message: `${name} logged`, onUndo: () => set((st) => ({ events: st.events.filter((e) => e.id !== ev.id) })) });
     }
 
@@ -454,21 +458,23 @@ export const useStore = create<AppState>()(
     get().pushToast({ message: 'Episode deleted' });
   },
 
-  updateMedication: (id, patch) =>
+  updateMedication: (id, patch) => {
     set((s) => ({
       medications: s.medications.map((m) => {
         if (m.id !== id) return m;
         const updated = { ...m, ...patch };
         syncWrite('medications', updated);
-        scheduleMedicationReminder(updated).catch(() => {});
         return updated;
       }),
-    })),
+    }));
+    syncMedicationReminders(get().medications).catch(() => {});
+  },
 
   deleteMedication: (id) => {
     set((s) => ({ medications: s.medications.filter((m) => m.id !== id) }));
     syncDelete('medications', id);
     cancelMedicationReminder(id).catch(() => {});
+    syncMedicationReminders(get().medications).catch(() => {});
     get().pushToast({ message: 'Medicine deleted' });
   },
 
@@ -530,7 +536,7 @@ export const useStore = create<AppState>()(
     const med: Medication = { id: uid('med'), babyId, ...m };
     set((s) => ({ medications: [med, ...s.medications] }));
     syncWrite('medications', med);
-    scheduleMedicationReminder(med).catch(() => {});
+    syncMedicationReminders(get().medications).catch(() => {});
   },
 
   addMilestone: (m) => {

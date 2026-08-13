@@ -11,6 +11,7 @@ import { TimelineRow } from '../../components/TimelineRow';
 import { VoiceBar } from '../../components/VoiceBar';
 import { useStore } from '../../lib/store';
 import { defaultMedicine } from '../../lib/medicinePick';
+import { isDueToday } from '../../lib/medicineReminders';
 import { FEATURES } from '../../lib/features';
 import { useTheme } from '../../theme/ThemeProvider';
 import { useContentStyle } from '../../theme/layout';
@@ -104,15 +105,10 @@ export function DayHomeView() {
     ? `Awake ${durationLabel(now.getTime() - new Date(lastSleep.endTime).getTime())}`
     : 'Tap to start sleep';
 
-  // Only due if it hasn't already been given today. This used to be
-  // `ongoing && reminderTime` with no reference to `lastGiven`, so the banner
-  // reappeared on every launch however many times you'd logged the dose.
-  const dueMed = medications.find((m) => {
-    if (!m.ongoing || !m.reminderTime) return false;
-    if (!m.lastGiven) return true;
-    const given = new Date(m.lastGiven);
-    return !(given.getFullYear() === now.getFullYear() && given.getMonth() === now.getMonth() && given.getDate() === now.getDate());
-  });
+  // Shares its answer with the notification scheduler. It used to be this same
+  // rule written out inline here, which is exactly why the banner cleared and
+  // the 6pm alarm did not — a component is somewhere only one caller can read.
+  const dueMed = medications.find((m) => isDueToday(m, now));
 
   // Scoped to today so the "Today" heading is truthful — this is where a
   // just-logged entry shows up, which wasn't obvious before.
