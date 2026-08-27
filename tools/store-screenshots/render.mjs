@@ -47,7 +47,7 @@ body{background:#FBF4EC;font-family:Nunito;color:#43382F;-webkit-font-smoothing:
 .si{display:flex;align-items:center;gap:6px}
 .wrap{padding:10px 20px 26px}
 h1{font-size:26px;font-weight:900;letter-spacing:-.3px}
-h2{font-size:17px;font-weight:900;margin:18px 0 10px}
+h2{font-size:17px;font-weight:900;margin:15px 0 9px}
 .row{display:flex;align-items:center;gap:12px}
 .av{width:46px;height:46px;border-radius:50%;background:#FFDCC2;color:#C96F4A;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900}
 .circ{width:38px;height:38px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(67,56,47,.08)}
@@ -76,7 +76,7 @@ h2{font-size:17px;font-weight:900;margin:18px 0 10px}
 .hrow:last-child{border-bottom:none}
 .ic{width:34px;height:34px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex:none}
 .pill{font-size:10.5px;font-weight:800;padding:5px 10px;border-radius:99px;white-space:nowrap}
-.add{display:flex;align-items:center;justify-content:center;gap:8px;border:2px dashed #E0CDB4;border-radius:20px;padding:12px;font-size:13.5px;font-weight:800;color:#A98F73}
+.add{display:flex;align-items:center;justify-content:center;gap:8px;border:2px dashed #E0CDB4;border-radius:20px;padding:12px;font-size:13.5px;font-weight:800;color:#A98F73;background:#fff;margin-bottom:12px}
 .tabbar{position:fixed;left:0;right:0;bottom:0;height:88px;background:rgba(255,255,255,.96);border-top:1px solid #F2E8DA;display:flex;align-items:flex-start;justify-content:space-around;padding-top:12px}
 .tb{font-size:10.5px;font-weight:700;color:#B3A493;display:flex;flex-direction:column;align-items:center;gap:4px}
 .tb.on{color:#E98862}
@@ -156,25 +156,33 @@ ${[[10, 129], [70, 116], [130, 98], [190, 73], [250, 52], [310, 34]].map(([x, y]
 <div style="font-size:11px;font-weight:700;color:#B39F8D;text-align:center;margin-top:11px;padding:0 12px;line-height:1.5">For your records only — not medical advice. Talk to your pediatrician about your baby's growth.</div>
 </div>${tab('g')}`;
 
+const addBtn = (emoji, label) =>
+  `<div class="add">${sv('0 0 20 20', `<path d="M10 3v14M3 10h14" stroke="#A98F73" stroke-width="2.5" stroke-linecap="round"/>`, 17)} ${label}</div>`;
+
+// Mirrors src/screens/health/HealthScreen.tsx as of build 21. Note the vaccine
+// add button sits ABOVE its card while the other two sit BELOW theirs — that
+// asymmetry is what the screen actually does, so the render keeps it. Tidying
+// it is queued with the Health redesign rather than risking an unverified
+// change to a build that has already passed on a device.
 const HEALTH = `${statusBar}<div class="wrap">
 <h1 style="margin-bottom:3px">Health</h1><div class="sub">Prince · 4 months, 12 days</div>
 <h2>Vaccines</h2>
+${addBtn('+', 'Add vaccine appointment')}
 <div class="card" style="padding:4px 18px">
 <div class="hrow"><div class="ic" style="background:#CFE7F2">${I.syringe('#2E5A70')}</div><div style="flex:1"><div style="font-size:14.5px;font-weight:800">DTaP · dose 3</div><div class="sub" style="font-size:12px">Mon 8 Sep, 10:30 AM · Dr Rao</div></div><span class="pill" style="background:#CFE7F2;color:#2E5A70">in 5 weeks</span></div>
-<div class="hrow"><div class="ic" style="background:#DCE8CE">${I.syringe('#43602A')}</div><div style="flex:1"><div style="font-size:14.5px;font-weight:800">DTaP · dose 2</div><div class="sub" style="font-size:12px">Given 12 May · left thigh · no reaction</div></div><span class="pill" style="background:#DCE8CE;color:#43602A">done ✓</span></div>
-<div class="hrow"><div class="ic" style="background:#DCE8CE">${I.syringe('#43602A')}</div><div style="flex:1"><div style="font-size:14.5px;font-weight:800">Rotavirus · dose 2</div><div class="sub" style="font-size:12px">Given 12 May · oral</div></div><span class="pill" style="background:#DCE8CE;color:#43602A">done ✓</span></div>
+<div class="hrow"><div class="ic" style="background:#DCE8CE">${I.syringe('#43602A')}</div><div style="flex:1"><div style="font-size:14.5px;font-weight:800">DTaP · dose 2</div><div class="sub" style="font-size:12px">12 May · left thigh · batch K4821 · no reaction</div></div><span class="pill" style="background:#DCE8CE;color:#43602A">done ✓</span></div>
 </div>
-<div class="add" style="margin-top:11px">${sv('0 0 20 20', `<path d="M10 3v14M3 10h14" stroke="#A98F73" stroke-width="2.5" stroke-linecap="round"/>`, 17)} Add vaccine appointment</div>
 <h2>Sickness &amp; symptoms</h2>
 <div class="card" style="padding:4px 18px">
-<div class="hrow"><div class="ic" style="background:#F7D6DC">${I.thermo('#A04E63')}</div><div style="flex:1"><div style="font-size:14.5px;font-weight:800">Mild fever · 38.1°C</div><div class="sub" style="font-size:12px">30 Jun – 1 Jul · after vaccines · resolved</div></div></div>
-<div class="hrow"><div class="ic" style="background:#DCE8CE">${I.thermo('#43602A')}</div><div style="flex:1"><div style="font-size:14.5px;font-weight:800">Cold &amp; cough</div><div class="sub" style="font-size:12px">12 – 18 Jul · resolved</div></div></div>
+<div class="hrow"><div class="ic" style="background:#F7D6DC">${I.thermo('#A04E63')}</div><div style="flex:1"><div style="font-size:14.5px;font-weight:800">🌡️ Mild fever · 38.1°C</div><div class="sub" style="font-size:12px">resolved · tap to edit</div></div><span style="font-size:12px;font-weight:700;color:#B39F8D">12 Jul – 18</span></div>
 </div>
+${addBtn('+', 'Add an illness')}
 <h2>Medicine</h2>
 <div class="card" style="padding:4px 18px">
-<div class="hrow"><div class="ic" style="background:#F3E3BC">${I.medicine('#A57F2C', 20)}</div><div style="flex:1"><div style="font-size:14.5px;font-weight:800">Vitamin D drops</div><div class="sub" style="font-size:12px">400 IU · daily 6 PM · ongoing</div></div><span class="pill" style="background:#F3E3BC;color:#A57F2C">6:00 PM</span></div>
-<div class="hrow"><div class="ic" style="background:#F3E3BC">${I.medicine('#A57F2C', 20)}</div><div style="flex:1"><div style="font-size:14.5px;font-weight:800">Paracetamol syrup</div><div class="sub" style="font-size:12px">2.5 ml · as needed</div></div><span class="pill" style="background:#F0E9DF;color:#9B8B7D">PRN</span></div>
+<div class="hrow"><div class="ic" style="background:#F3E3BC">${I.medicine('#A57F2C', 20)}</div><div style="flex:1"><div style="font-size:14.5px;font-weight:800">Vitamin D drops</div><div class="sub" style="font-size:12px">400 IU · daily 6 PM · ongoing · tap to edit</div></div><span class="pill" style="background:#F3E3BC;color:#A57F2C">6:00 PM ⏰</span></div>
+<div class="hrow"><div class="ic" style="background:#F3E3BC">${I.medicine('#A57F2C', 20)}</div><div style="flex:1"><div style="font-size:14.5px;font-weight:800">Paracetamol syrup</div><div class="sub" style="font-size:12px">2.5 ml · as needed · tap to edit</div></div><span style="font-size:11px;font-weight:800;color:#B39F8D">PRN</span></div>
 </div>
+${addBtn('+', 'Add a medicine')}
 </div>${tab('he')}`;
 
 const PROFILE = `${statusBar}<div class="wrap">

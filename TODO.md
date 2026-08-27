@@ -254,6 +254,11 @@ scheduled one first.
 - **Order: 1.0.1 (build 18) → 1.0.2 (build 19) → Health redesign → Family Sync**
 
 ## 10 · Loose ends
+- **Sickness date range reads "30 Jun – 1" across a month boundary.**
+  `HealthScreen` prints the end date as `{ day: 'numeric' }` only, which is
+  fine inside one month ("12 Jul – 18") and nonsense across two. Found while
+  re-rendering the store screenshots for build 21 — the sample had to be moved
+  inside a single month to avoid showcasing it. Fix with the Health redesign.
 - Night-feeding screen: hidden in v1.0, needs its own honest control if it
   returns (`FEATURES.nightFeedingView`)
 - ~~`SleepEvent.wokeCount` — modelled, never used~~ — deleted in build 20,

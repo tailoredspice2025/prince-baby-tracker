@@ -19,8 +19,16 @@ What makes it match the app:
 node tools/store-screenshots/render.mjs   # writes ./out2
 ```
 
+`playwright-core` is NOT a project dependency — the generator only ever runs
+in the build container, and adding it would make every `npm install` on the
+Mac heavier for no benefit. Install it on demand:
+
+```sh
+npm install --no-save playwright-core
+```
+
 Chromium is at `/opt/pw-browsers/chromium` in the build container; change
-`executablePath` if you run it elsewhere.
+`executablePath` if you run it elsewhere. Do not run `playwright install`.
 
 ## Output
 
