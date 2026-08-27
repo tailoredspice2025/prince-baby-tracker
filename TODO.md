@@ -13,7 +13,7 @@ Summary only. Detail lives in `FEEDBACK.md` (build-15 items) and
 | **Uploaded, not submitted** | 1.0.1 **build 18** | Sitting in App Store Connect, never released — **do not submit** |
 | **Submitted** | 1.0.1 **build 19** | Uploaded 3 Aug. Does **not** fix the daily-reminder bug below |
 | **Tested, superseded** | 1.0.1 **build 20** | Built and TestFlighted 3 Aug. Carried the reminder fix but not the `lastGiven` fix — a new medicine reminded tomorrow, not today |
-| **Ready to build** | 1.0.1 **build 21** | The one to ship |
+| **Device-VERIFIED** | 1.0.1 **build 21** | Reminders confirmed working on a real phone, 3 Aug. **This is the one to submit** |
 
 **Build 17 was superseded, not shipped.** Two commits titled "Build 17"
 (`a6b13b3`, `6d5e19b` — the banner clearing and settable medicine reminders)
@@ -118,6 +118,11 @@ This had been in the form since build 16 and was harmless while nothing read
 `lastGiven` for scheduling — it only made a brand-new medicine's Home banner
 say "not due", which nobody noticed. Fixing the reminder is what made a
 pre-existing fabricated capture consequential.
+
+**VERIFIED on device (build 21, 3 Aug).** A newly added medicine fires its
+reminder the same day, and a logged dose still silences that day. Both halves
+confirmed on a phone — the first two attempts at this were code-true and
+device-false, so the distinction is the point.
 
 **The general rule it belongs to:** a form that *defines* a thing must not
 record an *event* that did not happen. `lastGiven` is now undefined until a
