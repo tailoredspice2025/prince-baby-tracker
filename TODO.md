@@ -13,7 +13,7 @@ Summary only. Detail lives in `FEEDBACK.md` (build-15 items) and
 | **Uploaded, not submitted** | 1.0.1 **build 18** | Sitting in App Store Connect, never released — **do not submit** |
 | **Submitted** | 1.0.1 **build 19** | Uploaded 3 Aug. Does **not** fix the daily-reminder bug below |
 | **Tested, superseded** | 1.0.1 **build 20** | Built and TestFlighted 3 Aug. Carried the reminder fix but not the `lastGiven` fix — a new medicine reminded tomorrow, not today |
-| **Device-VERIFIED** | 1.0.1 **build 21** | Reminders confirmed working on a real phone, 3 Aug. **This is the one to submit** |
+| **SUBMITTED FOR REVIEW** | 1.0.1 **build 21** | Device-verified, then submitted 3 Aug. Awaiting Apple |
 
 **Build 17 was superseded, not shipped.** Two commits titled "Build 17"
 (`a6b13b3`, `6d5e19b` — the banner clearing and settable medicine reminders)
@@ -273,6 +273,9 @@ scheduled one first.
   decision; the listing now makes no forward-looking claims at all
 - Resolution Center: reply explaining the crash fix (NOT "What's New" —
   that field only shows on updates, not a first release)
+- Keywords say `diaper` on an English (U.K.) listing; `nappy` is the term a UK
+  parent searches. 12 of 100 characters used — free to add. Product decision,
+  since the app's own UI says "Diaper".
 - ✅ Privacy policy: voice and Family Sync marked "not in the current
   version" (docs/index.html, live via GitHub Pages)
 
