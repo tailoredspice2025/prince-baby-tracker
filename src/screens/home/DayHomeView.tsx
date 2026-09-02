@@ -11,6 +11,7 @@ import { TimelineRow } from '../../components/TimelineRow';
 import { VoiceBar } from '../../components/VoiceBar';
 import { useStore } from '../../lib/store';
 import { defaultMedicine } from '../../lib/medicinePick';
+import { canQuickLog, QuickLogType } from '../../lib/quickLogDefaults';
 import { isDueToday } from '../../lib/medicineReminders';
 import { FEATURES } from '../../lib/features';
 import { useTheme } from '../../theme/ThemeProvider';
@@ -93,6 +94,11 @@ export function DayHomeView() {
   const solids = lastByType.solids as FeedEvent | undefined;
   const pump = lastByType.pump as FeedEvent | undefined;
   const medicine = lastByType.medicine as MedicineEvent | undefined;
+  // A tap logs a repeat of what you last did; the first time, it opens the
+  // picker rather than the app choosing a food or a volume for you.
+  const tapOrAsk = (t: QuickLogType) => () =>
+    canQuickLog(t, babyEvents, baby.id) ? logQuickEvent(t) : setPickerType(t);
+
   const medicineDefault = useMemo(() => defaultMedicine(babyEvents, medications, baby.id), [babyEvents, medications, baby.id]);
   const lastSleep = lastByType.sleep as SleepEvent | undefined;
 
@@ -205,7 +211,7 @@ export function DayHomeView() {
                     ? `${relativeTime(bottle.time, now)} · ${bottle.quantityMl}ml · hold to change`
                     : 'Tap to log · hold to choose'
                 }
-                onPress={() => logQuickEvent('bottle')}
+                onPress={tapOrAsk('bottle')}
                 onLongPress={() => setPickerType('bottle')}
               />
             </View>
@@ -224,7 +230,7 @@ export function DayHomeView() {
                 icon={<DiaperIcon />}
                 title="Diaper"
                 caption={diaper ? `${relativeTime(diaper.time, now)} · ${diaper.kind} · hold to change` : 'Tap to log · hold to choose'}
-                onPress={() => logQuickEvent('diaper')}
+                onPress={tapOrAsk('diaper')}
                 onLongPress={() => setPickerType('diaper')}
               />
             </View>
@@ -234,7 +240,7 @@ export function DayHomeView() {
                 icon={<SolidsIcon />}
                 title="Solids"
                 caption={solids ? `${relativeTime(solids.time, now)}${solids.food ? ` · ${solids.food}` : ''} · hold to change` : 'Tap to log · hold to choose'}
-                onPress={() => logQuickEvent('solids')}
+                onPress={tapOrAsk('solids')}
                 onLongPress={() => setPickerType('solids')}
               />
             </View>
@@ -244,7 +250,7 @@ export function DayHomeView() {
                 icon={<PumpIcon />}
                 title="Pump"
                 caption={pump ? `${relativeTime(pump.time, now)} · ${pump.quantityMl}ml · hold to change` : 'Tap to log · hold to choose'}
-                onPress={() => logQuickEvent('pump')}
+                onPress={tapOrAsk('pump')}
                 onLongPress={() => setPickerType('pump')}
               />
             </View>

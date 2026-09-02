@@ -52,6 +52,7 @@ import {
 } from './firestoreSync';
 import { pendingIds, startFamilySync, stopFamilySync, syncDelete, syncWrite, uploadLocalData } from './familySync';
 import { eventTime } from './eventRow';
+import { QuickLogType, repeatLast } from './quickLogDefaults';
 import { defaultMedicine } from './medicinePick';
 import {
   cancelFeedReminder,
@@ -138,7 +139,7 @@ interface AppState {
   setBabyPhoto: (uri: string) => void;
   logQuickEvent: (
     type: 'bottle' | 'diaper' | 'solids' | 'pump' | 'medicine',
-    opts?: { quantityMl?: number; kind?: DiaperEvent['kind']; food?: string; name?: string; dose?: string }
+    opts?: { quantityMl?: number; kind?: DiaperEvent['kind']; food?: string; side?: FeedEvent['side']; name?: string; dose?: string }
   ) => void;
   toggleSleep: () => void;
   editingEventId: string | null;
@@ -316,37 +317,40 @@ export const useStore = create<AppState>()(
     const now = new Date().toISOString();
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-    /** Most recent amount logged for this feed type, so a one-tap log
-     * repeats what this baby actually takes instead of a fixed 120 ml. */
-    const lastAmount = (t: 'bottle' | 'pump'): number | undefined => {
-      const s = get();
-      return s.events
-        .filter((e) => e.babyId === s.activeBabyId && e.type === t && (e as FeedEvent).quantityMl != null)
-        .sort((a, b) => eventTime(b).localeCompare(eventTime(a)))
-        .map((e) => (e as FeedEvent).quantityMl)[0];
-    };
+    // A tap repeats what the parent actually did last; with nothing to
+    // repeat the tile opens the picker instead of reaching this branch. See
+    // quickLogDefaults.ts for the five invented values this replaced.
+    const repeat = (t: QuickLogType) => repeatLast(t, get().events, babyId);
 
     if (type === 'bottle') {
-      const quantityMl = opts?.quantityMl ?? lastAmount('bottle') ?? 120;
-      const ev: FeedEvent = { id: uid('ev'), babyId, type: 'bottle', time: now, quantityMl, notes: 'Formula', loggedBy, inputMethod: 'tap' };
+      const quantityMl = opts?.quantityMl ?? repeat('bottle')?.quantityMl;
+      if (quantityMl == null) return;
+      const ev: FeedEvent = { id: uid('ev'), babyId, type: 'bottle', time: now, quantityMl, loggedBy, inputMethod: 'tap' };
       set((s) => ({ events: [ev, ...s.events] }));
       syncWrite('events', ev);
       get().pushToast({ message: `Bottle · ${quantityMl} ml logged`, onUndo: () => set((s) => ({ events: s.events.filter((e) => e.id !== ev.id) })) });
     } else if (type === 'diaper') {
-      const kind = opts?.kind ?? 'wet';
+      const kind = opts?.kind ?? repeat('diaper')?.kind;
+      if (!kind) return;
       const ev: DiaperEvent = { id: uid('ev'), babyId, type: 'diaper', time: now, kind, loggedBy, inputMethod: 'tap' };
       set((s) => ({ events: [ev, ...s.events] }));
       syncWrite('events', ev);
       get().pushToast({ message: `Diaper · ${kind} logged`, onUndo: () => set((s) => ({ events: s.events.filter((e) => e.id !== ev.id) })) });
     } else if (type === 'solids') {
-      const food = opts?.food ?? 'pear';
+      const food = opts?.food ?? repeat('solids')?.food;
+      if (!food) return;
       const ev: FeedEvent = { id: uid('ev'), babyId, type: 'solids', time: now, food, loggedBy, inputMethod: 'tap' };
       set((s) => ({ events: [ev, ...s.events] }));
       syncWrite('events', ev);
       get().pushToast({ message: `Solids · ${food} logged`, onUndo: () => set((s) => ({ events: s.events.filter((e) => e.id !== ev.id) })) });
     } else if (type === 'pump') {
-      const quantityMl = opts?.quantityMl ?? lastAmount('pump') ?? 90;
-      const ev: FeedEvent = { id: uid('ev'), babyId, type: 'pump', time: now, quantityMl, side: 'left', loggedBy, inputMethod: 'tap' };
+      const prev = repeat('pump');
+      const quantityMl = opts?.quantityMl ?? prev?.quantityMl;
+      if (quantityMl == null) return;
+      // `side` stays undefined unless someone chose one. It used to be
+      // hardcoded 'left' on every pump.
+      const side = opts?.side ?? prev?.side;
+      const ev: FeedEvent = { id: uid('ev'), babyId, type: 'pump', time: now, quantityMl, ...(side ? { side } : {}), loggedBy, inputMethod: 'tap' };
       set((s) => ({ events: [ev, ...s.events] }));
       syncWrite('events', ev);
       get().pushToast({ message: `Pump · ${quantityMl} ml logged`, onUndo: () => set((s) => ({ events: s.events.filter((e) => e.id !== ev.id) })) });

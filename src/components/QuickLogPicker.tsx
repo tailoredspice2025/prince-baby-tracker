@@ -36,7 +36,9 @@ const CONFIG: Record<
   pump: {
     title: 'Pump — how much?',
     pastel: 'rose',
-    options: [60, 90, 120, 150].map((ml) => ({ label: `${ml} ml`, opts: { quantityMl: ml } })),
+    options: [60, 90, 120, 150].flatMap((ml) =>
+      (['left', 'right', 'both'] as const).map((side) => ({ label: `${ml} ml · ${side}`, opts: { quantityMl: ml, side } }))
+    ),
   },
   // Medicine has no fixed options — they are the parent's own medicines,
   // filled in by the component below. The hardcoded five made the picker

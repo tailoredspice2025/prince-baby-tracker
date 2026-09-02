@@ -14,6 +14,7 @@ Summary only. Detail lives in `FEEDBACK.md` (build-15 items) and
 | **Submitted** | 1.0.1 **build 19** | Uploaded 3 Aug. Does **not** fix the daily-reminder bug below |
 | **Tested, superseded** | 1.0.1 **build 20** | Built and TestFlighted 3 Aug. Carried the reminder fix but not the `lastGiven` fix — a new medicine reminded tomorrow, not today |
 | **SUBMITTED FOR REVIEW** | 1.0.1 **build 21** | Device-verified, then submitted 3 Aug. Awaiting Apple |
+| **Ready to build** | 1.0.2 **build 22** | Stops the app inventing what you logged — §11 |
 
 **Build 17 was superseded, not shipped.** Two commits titled "Build 17"
 (`a6b13b3`, `6d5e19b` — the banner clearing and settable medicine reminders)
@@ -199,6 +200,40 @@ hidden by a seeded Vitamin D medicine always existing.
 
 **Not done, deliberately:** temperature is still glued into the sickness title
 string. That is a model change and belongs with §7, not a UI build.
+
+## 11 · Build 22 — the app stops inventing what you logged
+*✅ done, ready to build. 1.0.2.*
+
+Five values were written into records nobody entered, all in `logQuickEvent`:
+
+| | was | now |
+| --- | --- | --- |
+| solids | `food ?? 'pear'` | repeat your last food, else ask |
+| pump | `side: 'left'` on every pump | only when chosen; offered in the picker |
+| bottle | `notes: 'Formula'` on every bottle | removed — many are breastmilk |
+| diaper | `kind ?? 'wet'` | repeat your last, else ask |
+| bottle / pump | `?? 120` / `?? 90` | repeat your last, else ask |
+
+**One rule across all five tiles:** a tap repeats what you actually did last;
+with nothing to repeat, the picker opens instead of the app guessing. Repeating
+your own last value is not invention — that number came from you. The first tap
+of each type costs one extra tap, once.
+
+`side` is now genuinely chosen, so it is shown on the timeline row. Before, the
+only place it appeared was the edit sheet — the screen you go to in order to
+correct it.
+
+**The sweep now catches this class.** `npm run cdse` gained an *invented
+default* check: any model field written with a hardcoded literal in `store.ts`
+or a form screen. Verified by reintroducing the three real bugs
+(`?? 'pear'`, `side: 'left'`, `notes: 'Formula'`) and confirming each is
+flagged. Nine legitimate literals are exempted with their reasons — `status`,
+`role`, `id`, `colorKey`, `loggedCount`.
+
+**Still open:** a quick-log tile stamps `new Date()`, so a feed logged forty
+minutes late records the wrong time. Recoverable by tapping the row, but
+logging after the fact is the normal case. Deciding between a time control in
+the picker and an Edit action on the toast — see §1.
 
 ## 7 · Health redesign — the model change
 *After 19. Do this BEFORE Family Sync — sync carries whatever model exists, and

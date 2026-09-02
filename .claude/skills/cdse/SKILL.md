@@ -50,11 +50,18 @@ oversight next time someone reads it.
 npm run cdse        # node tools/cdse-sweep.mjs
 ```
 
-It reads every field in `src/types/models.ts` and reports three kinds of break:
+It reads every field in `src/types/models.ts` and reports four kinds of break:
 
 - **surfaced, never captured** — a screen renders it; nothing can fill it
 - **captured, never surfaced** — the parent types it and never sees it again
 - **modelled only** — in the type and nowhere else
+- **invented default** — a model field written with a hardcoded literal, in
+  `store.ts` or a form screen. This is the opposite failure to the first three
+  and the one that has cost the most: a seeded medicine that rang at 6pm,
+  `lastGiven` defaulting to now so a new medicine was already "taken", and five
+  quick-log literals including a food (`'pear'`) and a note (`'Formula'`) that
+  print in the pediatrician PDF. Repeating the parent's own last value is fine
+  — that came from them. A literal is the app deciding on their behalf.
 
 It found `Vaccine.reaction` (printed on the Health row *and* in the
 pediatrician PDF, with no field anywhere to enter one) and `Vaccine.batchNo`
@@ -80,7 +87,18 @@ can call it and a test can too. That is also the only way it gets a regression
 test: `regression.test.ts` is one test per bug that reached a build, and a test
 cannot reach into a component.
 
-## Pattern 2 — the demo seed masks missing capture
+## Pattern 2 — a record must contain what happened, not what the app assumed
+
+Three separate builds shipped a value nobody entered. The tell is always a
+literal sitting where user data belongs: `?? 'pear'`, `side: 'left'`,
+`lastGiven: Date.now()`. It reads as helpful defaulting and it is fabrication,
+and it lands in a document a parent may hand to a doctor.
+
+The honest alternative is nearly always available: repeat what they did last
+and, with nothing to repeat, ask. One extra tap the first time buys a record
+that only contains things that happened.
+
+## Pattern 3 — the demo seed masks missing capture
 
 `Vaccine.reaction` and `Milestone.typicalAgeRange` looked alive for months
 because `demoData.ts` filled them. No user could ever produce either. Build 18

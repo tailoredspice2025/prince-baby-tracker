@@ -6,6 +6,7 @@ import { durationLabel } from '../time';
 import { SEEDED_RECORD_IDS, demoEvents, demoMeasurements, demoVaccines, demoMedications, demoMilestonesUpcoming } from '../demoData';
 import { remindersToArm } from '../bootReminders';
 import { defaultMedicine, medicineOptions } from '../medicinePick';
+import { canQuickLog, repeatLast } from '../quickLogDefaults';
 import {
   isDueToday,
   isMedicineReminderId,
@@ -17,7 +18,7 @@ import {
   sameLocalDay,
   windowDays,
 } from '../medicineReminders';
-import { Caregiver, Medication, SleepEvent, TimelineEvent } from '../../types/models';
+import { Caregiver, FeedEvent, Medication, SleepEvent, TimelineEvent } from '../../types/models';
 
 /**
  * One test per bug that actually reached a real build. These are not written
@@ -310,5 +311,44 @@ describe('a newly added medicine reminds today (build 20)', () => {
     const given = fresh({ lastGiven: at(10, 8).toISOString() });
     expect(isDueToday(given, at(10, 10))).toBe(false);
     expect(plannedReminders([given], at(10, 10)).some((p) => sameLocalDay(p.at, at(10, 10)))).toBe(false);
+  });
+});
+
+describe('a tap must not invent what it logs (build 22)', () => {
+  const feed = (type: 'bottle' | 'pump' | 'solids', over: Partial<FeedEvent> = {}): TimelineEvent =>
+    ({ id: `ev-${type}`, babyId: 'b', type, time: at(10, 9).toISOString(), loggedBy: 'cg-me', inputMethod: 'tap', ...over }) as TimelineEvent;
+
+  it('logs nothing on a first tap, so the picker can ask instead', () => {
+    // Five invented defaults lived here: solids 'pear', pump side 'left',
+    // bottle notes 'Formula', diaper 'wet', and 120ml / 90ml volumes. Each
+    // wrote something nobody entered into the pediatrician PDF.
+    for (const t of ['bottle', 'diaper', 'solids', 'pump'] as const) {
+      expect(repeatLast(t, [], 'b')).toBeNull();
+      expect(canQuickLog(t, [], 'b')).toBe(false);
+    }
+  });
+
+  it('never guesses a food — the allergy-relevant one', () => {
+    expect(repeatLast('solids', [], 'b')).toBeNull();
+    expect(repeatLast('solids', [feed('solids', { food: 'carrot' })], 'b')).toEqual({ food: 'carrot' });
+  });
+
+  it('repeats the parent\'s own last value, which is not invention', () => {
+    expect(repeatLast('bottle', [feed('bottle', { quantityMl: 150 })], 'b')).toEqual({ quantityMl: 150 });
+  });
+
+  it('carries pump side only when one was actually chosen', () => {
+    expect(repeatLast('pump', [feed('pump', { quantityMl: 90 })], 'b')).toEqual({ quantityMl: 90, side: undefined });
+    expect(repeatLast('pump', [feed('pump', { quantityMl: 90, side: 'right' })], 'b')).toEqual({ quantityMl: 90, side: 'right' });
+  });
+
+  it('shows the pump side on the row once it exists', () => {
+    const row = eventRowFor(feed('pump', { quantityMl: 90, side: 'right' }), [], 'cg-me');
+    expect(row.title).toBe('Pump · 90 ml · right');
+    expect(eventRowFor(feed('pump', { quantityMl: 90 }), [], 'cg-me').title).toBe('Pump · 90 ml');
+  });
+
+  it('does not read another baby\'s history', () => {
+    expect(repeatLast('bottle', [feed('bottle', { quantityMl: 150, babyId: 'other' })], 'b')).toBeNull();
   });
 });

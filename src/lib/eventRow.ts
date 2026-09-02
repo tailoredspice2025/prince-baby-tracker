@@ -35,8 +35,11 @@ export function eventRowFor(e: TimelineEvent, caregivers: Caregiver[], meId?: st
   } else if (e.type === 'solids') {
     title = `Solids${(e as FeedEvent).food ? ` · ${(e as FeedEvent).food}` : ''}`;
   } else if (e.type === 'pump') {
-    const q = (e as FeedEvent).quantityMl;
-    title = q != null ? `Pump · ${q} ml` : 'Pump';
+    const f = e as FeedEvent;
+    // Side is shown now that it is genuinely chosen. It used to be hardcoded
+    // 'left' on every pump and read only by the edit sheet, so the one place
+    // it appeared was the place you went to correct it.
+    title = [f.quantityMl != null ? `Pump · ${f.quantityMl} ml` : 'Pump', f.side].filter(Boolean).join(' · ');
   } else if (e.type === 'diaper') {
     title = `Diaper · ${(e as DiaperEvent).kind}`;
   } else if (e.type === 'medicine') {

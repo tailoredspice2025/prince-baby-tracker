@@ -132,6 +132,75 @@ const EXPLAIN = {
     'In the type and nowhere else. Either wire it up or delete it; a dead field reads as a feature that exists.',
 };
 
+/**
+ * Second check: a model field written with a hardcoded literal.
+ *
+ * The first check finds fields that are never captured or never shown. It is
+ * blind to the opposite failure — a field captured with a value the user never
+ * gave — which has now cost three builds: a seeded Vitamin D that rang at 6pm,
+ * `lastGiven` defaulting to now so a new medicine was already "taken", and
+ * five invented quick-log values including a food (`'pear'`) and a note
+ * (`'Formula'`) that print in the pediatrician PDF.
+ *
+ * Repeating the parent's own last value is fine — that came from them. A
+ * literal in the source is the app deciding on their behalf.
+ */
+// Only where records are actually constructed. Scanning every screen matched
+// style maps keyed by event type (`bottle: 'peach'`) against the identically
+// named VoicePermissions fields — noise that would have got this switched off.
+const DEFAULT_SCAN = (f) => f === 'src/lib/store.ts' || /Form.*\.tsx$/.test(f);
+const DEFAULT_ALLOWED = {
+  familyId: 'internal placeholder before a family is linked',
+  schedule: "form default 'as needed', shown in the field and editable before save",
+  emoji: 'presentation, not a record of anything',
+  type: 'discriminant',
+  inputMethod: 'provenance',
+  loggedBy: 'attribution',
+  title: "falls back to 'Symptom' only when the user left it blank",
+  name: "falls back to 'Medicine'/'Vaccine' only when the user left it blank",
+  dose: "falls back to '—' only when the user left it blank",
+  kind: 'voice path only, unreachable while FEATURES.voiceLogging is false',
+  // Determined by which action the user took, not chosen for them:
+  status: "'due' from the appointment branch, 'done' from the given branch",
+  role: "'owner' for whoever creates the family, 'editor' for an invitee",
+  id: "'pending' placeholder, replaced with the auth uid by createFamily",
+  colorKey: 'assigned so caregivers are distinguishable; not a record',
+  loggedCount: 'a caregiver who has just joined has genuinely logged nothing',
+};
+
+const fieldNames = new Set(Object.keys(nameCounts));
+const invented = [];
+for (const line of grep(`(\\w+: '[^']+'|\\w+: [0-9]+|\\?\\? '[^']+'|\\?\\? [0-9]+)`)) {
+  const [file, no, ...rest] = line.split(':');
+  const code = rest.join(':');
+  if (!DEFAULT_SCAN(file)) continue;
+  if (EXCLUDE_ALWAYS.some((f) => file.includes(f))) continue;
+  // Two shapes, because the bugs that prompted this used both:
+  //   `side: 'left'`                     written straight into the record
+  //   `const food = opts?.food ?? 'pear'` a fallback that lands in one
+  const matches = [
+    ...code.matchAll(/(\w+)\s*:\s*('[^']+'|[0-9]+)/g),
+    ...code.matchAll(/(?:const|let)\s+(\w+)\s*=[^;]*\?\?\s*('[^']+'|[0-9]+)/g),
+  ];
+  for (const m of matches) {
+    const [, field, value] = m;
+    if (!fieldNames.has(field) || DEFAULT_ALLOWED[field]) continue;
+    if (invented.some((i) => i.file === file && i.no === no && i.field === field)) continue;
+    invented.push({ file, no, field, value, code: code.trim() });
+  }
+}
+
+const reportInvented = () => {
+  if (!invented.length) {
+    console.log('\nNo model field is written with a hardcoded literal.');
+    return;
+  }
+  console.log(`\nPOSSIBLE INVENTED DEFAULTS  (${invented.length})`);
+  console.log('A record should contain what happened, not what the app assumed. Repeating the');
+  console.log("parent's own last value is fine; a literal here is the app deciding for them.");
+  for (const i of invented) console.log(`\n  ${i.field} = ${i.value}\n    ${i.file}:${i.no}  ${i.code.slice(0, 110)}`);
+};
+
 const reportAmbiguous = () => {
   if (!ambiguous.length) return;
   console.log(`\nSHARED NAMES — check by hand  (${ambiguous.length})`);
@@ -140,6 +209,7 @@ const reportAmbiguous = () => {
 
 if (findings.length === 0) {
   console.log('CDSE sweep: no capture/surface gaps found.');
+  reportInvented();
   reportAmbiguous();
   process.exit(0);
 }
@@ -154,5 +224,6 @@ for (const kind of ['surfaced-never-captured', 'captured-never-surfaced', 'model
     for (const l of [...f.writes, ...f.reads].slice(0, 4)) console.log(`    ${l.trim()}`);
   }
 }
+reportInvented();
 reportAmbiguous();
 console.log(`\n${findings.length} field(s) need a decision. Each is either a gap to close or an entry in ALLOWED with a reason.`);
