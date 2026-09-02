@@ -5,138 +5,53 @@ Summary only. Detail lives in `FEEDBACK.md` (build-15 items) and
 
 ---
 
-## 0 · Where things actually are — re-baselined 3 Aug 2026
+## 0 · Where things actually are — 3 Aug 2026
 
 | | Build | State |
 | --- | --- | --- |
-| **On the App Store** | 1.0.0 **build 16** | What every user has today |
-| **Uploaded, not submitted** | 1.0.1 **build 18** | Sitting in App Store Connect, never released — **do not submit** |
-| **Submitted** | 1.0.1 **build 19** | Uploaded 3 Aug. Does **not** fix the daily-reminder bug below |
-| **Tested, superseded** | 1.0.1 **build 20** | Built and TestFlighted 3 Aug. Carried the reminder fix but not the `lastGiven` fix — a new medicine reminded tomorrow, not today |
-| **SUBMITTED FOR REVIEW** | 1.0.1 **build 21** | Device-verified, then submitted 3 Aug. Awaiting Apple |
+| **LIVE on the App Store** | 1.0.1 **build 21** | Approved and released 3 Aug |
 | **Ready to build** | 1.0.2 **build 22** | Stops the app inventing what you logged — §11 |
 
-**Build 17 was superseded, not shipped.** Two commits titled "Build 17"
-(`a6b13b3`, `6d5e19b` — the banner clearing and settable medicine reminders)
-actually landed *after* the build-17 bump, so they are in build 18. Nothing in
-build 17 reached anyone; treat 16 → 18 as the real jump.
+**Version must be 1.0.2 for build 22.** 1.0.1 is released, and a released
+version cannot take another build — the next release needs its own version
+record, created in App Store Connect via **+ Version**.
 
-**Everything below §1–§5 that says "done" or "staged" is done in code and NOT
-on any phone.** The live build is 16. That is why the Vitamin D reminder still
-behaves the way it did before those fixes.
+Everything in §1–§6 is now live. Builds 17–20 were superseded before reaching
+anyone; the detail is in git history and `BUILD_RELEASE.md`'s landmine table,
+which is where it belongs now that it is no longer the current state.
 
-### The Vitamin D reminder, precisely
+### What 1.0.1 fixed, and what it cost to learn
 
-Three separate defects, one symptom:
+Five defects, four builds, because the first three attempts each fixed the
+reported instance rather than the class:
 
-1. **The banner never clears.** Build 16 asks `medications.find(m => m.ongoing
-   && m.reminderTime)` with no reference to `lastGiven`, so it shows on every
-   launch forever. *Fixed in build 18 — not released.*
-2. **The banner logged the wrong thing.** Its tap called `logQuickEvent
-   ('medicine')` bare, which reuses the previous event's name. *Fixed in build
-   18 — not released.*
-3. **A real 18:00 iOS notification is armed at every launch**, from the seeded
-   `med-1` "Vitamin D drops" nobody created. **Build 18 does NOT fix this** —
-   see below.
+1. **Seeded sample data reached real parents** — 1,565 fabricated records
+   including two vaccines marked *given* and a fever episode, all of which fed
+   "Export for pediatrician". Stripped at onboarding, and removed from existing
+   installs by the v3→v4 migration.
+2. **A daily 18:00 notification nobody set**, armed at every launch from the
+   seeded Vitamin D. Nothing at launch now reads persisted state before
+   `persist.hasHydrated()`, and a seeded id is never armed.
+3. **The reminder kept firing after the dose was logged.** It was one
+   `repeats: true` alarm, and iOS runs no code when a local notification is
+   delivered — so "already given" has to be decided when scheduling. Reminders
+   are dated one-shots in a rolling window now.
+4. **A newly added medicine reminded tomorrow, not today**, because the form
+   defaulted `lastGiven` to `Date.now()` and stamped a dose nobody gave.
+5. Plus: a way out of every modal, readable date pickers, editable records
+   throughout, and a real iPad layout.
 
-### Found while re-baselining: build 18 does not close #3
+**The two rules that came out of it**, both now mechanical rather than
+remembered — see `.claude/skills/cdse/` and `npm run cdse`:
 
-`App.tsx` armed reminders in a `useEffect` that read `medications` at first
-render. The store's initial state *is* the demo seed and `persist` fills it in
-from AsyncStorage asynchronously, so that snapshot always contains `med-1`,
-whatever is actually stored. Build 18's v3→v4 migration cancels it — but the
-migration runs once, on the version bump, and this effect runs every launch.
-So build 18 cancels the notification on the first launch after updating and
-re-arms it on the second.
-
-Fixed now in `src/lib/bootReminders.ts` + `App.tsx`: nothing is armed until
-`persist.hasHydrated()`, and a seeded id is never armed at all. Three tests in
-`regression.test.ts`. The same gate also fixes family sync failing to
-reconnect on launch, which had the same cause (`familyId` still null).
-
-**This is in build 19.** Releasing build 18 alone would not have stopped the
-6pm alarm.
-
-**Version stays 1.0.1.** A version number can only be reused while it is
-unreleased, and 1.0.1 never was — so build 19 attaches to the existing 1.0.1
-record in App Store Connect. No need to burn 1.0.2.
-
-### The daily reminder kept firing after the dose was logged — fixed in build 20
-
-Reported on build 19. A **different defect from the three above**, found by
-running CDSE on the field rather than the symptom:
-
-| | | |
-| --- | --- | --- |
-| **Capture** | `Medication.lastGiven` | ✅ stamped by `logQuickEvent` and the medicine form |
-| **Derive** | "due today?" | ⚠️ existed, but written **inline inside `DayHomeView`** |
-| **Surface** | Home banner | ✅ cleared correctly |
-| **Surface** | the notification | ❌ **never read `lastGiven`** |
-| **Editable** | time, on/off | ✅ |
-
-The reminder was one repeating alarm — `trigger: { hour, minute, repeats: true }`
-— which fires unconditionally. iOS cannot run code when a *local* notification
-is delivered, so "skip it, already given" cannot be decided at delivery; it has
-to be decided when scheduling. Nothing did: logging a dose stamped `lastGiven`
-and never touched the schedule.
-
-It could not have been fixed in place, either: the rule for "due today" lived
-in a component, where the scheduler had no way to read it. Same shape as the
-sleep bug in `AUDIT.md` — **logic inside a component gets exactly one caller.**
-
-**The fix.** `src/lib/medicineReminders.ts` owns the rule and both surfaces now
-ask it. Each reminder is a *dated one-shot* in a rolling window instead of a
-repeating alarm, so a single day can be dropped; `syncMedicationReminders`
-cancels everything and re-schedules the plan whenever the medicines or the
-clock change — on launch, on logging a dose, on add/edit/delete. The plan is a
-pure function of medicines + now, so there is no incremental state to drift.
-
-Two constraints worth remembering:
-- **iOS keeps only the 64 soonest pending notifications** and silently drops
-  the rest, so the window is a budget: a fortnight for one medicine, four days
-  each for ten.
-- **Upgrades must cancel the old `med-{id}` repeating alarm.** Left pending it
-  buzzes forever regardless of what is scheduled beside it —
-  `cancelAllMedicineReminders` sweeps by identifier prefix to catch it.
-
-Trade-off, stated plainly: reminders lapse if the app is not opened within the
-window. That is the price of being able to skip a day at all.
-
-### Then: no notification at all for a newly added medicine — build 21
-
-Reported straight after the fix above, and a **different defect** — in capture,
-not in the scheduler.
-
-`MedicineFormScreen` defaulted its "Last given" state to `Date.now()` for a
-medicine with no `existing` record, and `save()` wrote it. So every medicine
-you added was stamped as **already given today, from a dose nobody gave**.
-Since a logged dose now suppresses that day's reminder, adding "Vitamin C" at
-10am with a 6pm reminder produced silence until the next evening.
-
-The scheduler was right. The data handed to it was invented.
-
-This had been in the form since build 16 and was harmless while nothing read
-`lastGiven` for scheduling — it only made a brand-new medicine's Home banner
-say "not due", which nobody noticed. Fixing the reminder is what made a
-pre-existing fabricated capture consequential.
-
-**VERIFIED on device (build 21, 3 Aug).** A newly added medicine fires its
-reminder the same day, and a logged dose still silences that day. Both halves
-confirmed on a phone — the first two attempts at this were code-true and
-device-false, so the distinction is the point.
-
-**The general rule it belongs to:** a form that *defines* a thing must not
-record an *event* that did not happen. `lastGiven` is now undefined until a
-dose is actually logged, and the "Last given" field only appears for a
-medicine that has one. The underlying conflation — defining a medicine versus
-logging a dose — is §7 item 2.
-
-Worth noting for the same reason the seed strip mattered: both defects were
-the app inventing data on the parent's behalf.
+- A rule written inside a component has exactly one caller. `isDueToday` was
+  correct and unreachable, so the banner cleared and the alarm did not.
+- A record must contain what happened, not what the app assumed. Three builds
+  shipped a value nobody entered.
 
 ---
 
-## 1 · Dates & correcting mistakes — ✅ done in build 16
+## 1 · Dates & correcting mistakes — ✅ live in 1.0.1
 *Detail: `FEEDBACK.md` #2, #4*
 
 - `DateField` now on all five add forms, floored at DOB and capped at today
@@ -145,31 +60,31 @@ the app inventing data on the parent's behalf.
 - Still open: should quick-log tiles let you set a past time **at log time**?
   (today you log then edit — recoverable, but logging after the fact is normal)
 
-## 2 · Forms & input — ✅ done in build 16
+## 2 · Forms & input — ✅ live in 1.0.1
 *Detail: `FEEDBACK.md` #1, #3*
 
 - Shared `FormScreen` scaffold; every screen with an input is now covered
 - Tapping anywhere in a field opens the keypad
 
-## 3 · Getting out of screens — ✅ staged in build 17
+## 3 · Getting out of screens — ✅ live in 1.0.1
 *Detail: `FEEDBACK.md` #6*
 
 - Shared `ModalHeader` (back chevron + title) on all nine modal screens
 
-## 4 · Theming third-party controls — ✅ staged in build 17
+## 4 · Theming third-party controls — ✅ live in 1.0.1
 *Detail: `FEEDBACK.md` #5*
 
 - `ThemedDateTimePicker` wrapper always passes `themeVariant`; no bare
   `DateTimePicker` remains in the codebase
 
-## 5 · Reminders — ✅ staged in build 17
+## 5 · Reminders — ✅ live in 1.0.1
 *Detail: `FEEDBACK.md` #7–#9*
 
 - "due today" banner clears once logged; bell opens Health
 - "Remind me daily" toggle + time picker; medicines tappable to edit or delete
 - Reminders now cancel when switched off, not just reschedule
 
-## 6 · Build 19 — ✅ done, ready to build
+## 6 · Health entry points & iPad — ✅ live in 1.0.1
 *Everything build 18 has, plus the items below.*
 
 Build 18 strips the sample data, which exposed gaps that were previously
@@ -201,7 +116,7 @@ hidden by a seeded Vitamin D medicine always existing.
 **Not done, deliberately:** temperature is still glued into the sickness title
 string. That is a model change and belongs with §7, not a UI build.
 
-## 11 · Build 22 — the app stops inventing what you logged
+## 6b · Build 22 — the app stops inventing what you logged
 *✅ done, ready to build. 1.0.2.*
 
 Five values were written into records nobody entered, all in `logQuickEvent`:
@@ -236,7 +151,7 @@ logging after the fact is the normal case. Deciding between a time control in
 the picker and an Edit action on the toast — see §1.
 
 ## 7 · Health redesign — the model change
-*After 19. Do this BEFORE Family Sync — sync carries whatever model exists, and
+*After 1.0.2. Do this BEFORE Family Sync — sync carries whatever model exists, and
 changing it afterwards means migrating the cloud copy too.*
 
 **The problem.** Three unlinked concepts: a `Medication` (what they take), a
@@ -281,12 +196,12 @@ scheduled one first.
   dropped · "Edit" button dead · no undo · silent permission failures
 
 ## 9 · Family Sync
-*Detail: `RELEASE_v1.1.md`*
+*Detail: `RELEASE_v1.1.md`. Order: 1.0.2 → Health redesign → Family Sync (1.1)*
 
 - Code complete and Firebase-verified; runbook corrected for the v1.0 cycle
 - ✅ **Blocker cleared in build 18** — seeded data is stripped at onboarding,
   so there is nothing fabricated to upload
-- **Order: 1.0.1 (build 18) → 1.0.2 (build 19) → Health redesign → Family Sync**
+- **Order: 1.0.2 (build 22) → Health redesign → Family Sync (1.1)**
 
 ## 10 · Loose ends
 - **Sickness date range reads "30 Jun – 1" across a month boundary.**
@@ -306,8 +221,8 @@ scheduled one first.
 ## 11 · Yours, outside the repo
 - ~~App Store description: "coming soon" line for voice~~ — dropped by
   decision; the listing now makes no forward-looking claims at all
-- Resolution Center: reply explaining the crash fix (NOT "What's New" —
-  that field only shows on updates, not a first release)
+- ~~Resolution Center: reply explaining the crash fix~~ — moot, 1.0.1 was
+  approved without a further query
 - Keywords say `diaper` on an English (U.K.) listing; `nappy` is the term a UK
   parent searches. 12 of 100 characters used — free to add. Product decision,
   since the app's own UI says "Diaper".
@@ -316,21 +231,13 @@ scheduled one first.
 
 ---
 
-## Uploaded as 1.0.1 build 18 — NOT released, superseded by 19
-Back control on every modal screen · date pickers readable whatever the phone
-theme · vitamin banner clears once logged · bell opens Health · medicine
-reminders can be set, retimed, added and deleted · 1,565 seeded records
-stripped, including two vaccines marked *given*.
+---
 
-Still sitting in App Store Connect. See §0 — shipping it alone leaves the 6pm
-Vitamin D notification in place, so build 19 is the one to release.
+## Release history
+Per-build detail lives in git history and in `BUILD_RELEASE.md`'s landmine
+table. Keeping a running list here went stale the moment a build was
+superseded, and a stale status table is what made "is this fixed?" take four
+exchanges to answer.
 
-## Shipped in build 16
-Everything below, plus: dates on every record · measurement history with edit
-and delete · keyboard never covers a save button · tap-anywhere fields
-
-## Shipped in build 15
-Sleep crash fix · sleep start/end shown and editable · edit sheet field-aware
-for all six event types · night view removed · moon = light/dark · voice hidden
-· `UIBackgroundModes` removed · App Lock Face ID loop fixed · ESLint +
-`rules-of-hooks` · root error boundary
+- **1.0.1 (build 21)** — live 3 Aug 2026. See §0.
+- **1.0.0 (build 16)** — the first release.

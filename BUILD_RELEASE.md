@@ -97,7 +97,7 @@ Improvements → Analytics Data → newest `DenBaby-*.ips`) and fix before resub
 
 | # | What bit us | Permanent fix (in place) |
 |---|---|---|
-| 1 | Build number collisions (autoIncrement + remote source BOTH kept producing duplicate numbers across `git reset --hard`) | **Explicit, committed build number.** `autoIncrement` is OFF and `appVersionSource` is `local`; the build number is exactly `ios.buildNumber` in app.json. Before each production build, bump that number in the repo and push — deterministic and visible in git, no magic. Current: **21** for v1.0.1 (build 16 is the live 1.0.0). Build 17 was bumped but superseded before submission — nothing shipped from it. |
+| 1 | Build number collisions (autoIncrement + remote source BOTH kept producing duplicate numbers across `git reset --hard`) | **Explicit, committed build number.** `autoIncrement` is OFF and `appVersionSource` is `local`; the build number is exactly `ios.buildNumber` in app.json. Before each production build, bump that number in the repo and push — deterministic and visible in git, no magic. Current: **22** for v1.0.2 (1.0.1 build 21 is live). Build 17 was bumped but superseded before submission — nothing shipped from it. |
 | 2 | — | (see #1) |
 | 3 | `git reset --hard` discarded local auto-bumps → duplicate numbers | committed explicit number survives reset — it IS the repo value |
 | 4 | Stale local `app.json`/`eas.json` → repeated merge conflicts | always `git reset --hard origin/<branch>` before building (golden rule 1) |
@@ -119,7 +119,9 @@ Improvements → Analytics Data → newest `DenBaby-*.ips`) and fix before resub
 
 ## Version numbering
 
-- **1.0.0 (build 16) is LIVE on the App Store.** Once a version is released you
+- **1.0.1 (build 21) is LIVE on the App Store** as of 3 Aug 2026, so build 22
+  needs a new version record: **1.0.2**, created via **+ Version**.
+- Historic: **1.0.0 (build 16) was the previous live build.** Once a version is released you
   cannot attach another build to it — the next release needs its own version
   record. So 1.0.1 = build 18, created in App Store Connect via **+ Version**.
 - **Build 18 is uploaded but was never submitted, and should not be** — it
