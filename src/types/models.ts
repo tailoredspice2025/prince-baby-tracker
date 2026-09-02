@@ -58,6 +58,15 @@ export interface MedicineEvent {
   time: string;
   name: string;
   dose: string;
+  /** The `Medication` this dose was of. Without it a dose and the medicine it
+   * came from were unrelated rows, so Health could not say "last given today
+   * 6:04 PM" and had to either list every dose or nothing. Optional because
+   * doses logged before v5 have no link; the migration backfills by name. */
+  medicationId?: string;
+  /** The open illness this dose was for, when there was one. Read from either
+   * end: the fever shows "Calpol ×3", the Calpol row shows "3 doses for Mild
+   * fever". */
+  sicknessId?: string;
   loggedBy: string;
   inputMethod: InputMethod;
 }
@@ -96,16 +105,26 @@ export interface Vaccine {
   voiceFields?: Partial<Record<'name' | 'doseLabel' | 'date', boolean>>;
 }
 
+/** One temperature, taken at a moment. Previously a temperature was captured
+ * by the form and glued into the episode's *title* — `Fever · 38.1°C` — so
+ * nothing could chart it, compare it, or hold a second reading. */
+export interface TempReading {
+  at: string; // ISO
+  tempC: number;
+}
+
 export interface SicknessEpisode {
   id: string;
   babyId: string;
-  title: string; // e.g. "Mild fever · 38.1°C"
+  title: string; // e.g. "Mild fever"  — the symptom, not the measurement
   emoji: string;
   startDate: string;
   endDate?: string;
   notes?: string;
   resolved: boolean;
   photoUri?: string;
+  /** Every temperature taken during this episode, oldest first. */
+  readings?: TempReading[];
 }
 
 export interface Medication {

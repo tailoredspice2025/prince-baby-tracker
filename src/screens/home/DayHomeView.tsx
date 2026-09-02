@@ -111,10 +111,13 @@ export function DayHomeView() {
     ? `Awake ${durationLabel(now.getTime() - new Date(lastSleep.endTime).getTime())}`
     : 'Tap to start sleep';
 
-  // Shares its answer with the notification scheduler. It used to be this same
-  // rule written out inline here, which is exactly why the banner cleared and
-  // the 6pm alarm did not — a component is somewhere only one caller can read.
-  const dueMed = medications.find((m) => isDueToday(m, now));
+  // Shares `isDueToday` with the notification scheduler — the rule lives in
+  // medicineReminders.ts precisely so the banner and the alarm cannot disagree.
+  // Every medicine outstanding right now, not just the first. Three vitamins
+  // at 6pm are one moment in the evening, so the banner names them together
+  // and one tap logs all three — the same grouping the notification uses.
+  const dueMeds = medications.filter((m) => m.babyId === baby.id && isDueToday(m, now));
+  const dueMed = dueMeds[0];
 
   // Scoped to today so the "Today" heading is truthful — this is where a
   // just-logged entry shows up, which wasn't obvious before.
@@ -181,12 +184,13 @@ export function DayHomeView() {
               instead, `lastGiven` never matched, and the banner never cleared. */}
           {dueMed && (
             <Pressable
-              onPress={() => logQuickEvent('medicine', { name: dueMed.name, dose: dueMed.dose })}
+              onPress={() => dueMeds.forEach((m) => logQuickEvent('medicine', { medicationId: m.id, name: m.name, dose: m.dose }))}
               style={{ flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#F3E3BC', borderRadius: 16, paddingVertical: 11, paddingHorizontal: 14, marginBottom: 14 }}
             >
               <ClockIcon />
               <AppText weight={700} size={13.5} color="#7A5E20" style={{ flex: 1 }}>
-                {dueMed.name} · today {dueMed.reminderTime && new Date(`1970-01-01T${dueMed.reminderTime}`).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                {dueMeds.length > 1 ? `${dueMeds.length} medicines` : dueMed.name} · today{' '}
+                {dueMed.reminderTime && new Date(`1970-01-01T${dueMed.reminderTime}`).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
               </AppText>
               <AppText weight={800} size={12} color="#A57F2C">
                 Done ✓

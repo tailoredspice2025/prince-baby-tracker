@@ -5,6 +5,8 @@ import { useNavigation } from '@react-navigation/native';
 import { AppText } from '../../components/AppText';
 import { AlertTriangleIcon, CheckIcon, DueClockIcon } from '../../components/icons';
 import { useStore } from '../../lib/store';
+import { doseSummary, lastGivenLabel, peakTemp } from '../../lib/healthModel';
+import { dateRange } from '../../lib/time';
 import { useTheme } from '../../theme/ThemeProvider';
 import { useContentStyle } from '../../theme/layout';
 import { radii } from '../../theme/tokens';
@@ -87,6 +89,7 @@ export function HealthScreen() {
   const vaccines = useStore((s) => s.vaccines).filter((v) => v.babyId === baby.id);
   const sickness = useStore((s) => s.sickness).filter((s2) => s2.babyId === baby.id);
   const medications = useStore((s) => s.medications).filter((m) => m.babyId === baby.id);
+  const events = useStore((s) => s.events);
 
   const nextDue = useMemo(
     () => vaccines.filter((v) => v.status === 'due').sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0],
@@ -171,12 +174,19 @@ export function HealthScreen() {
                     {s.emoji} {s.title}
                   </AppText>
                   <AppText weight={700} size={12} color={theme.textTertiary}>
-                    {new Date(s.startDate).toLocaleDateString([], { month: 'short', day: 'numeric' })}
-                    {s.endDate ? ` – ${new Date(s.endDate).toLocaleDateString([], { day: 'numeric' })}` : ''}
+                    {dateRange(s.startDate, s.endDate)}
                   </AppText>
                 </View>
                 <AppText weight={600} size={12} color={theme.textSecondary}>
-                  {[s.notes, s.resolved ? 'resolved' : 'ongoing', 'tap to edit'].filter(Boolean).join(' · ')}
+                  {[
+                    peakTemp(s) ? `peak ${peakTemp(s)!.tempC}°` : null,
+                    doseSummary(events, s.id) || null,
+                    s.notes,
+                    s.resolved ? 'resolved' : 'ongoing',
+                    'tap to edit',
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')}
                 </AppText>
               </Pressable>
             </Row>
@@ -203,9 +213,7 @@ export function HealthScreen() {
                   {m.name}
                 </AppText>
                 <AppText weight={600} size={12} color={theme.textSecondary}>
-                  {m.dose} · {m.schedule}
-                  {m.ongoing ? ' · ongoing' : m.lastGiven ? ` · last ${new Date(m.lastGiven).toLocaleDateString([], { month: 'short', day: 'numeric' })}` : ''}
-                  {' · tap to edit'}
+                  {[m.dose, m.schedule, lastGivenLabel(events, m), 'tap to edit'].filter(Boolean).join(' · ')}
                 </AppText>
               </Pressable>
               {m.reminderTime ? (

@@ -10,6 +10,7 @@ import { FormScreen } from '../../components/FormScreen';
 import { Toggle } from '../../components/Toggle';
 import { useStore } from '../../lib/store';
 import { useTheme } from '../../theme/ThemeProvider';
+import { isFeverish, sortedReadings } from '../../lib/healthModel';
 
 export function SicknessFormScreen() {
   const theme = useTheme();
@@ -22,6 +23,7 @@ export function SicknessFormScreen() {
   const addSicknessEpisode = useStore((s) => s.addSicknessEpisode);
   const updateSicknessEpisode = useStore((s) => s.updateSicknessEpisode);
   const deleteSicknessEpisode = useStore((s) => s.deleteSicknessEpisode);
+  const addTempReading = useStore((s) => s.addTempReading);
   const closeVoiceSheet = useStore((s) => s.closeVoiceSheet);
 
   const fromVoice = voiceDraft?.eventType === 'sickness-form';
@@ -33,21 +35,28 @@ export function SicknessFormScreen() {
   const [resolved, setResolved] = useState(!!existing?.resolved);
 
   const save = () => {
-    // Temperature is still glued into the title string. That is wrong — the
-    // model has no temperature field, so nothing can chart it and a second
-    // reading has nowhere to go — but fixing it is the Health redesign
-    // (TODO §7), not a build-19 change. Keeping the existing behaviour here
-    // rather than half-migrating the data.
+    // Temperature is a reading now, not part of the name. It used to be glued
+    // into the title (`Fever · 38.1°C`), which meant nothing could chart it
+    // and a second reading — the thing an illness actually produces — had
+    // nowhere to go.
+    const tempC = temp.trim() ? Number(temp.trim()) : undefined;
     const payload = {
-      title: title || (temp ? `Fever · ${temp}°C` : 'Symptom'),
+      title: title || 'Symptom',
       emoji: '🌡️',
       startDate: startDate.toISOString(),
       notes: notes || undefined,
       resolved,
       endDate: resolved ? existing?.endDate ?? new Date().toISOString() : undefined,
     };
-    if (editingId) updateSicknessEpisode(editingId, payload);
-    else addSicknessEpisode(payload);
+    if (editingId) {
+      updateSicknessEpisode(editingId, payload);
+      if (tempC != null && Number.isFinite(tempC)) addTempReading(editingId, tempC);
+    } else {
+      addSicknessEpisode({
+        ...payload,
+        readings: tempC != null && Number.isFinite(tempC) ? [{ at: startDate.toISOString(), tempC }] : [],
+      });
+    }
     closeVoiceSheet();
     navigation.goBack();
   };
@@ -92,7 +101,32 @@ export function SicknessFormScreen() {
               they start — so the start date is picked, not assumed. */}
           <DateField label="Started" value={startDate} onChange={setStartDate} minimumDate={new Date(baby.dob)} maximumDate={new Date()} />
           <FormField label="Symptom" value={title} onChangeText={setTitle} placeholder="e.g. Mild fever" />
-          <FormField label="Temperature" value={temp} onChangeText={setTemp} placeholder="°C" keyboardType="numeric" />
+          <FormField
+            label={editingId ? 'Add a temperature' : 'Temperature'}
+            value={temp}
+            onChangeText={setTemp}
+            placeholder="°C"
+            keyboardType="numeric"
+          />
+          {!!existing?.readings?.length && (
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+              {sortedReadings(existing).map((r) => (
+                <View
+                  key={r.at}
+                  style={{
+                    backgroundColor: isFeverish(r.tempC) ? '#F7D6DC' : theme.border,
+                    borderRadius: 8,
+                    paddingVertical: 4,
+                    paddingHorizontal: 8,
+                  }}
+                >
+                  <AppText weight={700} size={11.5} color={isFeverish(r.tempC) ? '#A04E63' : theme.textSecondary}>
+                    {r.tempC}° · {new Date(r.at).toLocaleDateString([], { day: 'numeric', month: 'short' })}
+                  </AppText>
+                </View>
+              ))}
+            </View>
+          )}
           <FormField label="Notes" value={notes} onChangeText={setNotes} placeholder="Medicine given, when it started…" multiline />
 
           <View style={{ backgroundColor: theme.surface, borderRadius: 22, padding: 14, paddingHorizontal: 18, ...theme.cardShadow }}>

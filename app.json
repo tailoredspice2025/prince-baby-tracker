@@ -2,7 +2,7 @@
   "expo": {
     "name": "DenBaby",
     "slug": "DenBaby",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -10,7 +10,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.denbaby.app",
-      "buildNumber": "22",
+      "buildNumber": "23",
       "infoPlist": {
         "NSMicrophoneUsageDescription": "DenBaby uses the microphone so you can log events hands-free by speaking.",
         "NSSpeechRecognitionUsageDescription": "DenBaby turns your speech into a logged event.",

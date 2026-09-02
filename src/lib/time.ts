@@ -40,3 +40,15 @@ export function durationLabel(ms: number): string {
 export function isSameDay(a: Date, b: Date): boolean {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
+
+/** A date range that reads correctly across a month boundary.
+ * `30 Jun – 1` was what the Health screen printed, because the end date used
+ * `{ day: 'numeric' }` alone — fine inside one month, nonsense across two. */
+export function dateRange(startIso: string, endIso?: string): string {
+  const start = new Date(startIso);
+  const opts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
+  if (!endIso) return start.toLocaleDateString([], opts);
+  const end = new Date(endIso);
+  const sameMonth = start.getFullYear() === end.getFullYear() && start.getMonth() === end.getMonth();
+  return `${start.toLocaleDateString([], opts)} – ${end.toLocaleDateString([], sameMonth ? { day: 'numeric' } : opts)}`;
+}

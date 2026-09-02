@@ -97,7 +97,7 @@ Improvements → Analytics Data → newest `DenBaby-*.ips`) and fix before resub
 
 | # | What bit us | Permanent fix (in place) |
 |---|---|---|
-| 1 | Build number collisions (autoIncrement + remote source BOTH kept producing duplicate numbers across `git reset --hard`) | **Explicit, committed build number.** `autoIncrement` is OFF and `appVersionSource` is `local`; the build number is exactly `ios.buildNumber` in app.json. Before each production build, bump that number in the repo and push — deterministic and visible in git, no magic. Current: **22** for v1.0.2 (1.0.1 build 21 is live). Build 17 was bumped but superseded before submission — nothing shipped from it. |
+| 1 | Build number collisions (autoIncrement + remote source BOTH kept producing duplicate numbers across `git reset --hard`) | **Explicit, committed build number.** `autoIncrement` is OFF and `appVersionSource` is `local`; the build number is exactly `ios.buildNumber` in app.json. Before each production build, bump that number in the repo and push — deterministic and visible in git, no magic. Current: **23** for v1.0.3 (1.0.1 build 21 is live). Build 17 was bumped but superseded before submission — nothing shipped from it. |
 | 2 | — | (see #1) |
 | 3 | `git reset --hard` discarded local auto-bumps → duplicate numbers | committed explicit number survives reset — it IS the repo value |
 | 4 | Stale local `app.json`/`eas.json` → repeated merge conflicts | always `git reset --hard origin/<branch>` before building (golden rule 1) |

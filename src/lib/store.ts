@@ -54,6 +54,7 @@ import { pendingIds, startFamilySync, stopFamilySync, syncDelete, syncWrite, upl
 import { eventTime } from './eventRow';
 import { QuickLogType, repeatLast } from './quickLogDefaults';
 import { defaultMedicine } from './medicinePick';
+import { medicationFor, openEpisode, tempFromTitle } from './healthModel';
 import {
   cancelFeedReminder,
   cancelMedicationReminder,
@@ -139,7 +140,7 @@ interface AppState {
   setBabyPhoto: (uri: string) => void;
   logQuickEvent: (
     type: 'bottle' | 'diaper' | 'solids' | 'pump' | 'medicine',
-    opts?: { quantityMl?: number; kind?: DiaperEvent['kind']; food?: string; side?: FeedEvent['side']; name?: string; dose?: string }
+    opts?: { quantityMl?: number; kind?: DiaperEvent['kind']; food?: string; side?: FeedEvent['side']; name?: string; dose?: string; medicationId?: string }
   ) => void;
   toggleSleep: () => void;
   editingEventId: string | null;
@@ -153,6 +154,10 @@ interface AppState {
   updateMeasurement: (id: string, patch: Partial<Measurement>) => void;
   deleteMeasurement: (id: string) => void;
   updateSicknessEpisode: (id: string, patch: Partial<SicknessEpisode>) => void;
+  /** Adds a temperature to an episode. Temperature used to be captured once,
+   * at creation, and folded into the title — so a second reading had nowhere
+   * to go, which is exactly what an illness produces. */
+  addTempReading: (episodeId: string, tempC: number, at?: string) => void;
   deleteSicknessEpisode: (id: string) => void;
   updateMedication: (id: string, patch: Partial<Medication>) => void;
   deleteMedication: (id: string) => void;
@@ -366,14 +371,32 @@ export const useStore = create<AppState>()(
         return;
       }
       const { name, dose } = pick;
-      const ev: MedicineEvent = { id: uid('ev'), babyId, type: 'medicine', time: now, name, dose, loggedBy, inputMethod: 'tap' };
+      // A dose is now attached to the medicine it was of and, if the baby is
+      // currently unwell, to that illness — so Health can say "last given
+      // today 6:04 PM" and the fever can say "Calpol ×3" without either
+      // screen having to guess by name at render time.
+      const med = medicationFor(s.medications, babyId, { medicationId: opts?.medicationId, name });
+      const illness = openEpisode(s.sickness, babyId, new Date(now));
+      const ev: MedicineEvent = {
+        id: uid('ev'),
+        babyId,
+        type: 'medicine',
+        time: now,
+        name,
+        dose,
+        ...(med ? { medicationId: med.id } : {}),
+        ...(illness ? { sicknessId: illness.id } : {}),
+        loggedBy,
+        inputMethod: 'tap',
+      };
       // Mark the matching ongoing medication as given, so the "due today"
       // banner on Home actually clears. Logging a dose used to write the event
       // and leave `lastGiven` untouched, so nothing could ever mark it done.
       set((st) => ({
         events: [ev, ...st.events],
         medications: st.medications.map((m) => {
-          if (m.babyId !== babyId || !m.ongoing || m.name !== name) return m;
+          const isTarget = med ? m.id === med.id : m.babyId === babyId && m.ongoing && m.name === name;
+          if (!isTarget) return m;
           const updated = { ...m, lastGiven: now };
           syncWrite('medications', updated);
           return updated;
@@ -445,6 +468,17 @@ export const useStore = create<AppState>()(
       });
     }
   },
+
+  addTempReading: (episodeId, tempC, at) =>
+    set((st) => ({
+      sickness: st.sickness.map((e) => {
+        if (e.id !== episodeId) return e;
+        const reading = { at: at ?? new Date().toISOString(), tempC };
+        const updated = { ...e, readings: [...(e.readings ?? []), reading].sort((a, b) => a.at.localeCompare(b.at)) };
+        syncWrite('sickness', updated);
+        return updated;
+      }),
+    })),
 
   updateSicknessEpisode: (id, patch) =>
     set((s) => ({
@@ -846,7 +880,7 @@ export const useStore = create<AppState>()(
     {
       name: 'denbaby',
       storage: createJSONStorage(() => AsyncStorage),
-      version: 4,
+      version: 5,
       // v0 → v1: installs persisted before the Trends screen existed only
       // have the 3-event demo seed; append the generated demo history so
       // trends have data, without touching anything the user logged.
@@ -886,6 +920,29 @@ export const useStore = create<AppState>()(
           }
           SEEDED_MEDICATION_IDS.forEach((id) => cancelMedicationReminder(id).catch(() => {}));
           SEEDED_VACCINE_IDS.forEach((id) => cancelVaccineReminders(id).catch(() => {}));
+        }
+        if (version < 5) {
+          // Temperatures were captured and glued into the episode title
+          // (`Fever · 38.1°C`), so every reading a parent took is sitting in a
+          // string. Parse it back into a real reading rather than dropping a
+          // measurement they actually made.
+          persisted.sickness = (persisted.sickness ?? []).map((e: any) => {
+            if (!e || e.readings) return e;
+            const { title, tempC } = tempFromTitle(String(e.title ?? ''));
+            return {
+              ...e,
+              title,
+              readings: tempC == null ? [] : [{ at: e.startDate ?? new Date().toISOString(), tempC }],
+            };
+          });
+          // Doses predate the link to their medicine, so match by name — the
+          // same forgiving-on-case, strict-on-everything-else rule the app
+          // uses live. A wrong link would be worse than none.
+          persisted.events = (persisted.events ?? []).map((e: any) => {
+            if (!e || e.type !== 'medicine' || e.medicationId) return e;
+            const med = medicationFor(persisted.medications ?? [], e.babyId, { name: e.name });
+            return med ? { ...e, medicationId: med.id } : e;
+          });
         }
         return persisted;
       },

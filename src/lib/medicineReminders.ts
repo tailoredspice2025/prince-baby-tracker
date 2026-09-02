@@ -27,10 +27,11 @@ export const MAX_WINDOW_DAYS = 14;
 export const MIN_WINDOW_DAYS = 2;
 
 export interface PlannedReminder {
-  /** Stable per occurrence, so one day can be cancelled without disturbing the
-   * rest — `med-{medicationId}-{YYYY-MM-DD}`. */
+  /** Stable per slot, so one evening can be cancelled without disturbing the
+   * rest — `med-{HH-mm}-{YYYY-MM-DD}`. Keyed by time rather than by medicine
+   * because a slot is now shared. */
   id: string;
-  medicationId: string;
+  medicationIds: string[];
   at: Date;
   title: string;
   body: string;
@@ -44,8 +45,10 @@ export function dayKey(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-export function occurrenceId(medicationId: string, day: Date): string {
-  return `med-${medicationId}-${dayKey(day)}`;
+/** One id per time slot per day. Three vitamins at 6pm share it, which is the
+ * point: the phone should buzz once for one moment in the evening. */
+export function occurrenceId(reminderTime: string, day: Date): string {
+  return `med-${reminderTime.replace(':', '-')}-${dayKey(day)}`;
 }
 
 /** True when this medicine's dose for `day` has already been logged. */
@@ -63,12 +66,14 @@ export function isDueToday(med: Medication, now: Date): boolean {
   return !givenOn(med, now);
 }
 
-/** How many days ahead to schedule, given how many medicines are competing for
- * the budget. One medicine gets a fortnight of cover; ten get four days each.
- * Never fewer than two, or a single quiet day would end the chain. */
-export function windowDays(medicineCount: number): number {
-  if (medicineCount <= 0) return 0;
-  return Math.max(MIN_WINDOW_DAYS, Math.min(MAX_WINDOW_DAYS, Math.floor(MEDICINE_NOTIFICATION_BUDGET / medicineCount)));
+/** How many days ahead to schedule, given how many *time slots* are competing
+ * for the budget. Grouping by time is what makes this affordable: three
+ * vitamins at 6pm cost one slot, not three, so the window stays a fortnight
+ * instead of collapsing. Never fewer than two, or a single quiet day would end
+ * the chain. */
+export function windowDays(slotCount: number): number {
+  if (slotCount <= 0) return 0;
+  return Math.max(MIN_WINDOW_DAYS, Math.min(MAX_WINDOW_DAYS, Math.floor(MEDICINE_NOTIFICATION_BUDGET / slotCount)));
 }
 
 /**
@@ -84,11 +89,22 @@ export function windowDays(medicineCount: number): number {
  */
 export function plannedReminders(medications: Medication[], now: Date): PlannedReminder[] {
   const active = medications.filter((m) => m.ongoing && !!m.reminderTime);
-  const days = windowDays(active.length);
+
+  // Group by time first. Three vitamins at 6pm used to schedule three separate
+  // notifications — three buzzes for one moment, which is how people end up
+  // turning reminders off altogether.
+  const slots = new Map<string, Medication[]>();
+  for (const m of active) {
+    const key = m.reminderTime!;
+    if (!/^\d{1,2}:\d{2}$/.test(key)) continue;
+    slots.set(key, [...(slots.get(key) ?? []), m]);
+  }
+
+  const days = windowDays(slots.size);
   const planned: PlannedReminder[] = [];
 
-  for (const med of active) {
-    const [hour, minute] = med.reminderTime!.split(':').map(Number);
+  for (const [time, meds] of slots) {
+    const [hour, minute] = time.split(':').map(Number);
     if (Number.isNaN(hour) || Number.isNaN(minute)) continue;
 
     for (let offset = 0; offset < days; offset += 1) {
@@ -99,15 +115,18 @@ export function plannedReminders(medications: Medication[], now: Date): PlannedR
       // Today's slot may already have passed — scheduling it would either fire
       // immediately or be dropped, and neither is a reminder.
       if (at.getTime() <= now.getTime()) continue;
-      // The whole point: a day whose dose is logged gets no notification.
-      if (givenOn(med, at)) continue;
+
+      // Only the medicines still outstanding that day. A slot where every dose
+      // is logged produces no notification at all.
+      const due = meds.filter((m) => !givenOn(m, at));
+      if (due.length === 0) continue;
 
       planned.push({
-        id: occurrenceId(med.id, at),
-        medicationId: med.id,
+        id: occurrenceId(time, at),
+        medicationIds: due.map((m) => m.id),
         at,
-        title: `${med.name} · ${med.dose}`,
-        body: `Time for ${med.name} (${med.schedule})`,
+        title: due.length === 1 ? `${due[0].name} · ${due[0].dose}` : `${due.length} medicines due`,
+        body: due.length === 1 ? `Time for ${due[0].name} (${due[0].schedule})` : due.map((m) => m.name).join(', '),
       });
     }
   }

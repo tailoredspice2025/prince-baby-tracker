@@ -2,11 +2,15 @@ import { describe, expect, it } from 'vitest';
 import { computeDailyStats } from '../stats';
 import { eventRowFor, sleepDurationMs, sleepRange } from '../eventRow';
 import { resolveSleepRange } from '../sleepEdit';
-import { durationLabel } from '../time';
+import { dateRange, durationLabel } from '../time';
 import { SEEDED_RECORD_IDS, demoEvents, demoMeasurements, demoVaccines, demoMedications, demoMilestonesUpcoming } from '../demoData';
 import { remindersToArm } from '../bootReminders';
 import { defaultMedicine, medicineOptions } from '../medicinePick';
 import { canQuickLog, repeatLast } from '../quickLogDefaults';
+import {
+  doseSummary, dosesOf, isFeverish, lastGivenLabel, medicationFor,
+  openEpisode, peakTemp, sortedReadings, tempFromTitle,
+} from '../healthModel';
 import {
   isDueToday,
   isMedicineReminderId,
@@ -18,7 +22,7 @@ import {
   sameLocalDay,
   windowDays,
 } from '../medicineReminders';
-import { Caregiver, FeedEvent, Medication, SleepEvent, TimelineEvent } from '../../types/models';
+import { Caregiver, FeedEvent, Medication, MedicineEvent, SicknessEpisode, SleepEvent, TimelineEvent } from '../../types/models';
 
 /**
  * One test per bug that actually reached a real build. These are not written
@@ -350,5 +354,109 @@ describe('a tap must not invent what it logs (build 22)', () => {
 
   it('does not read another baby\'s history', () => {
     expect(repeatLast('bottle', [feed('bottle', { quantityMl: 150, babyId: 'other' })], 'b')).toBeNull();
+  });
+});
+
+describe('Health redesign — the three things were never linked (1.0.3)', () => {
+  const episode = (over: Partial<SicknessEpisode> = {}): SicknessEpisode => ({
+    id: 's1', babyId: 'b', title: 'Mild fever', emoji: '🌡️',
+    startDate: at(10, 8).toISOString(), resolved: false, readings: [], ...over,
+  });
+  const dose = (over: Partial<MedicineEvent> = {}): TimelineEvent =>
+    ({ id: 'ev-d', babyId: 'b', type: 'medicine', time: at(10, 9).toISOString(), name: 'Calpol', dose: '2.5 ml', loggedBy: 'cg-me', inputMethod: 'tap', ...over }) as TimelineEvent;
+  const med = (over: Partial<Medication> = {}): Medication => ({
+    id: 'med-a', babyId: 'b', name: 'Calpol', dose: '2.5 ml', schedule: 'as needed', prn: true, ongoing: false, ...over,
+  });
+
+  it('recovers a temperature trapped in a title, rather than dropping it', () => {
+    // Every episode logged before v5 carries its reading as text, because the
+    // form glued it into the title. Discarding it at migration would lose a
+    // measurement a parent actually took.
+    expect(tempFromTitle('Fever · 38.1°C')).toEqual({ title: 'Fever', tempC: 38.1 });
+    expect(tempFromTitle('Mild fever · 37°C')).toEqual({ title: 'Mild fever', tempC: 37 });
+  });
+
+  it('does not invent a reading out of a title that has no temperature', () => {
+    expect(tempFromTitle('Cold & cough')).toEqual({ title: 'Cold & cough' });
+    // A number that is not a body temperature belongs to the name.
+    expect(tempFromTitle('Rash · 12')).toEqual({ title: 'Rash · 12' });
+  });
+
+  it('holds more than one reading and reports the peak', () => {
+    // The whole point: an illness produces a series, and the old model had
+    // room for exactly one, inside a string.
+    const e = episode({ readings: [
+      { at: at(10, 8).toISOString(), tempC: 37.6 },
+      { at: at(10, 20).toISOString(), tempC: 38.4 },
+      { at: at(11, 8).toISOString(), tempC: 37.9 },
+    ] });
+    expect(peakTemp(e)?.tempC).toBe(38.4);
+    expect(sortedReadings(e).map((r) => r.tempC)).toEqual([37.6, 38.4, 37.9]);
+    expect(isFeverish(38.4)).toBe(true);
+    expect(isFeverish(37.6)).toBe(false);
+  });
+
+  it('reads the same link from both ends', () => {
+    const events = [dose({ id: 'd1', medicationId: 'med-a', sicknessId: 's1' }), dose({ id: 'd2', medicationId: 'med-a', sicknessId: 's1' })];
+    expect(doseSummary(events, 's1')).toBe('Calpol ×2');
+    expect(dosesOf(events, 'med-a')).toHaveLength(2);
+  });
+
+  it('attaches a dose to the open illness, not a resolved one', () => {
+    const open = episode({ id: 'open', startDate: at(10, 8).toISOString() });
+    const done = episode({ id: 'done', startDate: at(9, 8).toISOString(), resolved: true });
+    expect(openEpisode([done, open], 'b', at(10, 12))?.id).toBe('open');
+    expect(openEpisode([done], 'b', at(10, 12))).toBeUndefined();
+  });
+
+  it('matches a dose to its medicine forgivingly on case, strictly otherwise', () => {
+    expect(medicationFor([med()], 'b', { name: ' calpol ' })?.id).toBe('med-a');
+    expect(medicationFor([med()], 'b', { name: 'Calpol infant' })).toBeUndefined();
+    expect(medicationFor([med()], 'other', { name: 'Calpol' })).toBeUndefined();
+  });
+
+  it('says when a medicine was last given instead of listing every dose', () => {
+    const events = [dose({ medicationId: 'med-a', time: at(10, 18).toISOString() })];
+    expect(lastGivenLabel(events, med(), at(10, 20))).toBe('last given today 6:00 PM');
+    expect(lastGivenLabel([], med({ ongoing: true }), at(10, 20))).toBe('not given yet');
+  });
+
+  it('reads a date range correctly across a month boundary', () => {
+    // It printed "30 Jun – 1", because the end used day-only. Asserted by
+    // shape rather than by an exact string: the test runner's locale orders
+    // day and month differently from the UK listing, and pinning the format
+    // would test the locale rather than the fix.
+    const across = dateRange(new Date(2026, 5, 30).toISOString(), new Date(2026, 6, 1).toISOString());
+    expect(across).toMatch(/Jun/);
+    expect(across).toMatch(/Jul/); // the end month must appear — this is the bug
+    const within = dateRange(new Date(2026, 6, 12).toISOString(), new Date(2026, 6, 18).toISOString());
+    expect(within.match(/Jul/g)).toHaveLength(1); // not repeated inside one month
+    expect(within).toMatch(/18/);
+  });
+
+  it('buzzes once for three vitamins sharing a time, not three times', () => {
+    const meds = ['B', 'C', 'D'].map((n) => med({ id: `med-${n}`, name: `Vitamin ${n}`, ongoing: true, reminderTime: '18:00' }));
+    const sameEvening = plannedReminders(meds, at(10, 9)).filter((p) => sameLocalDay(p.at, at(10, 18)));
+    expect(sameEvening).toHaveLength(1);
+    expect(sameEvening[0].title).toBe('3 medicines due');
+    expect(sameEvening[0].medicationIds).toHaveLength(3);
+  });
+
+  it('drops only the medicine already given from a shared slot', () => {
+    const meds = [
+      med({ id: 'med-B', name: 'Vitamin B', ongoing: true, reminderTime: '18:00', lastGiven: at(10, 8).toISOString() }),
+      med({ id: 'med-C', name: 'Vitamin C', ongoing: true, reminderTime: '18:00' }),
+    ];
+    const evening = plannedReminders(meds, at(10, 9)).filter((p) => sameLocalDay(p.at, at(10, 18)));
+    expect(evening).toHaveLength(1);
+    expect(evening[0].medicationIds).toEqual(['med-C']);
+    expect(evening[0].title).toBe('Vitamin C · 2.5 ml');
+  });
+
+  it('keeps a fortnight of cover for vitamins that share one slot', () => {
+    // Grouping is what makes the window affordable: three medicines at one
+    // time cost one slot against the 64-notification limit, not three.
+    const meds = ['B', 'C', 'D'].map((n) => med({ id: `med-${n}`, name: `Vitamin ${n}`, ongoing: true, reminderTime: '18:00' }));
+    expect(plannedReminders(meds, at(10, 9)).length).toBe(MAX_WINDOW_DAYS);
   });
 });

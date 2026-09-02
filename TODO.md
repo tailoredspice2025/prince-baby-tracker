@@ -10,11 +10,11 @@ Summary only. Detail lives in `FEEDBACK.md` (build-15 items) and
 | | Build | State |
 | --- | --- | --- |
 | **LIVE on the App Store** | 1.0.1 **build 21** | Approved and released 3 Aug |
-| **Ready to build** | 1.0.2 **build 22** | Stops the app inventing what you logged — §11 |
+| **Ready to build** | 1.0.3 **build 23** | Build 22's fixes plus the Health redesign — §6b, §7 |
 
-**Version must be 1.0.2 for build 22.** 1.0.1 is released, and a released
-version cannot take another build — the next release needs its own version
-record, created in App Store Connect via **+ Version**.
+**Version must be 1.0.3 for build 23.** 1.0.1 is released, and a released
+version cannot take another build. Build 22 was never built, so its changes
+ride along in 23 rather than needing a release of their own.
 
 Everything in §1–§6 is now live. Builds 17–20 were superseded before reaching
 anyone; the detail is in git history and `BUILD_RELEASE.md`'s landmine table,
@@ -116,8 +116,7 @@ hidden by a seeded Vitamin D medicine always existing.
 **Not done, deliberately:** temperature is still glued into the sickness title
 string. That is a model change and belongs with §7, not a UI build.
 
-## 6b · Build 22 — the app stops inventing what you logged
-*✅ done, ready to build. 1.0.2.*
+## 6b · The app stops inventing what you logged — ✅ done, ships in 1.0.3
 
 Five values were written into records nobody entered, all in `logQuickEvent`:
 
@@ -150,42 +149,38 @@ minutes late records the wrong time. Recoverable by tapping the row, but
 logging after the fact is the normal case. Deciding between a time control in
 the picker and an Edit action on the toast — see §1.
 
-## 7 · Health redesign — the model change
-*After 1.0.2. Do this BEFORE Family Sync — sync carries whatever model exists, and
-changing it afterwards means migrating the cloud copy too.*
+## 7 · Health redesign — ✅ done, ready to build (1.0.3, build 23)
 
-**The problem.** Three unlinked concepts: a `Medication` (what they take), a
-`MedicineEvent` (one dose), a `SicknessEpisode` (a period of illness). Nothing
-connects them, so the app can't produce the sentence a parent would say to a
-doctor: *"fever Tuesday to Thursday, peaked at 38.1, Calpol three times."*
+Health held three unconnected lists — a `Medication`, a `MedicineEvent`, a
+`SicknessEpisode` — so the app could not produce the one sentence a parent
+says to a doctor: *"fever Tuesday to Thursday, peaked at 38.1, Calpol three
+times."* Every part of it was captured. None of it was connected.
 
-1. **Temperature becomes real data.** `SicknessFormScreen` has a Temperature
-   field, and `save()` glues it into a *title string* — `Fever · 38.1°C`. The
-   model has no temperature field at all, so nothing can chart it and you can't
-   add a second reading. Needs `readings: { at, tempC }[]` and a way to add one
-   to an open episode. Third instance of "captured from the user, then folded
-   into a display string" — see solids food and pump side in `BACKLOG.md`.
-2. **A dose links to its medicine.** Health then shows one row per medicine
-   with *"last given today 6:04 PM"* — **not** a list of every dose, which
-   after a week of vitamins would be unreadable. Individual doses stay on the
-   Home timeline and day log, where a chronological list belongs.
-3. **A dose can attach to an open illness.** The fever reads "Calpol ×3"; the
-   Calpol row reads "3 doses for Mild fever". Same link, read from either end.
-4. **Group reminders by time.** Three vitamins at 6pm currently schedule three
-   separate notifications — three buzzes for one moment in the evening, which
-   is how people end up turning reminders off. One notification per slot:
-   *"3 medicines due: Vitamin B, C, D"*, with the Home banner logging all three
-   in one tap.
+1. ✅ **Temperature is real data.** `SicknessEpisode.readings: { at, tempC }[]`
+   replaces gluing it into the title. An episode holds a series, which is what
+   an illness produces; the peak is shown on the row because that is the number
+   a doctor asks for. **The v4→v5 migration parses temperatures back out of
+   existing titles** rather than discarding readings a parent actually took —
+   with a 30–45°C sanity check, so `Rash · 12` keeps its name.
+2. ✅ **A dose links to its medicine** (`MedicineEvent.medicationId`). Health
+   shows one row per medicine reading *"last given today 6:04 PM"*, not a list
+   of every dose. Pre-v5 doses are backfilled by name — forgiving on case,
+   strict on everything else, because a wrong link is worse than none.
+3. ✅ **A dose attaches to the open illness** (`MedicineEvent.sicknessId`). The
+   fever row reads "Calpol ×2"; both ends read from `healthModel.ts` so they
+   cannot drift apart.
+4. ✅ **Reminders group by time.** Three vitamins at 6pm are now one
+   notification — *"3 medicines due"* — and the Home banner names them together
+   and logs all three in one tap. Grouping also protects the rolling window:
+   three medicines in one slot cost one slot against the iOS 64-notification
+   limit, not three, so the fortnight of cover survives.
 
-**Naming decisions already made:** the Home tile stays **"Medicine"** (it means
-*gave a dose*, and works for Calpol at 2am as well as vitamins — "Daily
-vitamins" would be wrong the moment the baby is ill). No new Home tile for
-sickness — an illness is entered once and edited once, so it belongs in Health;
-if it needs presence on Home it's a contextual banner, not a seventh tile.
+Also fixed: the date range that read **"30 Jun – 1"** across a month boundary
+(`dateRange()` in `time.ts`).
 
-**Mockup:** `docs/health-redesign-mockup.html` (open in a browser) — illness at the top with the open episode
-outlined, temperature strip, medicines with "last given", vaccines with the
-scheduled one first.
+**Left alone deliberately:** the vaccine add button sits above its card while
+the other two sit below. Cosmetic, and it did not warrant touching a screen
+whose logic changed this much in the same build.
 
 ## 8 · Voice logging — UNSCHEDULED, not a priority
 *Detail: `BACKLOG.md`. Hidden behind `FEATURES.voiceLogging`*

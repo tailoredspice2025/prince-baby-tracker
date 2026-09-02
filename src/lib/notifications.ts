@@ -71,6 +71,7 @@ export async function syncMedicationReminders(medications: Medication[], now: Da
         title: planned.title,
         body: planned.body,
         sound: Platform.OS === 'ios' ? 'default' : undefined,
+        data: { medicationIds: planned.medicationIds },
       },
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DATE,
