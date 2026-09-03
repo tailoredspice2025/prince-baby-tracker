@@ -416,9 +416,18 @@ describe('Health redesign — the three things were never linked (1.0.3)', () =>
   });
 
   it('says when a medicine was last given instead of listing every dose', () => {
+    // Asserted by shape, not by an exact string. `toLocaleTimeString` renders
+    // "6:00 PM" on a US machine and "18:00" on a UK one, so pinning the format
+    // tests whoever's laptop is running it rather than the behaviour — which
+    // is exactly how this failed on the Mac after passing in the container.
     const events = [dose({ medicationId: 'med-a', time: at(10, 18).toISOString() })];
-    expect(lastGivenLabel(events, med(), at(10, 20))).toBe('last given today 6:00 PM');
+    const label = lastGivenLabel(events, med(), at(10, 20))!;
+    expect(label).toMatch(/^last given today /);
+    expect(label).toMatch(/\b(18:00|6:00)\b/); // 24-hour or 12-hour, both correct
     expect(lastGivenLabel([], med({ ongoing: true }), at(10, 20))).toBe('not given yet');
+    // A dose on an earlier day reads as a date, not "today".
+    const older = [dose({ medicationId: 'med-a', time: at(8, 18).toISOString() })];
+    expect(lastGivenLabel(older, med(), at(10, 20))).not.toMatch(/today/);
   });
 
   it('reads a date range correctly across a month boundary', () => {

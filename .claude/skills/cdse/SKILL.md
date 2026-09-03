@@ -107,6 +107,26 @@ strips the seed, so every field in this state turns blank on real installs.
 This is why the sweep excludes `demoData.ts` when looking for writes, and why
 **"I saw it working" is not evidence of capture** — check what wrote it.
 
+## Writing the regression test
+
+One test per bug that reached a build. Two things make these tests fail on
+someone else's machine rather than catching a real defect:
+
+- **Never assert an exact formatted date or time.** `toLocaleTimeString`
+  renders `6:00 PM` in the container and `18:00` on a UK Mac, and
+  `toLocaleDateString` reorders day and month. Assert the shape — the month
+  appears, the label starts with "today" — so the test measures the behaviour
+  and not the laptop. This has now broken a build gate once.
+- **Build dates with `new Date(y, m, d, h)`**, which is local time, rather
+  than parsing a UTC string, so a timezone change does not shift the day.
+
+Check both before pushing:
+
+```bash
+LC_ALL=en_GB.UTF-8 npx vitest run
+TZ=Europe/Berlin LC_ALL=de_DE.UTF-8 npx vitest run
+```
+
 ## Before saying a fix is done
 
 - The reported symptom is fixed **and** the other surfaces of the same field
