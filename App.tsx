@@ -26,7 +26,8 @@ import { VoiceListeningSheet } from './src/screens/voice/VoiceListeningSheet';
 import { AppLockScreen } from './src/components/AppLockScreen';
 import { useStore } from './src/lib/store';
 import { remindersToArm } from './src/lib/bootReminders';
-import { ensureNotificationPermissions, syncMedicationReminders, scheduleVaccineReminders, setupNotificationChannel } from './src/lib/notifications';
+import { ensureNotificationPermissions, rescheduleFeedReminder, syncMedicationReminders, scheduleVaccineReminders, setupNotificationChannel } from './src/lib/notifications';
+import { lastFeedTime } from './src/lib/reminderPlan';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -52,6 +53,16 @@ function AppInner() {
         // logged dose remove a single day — so the window needs topping up.
         syncMedicationReminders(arm.medications).catch(() => {});
         arm.vaccines.forEach((v) => scheduleVaccineReminders(v).catch(() => {}));
+        // Medicine and vaccine were both re-armed at launch and feed was not,
+        // which is the kind of asymmetry that hides a bug for months.
+        const { events, activeBabyId, settings, activeBaby } = useStore.getState();
+        if (settings.feedReminderEnabled) {
+          rescheduleFeedReminder(
+            lastFeedTime(events, activeBabyId),
+            settings.feedReminderHours ?? 3,
+            activeBaby().name
+          ).catch(() => {});
+        }
       });
     };
 

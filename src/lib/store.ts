@@ -53,6 +53,7 @@ import {
 import { pendingIds, startFamilySync, stopFamilySync, syncDelete, syncWrite, uploadLocalData } from './familySync';
 import { eventTime } from './eventRow';
 import { QuickLogType, repeatLast } from './quickLogDefaults';
+import { lastFeedTime } from './reminderPlan';
 import { defaultMedicine } from './medicinePick';
 import { medicationFor, openEpisode, tempFromTitle } from './healthModel';
 import {
@@ -86,6 +87,18 @@ function stripSeededRecords(s: {
     medications: keep(s.medications),
     milestonesAchieved: keep(s.milestonesAchieved),
   };
+}
+
+/** Recomputes the feed reminder from whatever the latest feed now is.
+ *
+ * It used to be re-armed only when a feed was *logged*, so retiming or
+ * deleting the most recent feed left a reminder anchored to an event that had
+ * changed or gone. Every action that can move "the last feed" calls this. */
+function refreshFeedReminder(get: () => AppState) {
+  const s = get();
+  if (!s.settings.feedReminderEnabled) return;
+  const last = lastFeedTime(s.events, s.activeBabyId);
+  rescheduleFeedReminder(last, s.settings.feedReminderHours ?? 3, s.activeBaby().name).catch(() => {});
 }
 
 function uid(prefix: string) {
@@ -284,7 +297,9 @@ export const useStore = create<AppState>()(
   editingEventId: null,
   setEditingEvent: (id) => set({ editingEventId: id }),
 
-  updateEvent: (id, patch) =>
+  // Retiming a feed moves "the last feed", so the reminder has to move with
+  // it — this was only ever re-armed on logging.
+  updateEvent: (id, patch) => {
     set((s) => ({
       events: s.events.map((e) => {
         if (e.id !== id) return e;
@@ -292,11 +307,14 @@ export const useStore = create<AppState>()(
         syncWrite('events', updated);
         return updated;
       }),
-    })),
+    }));
+    refreshFeedReminder(get);
+  },
 
   deleteEvent: (id) => {
     const removed = get().events.find((e) => e.id === id);
     set((s) => ({ events: s.events.filter((e) => e.id !== id), editingEventId: null }));
+    refreshFeedReminder(get);
     syncDelete('events', id);
     if (removed) {
       get().pushToast({
@@ -410,9 +428,7 @@ export const useStore = create<AppState>()(
       get().pushToast({ message: `${name} logged`, onUndo: () => set((st) => ({ events: st.events.filter((e) => e.id !== ev.id) })) });
     }
 
-    if ((type === 'bottle' || type === 'solids') && get().settings.feedReminderEnabled) {
-      rescheduleFeedReminder(now, get().settings.feedReminderHours ?? 3, get().activeBaby().name).catch(() => {});
-    }
+    if (type === 'bottle' || type === 'solids') refreshFeedReminder(get);
   },
 
   toggleSleep: () => {
@@ -599,14 +615,8 @@ export const useStore = create<AppState>()(
       return;
     }
     ensureNotificationPermissions().catch(() => {});
-    // anchor to the most recent feed so the reminder is meaningful immediately
-    const s = get();
-    const lastFeed = s.events
-      .filter((e) => e.babyId === s.activeBabyId && (e.type === 'bottle' || e.type === 'solids'))
-      .map((e) => ('time' in e ? e.time : ''))
-      .sort()
-      .pop();
-    if (lastFeed) rescheduleFeedReminder(lastFeed, nextHours, s.activeBaby().name).catch(() => {});
+    // anchored to the most recent feed, so it is meaningful immediately
+    refreshFeedReminder(get);
   },
   toggleVoicePermission: (key) =>
     set((s) => ({

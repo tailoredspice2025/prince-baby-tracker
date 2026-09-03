@@ -3,6 +3,14 @@ import { Platform } from 'react-native';
 import { Medication, Vaccine } from '../types/models';
 import { isMedicineReminderId, plannedReminders } from './medicineReminders';
 import { SEEDED_MEDICATION_IDS } from './demoData';
+import {
+  FEED_REMINDER_ID,
+  PlannedNotification,
+  VAX_OFFSETS,
+  feedReminderPlan,
+  vaccineReminderPlan,
+  vaxReminderId,
+} from './reminderPlan';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -30,6 +38,24 @@ Notifications.setNotificationHandler({
  */
 function dateTrigger(at: Date): Notifications.DateTriggerInput {
   return { type: Notifications.SchedulableTriggerInputTypes.DATE, date: at, channelId: 'reminders' };
+}
+
+/** The only place a plan becomes a scheduled notification. Every reminder in
+ * the app goes through here, so there is one trigger construction to get right
+ * rather than three. */
+async function schedule(list: PlannedNotification[]) {
+  for (const p of list) {
+    await Notifications.scheduleNotificationAsync({
+      identifier: p.id,
+      content: {
+        title: p.title,
+        body: p.body,
+        sound: Platform.OS === 'ios' ? 'default' : undefined,
+        ...(p.data ? { data: p.data } : {}),
+      },
+      trigger: dateTrigger(p.at),
+    }).catch(() => {});
+  }
 }
 
 export async function ensureNotificationPermissions(): Promise<boolean> {
@@ -82,32 +108,9 @@ export async function syncMedicationReminders(medications: Medication[], now: Da
   // Sample data is allowed to be visible; it is never allowed to ring.
   const real = medications.filter((m) => !SEEDED_MEDICATION_IDS.includes(m.id));
 
-  for (const planned of plannedReminders(real, now)) {
-    await Notifications.scheduleNotificationAsync({
-      identifier: planned.id,
-      content: {
-        title: planned.title,
-        body: planned.body,
-        sound: Platform.OS === 'ios' ? 'default' : undefined,
-        data: { medicationIds: planned.medicationIds },
-      },
-      trigger: dateTrigger(planned.at),
-    }).catch(() => {});
-  }
-}
-
-// A booked vaccine appointment nudges the parents three times: 48h, 24h,
-// and 2h before the appointment time. Each is its own notification with a
-// stable id (`vax-{id}-48h` etc.) so rescheduling overwrites cleanly and
-// both parents' devices can arm the same set idempotently after a sync.
-const VAX_OFFSETS: { key: string; ms: number; label: string }[] = [
-  { key: '48h', ms: 48 * 3600_000, label: 'in 2 days' },
-  { key: '24h', ms: 24 * 3600_000, label: 'tomorrow' },
-  { key: '2h', ms: 2 * 3600_000, label: 'in 2 hours' },
-];
-
-function vaxReminderId(vaccineId: string, key: string) {
-  return `vax-${vaccineId}-${key}`;
+  await schedule(
+    plannedReminders(real, now).map((p) => ({ ...p, data: { medicationIds: p.medicationIds } }))
+  );
 }
 
 /** Cancels all reminders for a vaccine appointment (done/edited/deleted). */
@@ -117,34 +120,11 @@ export async function cancelVaccineReminders(vaccineId: string) {
   );
 }
 
-/**
- * (Re)schedules the 48h/24h/2h reminders for an upcoming vaccine
- * appointment. Only applies to a 'due' vaccine with an appointmentAt time;
- * anything else clears any stale reminders. Offsets already in the past are
- * skipped (e.g. an appointment booked 30h out schedules only 24h + 2h).
- * Idempotent — safe to call on every sync/app-launch.
- */
-export async function scheduleVaccineReminders(vaccine: Vaccine) {
+/** Idempotent — safe on every launch and every sync. Cancels first so a
+ * retimed or completed appointment cannot leave a stale nudge behind. */
+export async function scheduleVaccineReminders(vaccine: Vaccine, now: Date = new Date()) {
   await cancelVaccineReminders(vaccine.id);
-  if (vaccine.status !== 'due' || !vaccine.appointmentAt) return;
-  const apptMs = new Date(vaccine.appointmentAt).getTime();
-  if (isNaN(apptMs) || apptMs <= Date.now()) return;
-  const timeLabel = new Date(apptMs).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-  const place = vaccine.clinic ? ` — ${vaccine.clinic}` : '';
-  const addr = vaccine.address ? `, ${vaccine.address}` : '';
-  for (const o of VAX_OFFSETS) {
-    const fireAt = apptMs - o.ms;
-    if (fireAt <= Date.now()) continue;
-    await Notifications.scheduleNotificationAsync({
-      identifier: vaxReminderId(vaccine.id, o.key),
-      content: {
-        title: `${vaccine.name} ${o.label} 💉`,
-        body: `${vaccine.doseLabel} at ${timeLabel}${place}${addr}`,
-        sound: Platform.OS === 'ios' ? 'default' : undefined,
-      },
-      trigger: dateTrigger(new Date(fireAt)),
-    });
-  }
+  await schedule(vaccineReminderPlan(vaccine, now));
 }
 
 export async function setupNotificationChannel() {
@@ -160,26 +140,12 @@ export async function cancelReminder(identifier: string) {
   await Notifications.cancelScheduledNotificationAsync(identifier);
 }
 
-const FEED_REMINDER_ID = 'feed-reminder';
-
-/**
- * (Re)schedules the single "time to feed" reminder for `hours` after the
- * most recent feed. Called on every feed log, so the reminder keeps
- * sliding forward and only fires after a genuine gap.
- */
-export async function rescheduleFeedReminder(lastFeedISO: string, hours: number, babyName: string) {
-  await Notifications.cancelScheduledNotificationAsync(FEED_REMINDER_ID).catch(() => {});
-  const fireAt = new Date(new Date(lastFeedISO).getTime() + hours * 3600_000);
-  if (fireAt.getTime() <= Date.now()) return;
-  await Notifications.scheduleNotificationAsync({
-    identifier: FEED_REMINDER_ID,
-    content: {
-      title: `Feeding time? 🍼`,
-      body: `It's been ${hours} hours since ${babyName}'s last feed`,
-      sound: Platform.OS === 'ios' ? 'default' : undefined,
-    },
-    trigger: dateTrigger(fireAt),
-  });
+/** (Re)schedules the single "time to feed" reminder for `hours` after the most
+ * recent feed. Cancels first, so logging, retiming or deleting a feed slides
+ * it rather than leaving an older one armed. */
+export async function rescheduleFeedReminder(lastFeedISO: string | undefined, hours: number, babyName: string, now: Date = new Date()) {
+  await cancelFeedReminder();
+  await schedule(feedReminderPlan(lastFeedISO, hours, babyName, now));
 }
 
 export async function cancelFeedReminder() {

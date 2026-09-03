@@ -3,6 +3,7 @@ import { computeDailyStats } from '../stats';
 import { eventRowFor, sleepDurationMs, sleepRange } from '../eventRow';
 import { resolveSleepRange } from '../sleepEdit';
 import { dateRange, durationLabel } from '../time';
+import { feedReminderPlan, lastFeedTime, vaccineReminderPlan } from '../reminderPlan';
 import { SEEDED_RECORD_IDS, demoEvents, demoMeasurements, demoVaccines, demoMedications, demoMilestonesUpcoming } from '../demoData';
 import { remindersToArm } from '../bootReminders';
 import { defaultMedicine, medicineOptions } from '../medicinePick';
@@ -22,7 +23,7 @@ import {
   sameLocalDay,
   windowDays,
 } from '../medicineReminders';
-import { Caregiver, FeedEvent, Medication, MedicineEvent, SicknessEpisode, SleepEvent, TimelineEvent } from '../../types/models';
+import { Caregiver, FeedEvent, Medication, MedicineEvent, SicknessEpisode, SleepEvent, TimelineEvent, Vaccine } from '../../types/models';
 
 /**
  * One test per bug that actually reached a real build. These are not written
@@ -467,5 +468,71 @@ describe('Health redesign — the three things were never linked (1.0.3)', () =>
     // time cost one slot against the 64-notification limit, not three.
     const meds = ['B', 'C', 'D'].map((n) => med({ id: `med-${n}`, name: `Vitamin ${n}`, ongoing: true, reminderTime: '18:00' }));
     expect(plannedReminders(meds, at(10, 9)).length).toBe(MAX_WINDOW_DAYS);
+  });
+});
+
+describe('all three reminder kinds, not just the one being changed (build 24)', () => {
+  const vax = (over: Partial<Vaccine> = {}): Vaccine => ({
+    id: 'v1', babyId: 'b', name: 'DTaP', doseLabel: 'dose 3', status: 'due',
+    date: at(20, 10).toISOString(), appointmentAt: at(20, 10).toISOString(), ...over,
+  });
+
+  it('a feed at 11:53 with a 3h gap is due at 14:53, not minutes later', () => {
+    // The reported bug. The arithmetic here was always right; what shipped
+    // wrong was the trigger built from it, which is why this lives in a
+    // planner that never touches expo and the scheduling is done in one place.
+    const plan = feedReminderPlan(at(10, 11, 53).toISOString(), 3, 'Prince', at(10, 11, 55));
+    expect(plan).toHaveLength(1);
+    expect(plan[0].at.getHours()).toBe(14);
+    expect(plan[0].at.getMinutes()).toBe(53);
+  });
+
+  it('never schedules a feed reminder that is already due', () => {
+    expect(feedReminderPlan(at(10, 8).toISOString(), 3, 'Prince', at(10, 14))).toEqual([]);
+    expect(feedReminderPlan(undefined, 3, 'Prince', at(10, 12))).toEqual([]);
+  });
+
+  it('follows the latest feed, so retiming or deleting one moves it', () => {
+    const feed = (id: string, h: number): TimelineEvent =>
+      ({ id, babyId: 'b', type: 'bottle', time: at(10, h).toISOString(), quantityMl: 120, loggedBy: 'cg-me', inputMethod: 'tap' }) as TimelineEvent;
+    const events = [feed('a', 9), feed('b', 11)];
+    expect(lastFeedTime(events, 'b')).toBe(at(10, 11).toISOString());
+    // delete the later one and the anchor moves back
+    expect(lastFeedTime([feed('a', 9)], 'b')).toBe(at(10, 9).toISOString());
+    expect(lastFeedTime(events, 'other-baby')).toBeUndefined();
+  });
+
+  it('nudges 48h, 24h and 2h before an appointment', () => {
+    const plan = vaccineReminderPlan(vax(), at(10, 10));
+    expect(plan.map((p) => p.id)).toEqual(['vax-v1-48h', 'vax-v1-24h', 'vax-v1-2h']);
+    expect(plan.every((p) => p.at.getTime() < at(20, 10).getTime())).toBe(true);
+  });
+
+  it('drops offsets already in the past — booking 30h out gets two, not three', () => {
+    const appt = at(11, 16); // ~30h after the 10th at 10:00
+    const plan = vaccineReminderPlan(vax({ appointmentAt: appt.toISOString() }), at(10, 10));
+    expect(plan.map((p) => p.id)).toEqual(['vax-v1-24h', 'vax-v1-2h']);
+  });
+
+  it('schedules nothing for a vaccine already given or with no time booked', () => {
+    expect(vaccineReminderPlan(vax({ status: 'done' }), at(10, 10))).toEqual([]);
+    expect(vaccineReminderPlan(vax({ appointmentAt: undefined }), at(10, 10))).toEqual([]);
+    expect(vaccineReminderPlan(vax({ appointmentAt: at(1, 10).toISOString() }), at(10, 10))).toEqual([]);
+  });
+
+  it('no reminder of any kind is ever scheduled in the past', () => {
+    // The invariant that binds all three. Applied in one place so a new
+    // reminder kind cannot forget it.
+    const now = at(10, 12);
+    const all = [
+      ...feedReminderPlan(at(10, 11).toISOString(), 3, 'Prince', now),
+      ...vaccineReminderPlan(vax(), now),
+      ...plannedReminders(
+        [{ id: 'm', babyId: 'b', name: 'V', dose: '1', schedule: 'daily', prn: false, ongoing: true, reminderTime: '18:00' }],
+        now
+      ),
+    ];
+    expect(all.length).toBeGreaterThan(0);
+    expect(all.every((p) => p.at.getTime() > now.getTime())).toBe(true);
   });
 });

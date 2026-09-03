@@ -20,6 +20,29 @@ The reason to run all four rather than fix what was reported: the report is one
 symptom of a break, and a break usually has more than one symptom. Fixing the
 reported instance is what turns one bug into four builds.
 
+## Scope: the system you are touching, not the field you are adding
+
+The Health redesign changed the medicine reminder. CDSE was run on the fields
+being added — `readings`, `medicationId`, `sicknessId` — and not on the
+reminder *system*. Three reminder kinds live in one file; one was rewritten and
+tested, the other two were never compared to it, and both shipped a malformed
+trigger. That cost two builds.
+
+So before starting, ask **what else is of the same kind as the thing I am
+changing** — and check those too, even when nobody reported them:
+
+```bash
+# every notification the app can schedule
+grep -rn "scheduleNotificationAsync" src/
+# every screen that writes this record type
+grep -rln "addVaccine\|updateVaccine" src/screens/
+```
+
+If two things do the same job in two different ways, that difference is where
+the next bug is. The medicine planner was extracted and tested; feed and
+vaccine were left inline where no test could reach them. The asymmetry *was*
+the bug, and it was visible in the file the whole time.
+
 ## On every bug fix, before writing code
 
 Start from **the data field, not the screen**. Name the field, then answer the
