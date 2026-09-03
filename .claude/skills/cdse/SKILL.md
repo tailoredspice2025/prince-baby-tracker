@@ -98,7 +98,20 @@ The honest alternative is nearly always available: repeat what they did last
 and, with nothing to repeat, ask. One extra tap the first time buys a record
 that only contains things that happened.
 
-## Pattern 3 — the demo seed masks missing capture
+## Pattern 3 — a type assertion is a check switched off
+
+`{ date, channelId } as Notifications.DateTriggerInput` shipped a feed reminder
+that fired seven minutes after a feed instead of three hours. The type requires
+`type: SchedulableTriggerInputTypes.DATE`; the object did not have it; the `as`
+told the compiler to stop looking. Removing the assertion turns the same line
+into `TS2741: Property 'type' is missing`.
+
+When you reach for `as` to make an SDK call compile, that is the moment to
+check the type definition instead. Where a shape is built more than once, build
+it in a helper with a declared return type so the compiler has to agree — the
+guard is then free and cannot be forgotten.
+
+## Pattern 4 — the demo seed masks missing capture
 
 `Vaccine.reaction` and `Milestone.typicalAgeRange` looked alive for months
 because `demoData.ts` filled them. No user could ever produce either. Build 18

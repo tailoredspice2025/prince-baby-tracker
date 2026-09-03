@@ -14,6 +14,24 @@ Notifications.setNotificationHandler({
   }),
 });
 
+/** The only way this file builds a "fire at this moment" trigger.
+ *
+ * The feed and vaccine reminders used to write `{ date, channelId } as
+ * Notifications.DateTriggerInput`. `DateTriggerInput` *requires*
+ * `type: SchedulableTriggerInputTypes.DATE`, so the cast was not a tidy-up —
+ * it was asserting a shape the object did not have, and silencing the one
+ * check that would have caught it. Without the discriminator expo cannot tell
+ * which kind of trigger it was given, and the notification does not arrive
+ * when it should: a feed logged at 11:53 with a three-hour reminder produced a
+ * notification seven minutes later.
+ *
+ * Returning a properly typed value with no assertion makes the compiler the
+ * guard, which is stronger than a test here — a wrong shape stops the build.
+ */
+function dateTrigger(at: Date): Notifications.DateTriggerInput {
+  return { type: Notifications.SchedulableTriggerInputTypes.DATE, date: at, channelId: 'reminders' };
+}
+
 export async function ensureNotificationPermissions(): Promise<boolean> {
   const current = await Notifications.getPermissionsAsync();
   if (current.granted) return true;
@@ -73,11 +91,7 @@ export async function syncMedicationReminders(medications: Medication[], now: Da
         sound: Platform.OS === 'ios' ? 'default' : undefined,
         data: { medicationIds: planned.medicationIds },
       },
-      trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.DATE,
-        date: planned.at,
-        channelId: 'reminders',
-      },
+      trigger: dateTrigger(planned.at),
     }).catch(() => {});
   }
 }
@@ -128,7 +142,7 @@ export async function scheduleVaccineReminders(vaccine: Vaccine) {
         body: `${vaccine.doseLabel} at ${timeLabel}${place}${addr}`,
         sound: Platform.OS === 'ios' ? 'default' : undefined,
       },
-      trigger: { date: new Date(fireAt), channelId: 'reminders' } as Notifications.DateTriggerInput,
+      trigger: dateTrigger(new Date(fireAt)),
     });
   }
 }
@@ -164,7 +178,7 @@ export async function rescheduleFeedReminder(lastFeedISO: string, hours: number,
       body: `It's been ${hours} hours since ${babyName}'s last feed`,
       sound: Platform.OS === 'ios' ? 'default' : undefined,
     },
-    trigger: { date: fireAt, channelId: 'reminders' } as Notifications.DateTriggerInput,
+    trigger: dateTrigger(fireAt),
   });
 }
 
