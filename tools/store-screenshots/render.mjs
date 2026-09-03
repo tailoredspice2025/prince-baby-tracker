@@ -174,13 +174,13 @@ ${addBtn('+', 'Add vaccine appointment')}
 </div>
 <h2>Sickness &amp; symptoms</h2>
 <div class="card" style="padding:4px 18px">
-<div class="hrow"><div class="ic" style="background:#F7D6DC">${I.thermo('#A04E63')}</div><div style="flex:1"><div style="font-size:14.5px;font-weight:800">🌡️ Mild fever · 38.1°C</div><div class="sub" style="font-size:12px">resolved · tap to edit</div></div><span style="font-size:12px;font-weight:700;color:#B39F8D">12 Jul – 18</span></div>
+<div class="hrow"><div class="ic" style="background:#F7D6DC">${I.thermo('#A04E63')}</div><div style="flex:1"><div style="font-size:14.5px;font-weight:800">🌡️ Mild fever</div><div class="sub" style="font-size:12px">peak 38.4° · Calpol ×2 · resolved · tap to edit</div></div><span style="font-size:12px;font-weight:700;color:#B39F8D">12 Jul – 18</span></div>
 </div>
 ${addBtn('+', 'Add an illness')}
 <h2>Medicine</h2>
 <div class="card" style="padding:4px 18px">
-<div class="hrow"><div class="ic" style="background:#F3E3BC">${I.medicine('#A57F2C', 20)}</div><div style="flex:1"><div style="font-size:14.5px;font-weight:800">Vitamin D drops</div><div class="sub" style="font-size:12px">400 IU · daily 6 PM · ongoing · tap to edit</div></div><span class="pill" style="background:#F3E3BC;color:#A57F2C">6:00 PM ⏰</span></div>
-<div class="hrow"><div class="ic" style="background:#F3E3BC">${I.medicine('#A57F2C', 20)}</div><div style="flex:1"><div style="font-size:14.5px;font-weight:800">Paracetamol syrup</div><div class="sub" style="font-size:12px">2.5 ml · as needed · tap to edit</div></div><span style="font-size:11px;font-weight:800;color:#B39F8D">PRN</span></div>
+<div class="hrow"><div class="ic" style="background:#F3E3BC">${I.medicine('#A57F2C', 20)}</div><div style="flex:1"><div style="font-size:14.5px;font-weight:800">Vitamin D drops</div><div class="sub" style="font-size:12px">400 IU · daily 6 PM · last given today 6:04 PM</div></div><span class="pill" style="background:#F3E3BC;color:#A57F2C">6:00 PM ⏰</span></div>
+<div class="hrow"><div class="ic" style="background:#F3E3BC">${I.medicine('#A57F2C', 20)}</div><div style="flex:1"><div style="font-size:14.5px;font-weight:800">Paracetamol syrup</div><div class="sub" style="font-size:12px">2.5 ml · as needed · 2 doses for Mild fever</div></div><span style="font-size:11px;font-weight:800;color:#B39F8D">PRN</span></div>
 </div>
 ${addBtn('+', 'Add a medicine')}
 </div>${tab('he')}`;
