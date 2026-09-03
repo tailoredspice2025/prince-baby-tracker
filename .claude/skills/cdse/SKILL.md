@@ -59,8 +59,18 @@ Then ask, in order:
 2. **Where is the rule that interprets it?** If it is inside a component, that
    is the bug, whatever the symptom. See the first pattern below.
 3. **Every place it should appear** — list them, then check each. A row, a
-   trend, a notification, a banner, the pediatrician PDF. The PDF is the one
-   most often forgotten and the one that matters most.
+   trend, a notification, a banner, the pediatrician PDF.
+
+   **The PDF is the one that keeps being forgotten**, including by the person
+   who wrote this line. It was never handed `events` at all, so feeds, sleep
+   and nappies never reached it; and the Health redesign's own temperature
+   readings did not reach it either, one commit after being built. It is the
+   only document that leaves the app and goes to a clinician, so it is the
+   surface where an omission does the most damage. Check it explicitly:
+
+   ```bash
+   grep -n "data: {" -A10 src/lib/pdfExport.ts   # what it is even given
+   ```
 4. **Can it be corrected and deleted?**
 
 Write the answer down in the commit message. If a stage is deliberately not

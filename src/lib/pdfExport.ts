@@ -1,7 +1,9 @@
 import * as Print from 'expo-print';
 import * as Sharing from 'expo-sharing';
-import { Baby, Measurement, Medication, SicknessEpisode, Vaccine } from '../types/models';
+import { Baby, Measurement, Medication, Milestone, RunningSleepSession, SicknessEpisode, TimelineEvent, Vaccine } from '../types/models';
 import { ageString } from './time';
+import { hoursMinutes, rhythmSummary } from './pdfSummary';
+import { doseSummary, dosesOf, peakTemp, sortedReadings } from './healthModel';
 
 function esc(s: string): string {
   return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -18,8 +20,11 @@ export async function exportPediatricianPdf(data: {
   vaccines: Vaccine[];
   sickness: SicknessEpisode[];
   medications: Medication[];
+  events: TimelineEvent[];
+  milestones: Milestone[];
+  runningSleep?: RunningSleepSession | null;
 }): Promise<void> {
-  const { baby, measurements, vaccines, sickness, medications } = data;
+  const { baby, measurements, vaccines, sickness, medications, events, milestones, runningSleep } = data;
   const sorted = [...measurements].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
   const measurementRows = sorted
@@ -44,21 +49,72 @@ export async function exportPediatricianPdf(data: {
     .join('');
 
   const sicknessRows = sickness
-    .map(
-      (s) => `<tr>
+    .map((s) => {
+      const peak = peakTemp(s);
+      const readings = sortedReadings(s)
+        .map((r) => `${r.tempC}°`)
+        .join(', ');
+      const detail = [
+        peak ? `peak ${peak.tempC}°C` : null,
+        readings ? `readings: ${readings}` : null,
+        doseSummary(events, s.id) || null,
+        s.notes,
+      ]
+        .filter(Boolean)
+        .join(' · ');
+      return `<tr>
         <td>${esc(s.title)}</td>
         <td>${fmtDate(s.startDate)}${s.endDate ? ` – ${fmtDate(s.endDate)}` : ' (ongoing)'}</td>
-        <td>${esc(s.notes ?? '—')}</td>
-      </tr>`
-    )
+        <td>${esc(detail || '—')}</td>
+      </tr>`;
+    })
     .join('');
 
   const medRows = medications
-    .map(
-      (m) => `<tr>
+    .map((m) => {
+      const given = dosesOf(events, m.id);
+      const last = given[0]?.time ?? m.lastGiven;
+      const record = [
+        given.length ? `${given.length} dose${given.length === 1 ? '' : 's'} logged` : null,
+        last ? `last ${fmtDate(last)}` : null,
+      ]
+        .filter(Boolean)
+        .join(' · ');
+      return `<tr>
         <td>${esc(m.name)}</td>
         <td>${esc(m.dose)}</td>
         <td>${esc(m.schedule)}${m.prn ? ' (PRN)' : m.ongoing ? ' (ongoing)' : ''}</td>
+        <td>${esc(record || '—')}</td>
+      </tr>`;
+    })
+    .join('');
+
+  // Feeds, sleep and nappies — the six tiles' worth of data that never reached
+  // this document at all.
+  const rhythm = rhythmSummary(events, baby.id, 14, new Date(), runningSleep);
+  const rhythmSection = rhythm
+    ? `<h2>Daily rhythm — average over ${rhythm.days} day${rhythm.days === 1 ? '' : 's'} with entries (${fmtDate(rhythm.from)} – ${fmtDate(rhythm.to)})</h2>
+    <table>
+      <tr><th>Feeds</th><th>Milk</th><th>Solids</th><th>Sleep</th><th>Nappies</th></tr>
+      <tr>
+        <td>${rhythm.bottlesPerDay} / day</td>
+        <td>${rhythm.milkMlPerDay} ml / day</td>
+        <td>${rhythm.solidsPerDay} / day</td>
+        <td>${hoursMinutes(rhythm.sleepMinutesPerDay)} / day over ${rhythm.sleepSessionsPerDay} sleeps</td>
+        <td>${rhythm.diapersPerDay} / day (${rhythm.wetPerDay} wet, ${rhythm.dirtyPerDay} dirty)</td>
+      </tr>
+    </table>`
+    : '<h2>Daily rhythm</h2><table><tr><td>No feeds, sleep or nappies logged in the last 14 days</td></tr></table>';
+
+  // Development is the other thing a pediatrician asks about, and it was the
+  // last record type the app holds that this document did not carry.
+  const milestoneRows = [...milestones]
+    .sort((a, b) => (a.date ?? '').localeCompare(b.date ?? ''))
+    .map(
+      (m) => `<tr>
+        <td>${esc(m.name)}</td>
+        <td>${m.date ? fmtDate(m.date) : '—'}</td>
+        <td>${esc(m.ageLabel ?? '—')}</td>
       </tr>`
     )
     .join('');
@@ -76,6 +132,8 @@ export async function exportPediatricianPdf(data: {
     <h1>${esc(baby.name)} — Health &amp; Growth Summary</h1>
     <div class="sub">Born ${fmtDate(baby.dob)} · ${ageString(baby.dob)} · birth weight ${baby.birthWeightKg} kg · birth length ${baby.birthLengthCm} cm</div>
 
+    ${rhythmSection}
+
     <h2>Growth measurements</h2>
     <table><tr><th>Date</th><th>Weight</th><th>Height</th><th>Head</th></tr>${measurementRows}</table>
 
@@ -86,7 +144,10 @@ export async function exportPediatricianPdf(data: {
     <table><tr><th>Episode</th><th>Dates</th><th>Notes</th></tr>${sicknessRows || '<tr><td colspan="3">None recorded</td></tr>'}</table>
 
     <h2>Medications</h2>
-    <table><tr><th>Medicine</th><th>Dose</th><th>Schedule</th></tr>${medRows || '<tr><td colspan="3">None recorded</td></tr>'}</table>
+    <table><tr><th>Medicine</th><th>Dose</th><th>Schedule</th><th>Record</th></tr>${medRows || '<tr><td colspan="4">None recorded</td></tr>'}</table>
+
+    <h2>Milestones</h2>
+    <table><tr><th>Milestone</th><th>Date</th><th>Age</th></tr>${milestoneRows || '<tr><td colspan="3">None recorded</td></tr>'}</table>
 
     <div class="footer">Generated by DenBaby on ${new Date().toLocaleDateString([], { year: 'numeric', month: 'long', day: 'numeric' })}. Parent-logged records — not a clinical document.</div>
   </body></html>`;

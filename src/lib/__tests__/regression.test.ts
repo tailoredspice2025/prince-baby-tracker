@@ -4,6 +4,7 @@ import { eventRowFor, sleepDurationMs, sleepRange } from '../eventRow';
 import { resolveSleepRange } from '../sleepEdit';
 import { dateRange, durationLabel } from '../time';
 import { feedReminderPlan, lastFeedTime, vaccineReminderPlan } from '../reminderPlan';
+import { hoursMinutes, rhythmSummary } from '../pdfSummary';
 import { SEEDED_RECORD_IDS, demoEvents, demoMeasurements, demoVaccines, demoMedications, demoMilestonesUpcoming } from '../demoData';
 import { remindersToArm } from '../bootReminders';
 import { defaultMedicine, medicineOptions } from '../medicinePick';
@@ -534,5 +535,57 @@ describe('all three reminder kinds, not just the one being changed (build 24)', 
     ];
     expect(all.length).toBeGreaterThan(0);
     expect(all.every((p) => p.at.getTime() > now.getTime())).toBe(true);
+  });
+});
+
+describe('the pediatrician PDF carries the daily data (build 25)', () => {
+  const ev = (type: 'bottle' | 'solids' | 'diaper', d: number, h: number, over: any = {}): TimelineEvent =>
+    ({ id: `ev-${type}-${d}-${h}`, babyId: 'b', type, time: at(d, h).toISOString(), loggedBy: 'cg-me', inputMethod: 'tap', ...over }) as TimelineEvent;
+  const nap = (d: number, from: number, to: number): TimelineEvent =>
+    ({ id: `s-${d}-${from}`, babyId: 'b', type: 'sleep', startTime: at(d, from).toISOString(), endTime: at(d, to).toISOString(), loggedBy: 'cg-me', inputMethod: 'tap' }) as TimelineEvent;
+
+  const twoDays = [
+    ev('bottle', 20, 8, { quantityMl: 120 }), ev('bottle', 20, 12, { quantityMl: 120 }),
+    ev('diaper', 20, 9, { kind: 'wet' }), ev('diaper', 20, 13, { kind: 'dirty' }),
+    nap(20, 13, 15),
+    ev('bottle', 21, 8, { quantityMl: 100 }),
+    ev('diaper', 21, 9, { kind: 'wet' }),
+    nap(21, 13, 14),
+  ];
+
+  it('reports feeds, milk, sleep and nappies per day', () => {
+    // None of this reached the PDF: `events` was never passed to the export at
+    // all, so everything the six Home tiles log stopped at Trends.
+    const r = rhythmSummary(twoDays, 'b', 14, at(21, 20))!;
+    expect(r.days).toBe(2);
+    expect(r.bottlesPerDay).toBe(1.5); // 2 then 1
+    expect(r.milkMlPerDay).toBe(170); // (240 + 100) / 2
+    expect(r.diapersPerDay).toBe(1.5);
+    expect(r.wetPerDay).toBe(1);
+    expect(r.sleepMinutesPerDay).toBe(90); // 120 then 60
+  });
+
+  it('averages over days with entries, not the whole calendar window', () => {
+    // A parent who logged two days out of fourteen should see their real
+    // pattern, not one diluted by twelve days they never opened the app.
+    const r = rhythmSummary(twoDays, 'b', 14, at(21, 20))!;
+    expect(r.days).toBe(2);
+    expect(r.bottlesPerDay).toBeGreaterThan(1);
+  });
+
+  it('returns nothing rather than zeroes when there is no data to report', () => {
+    expect(rhythmSummary([], 'b', 14, at(21, 20))).toBeNull();
+    expect(rhythmSummary(twoDays, 'other-baby', 14, at(21, 20))).toBeNull();
+  });
+
+  it('ignores entries outside the window', () => {
+    const old = [ev('bottle', 1, 8, { quantityMl: 120 })];
+    expect(rhythmSummary(old, 'b', 14, at(30, 20))).toBeNull();
+  });
+
+  it('writes sleep as hours and minutes, which is how a clinician reads it', () => {
+    expect(hoursMinutes(608)).toBe('10 h 8 m');
+    expect(hoursMinutes(120)).toBe('2 h');
+    expect(hoursMinutes(45)).toBe('45 m');
   });
 });

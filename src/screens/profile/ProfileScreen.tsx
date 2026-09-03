@@ -28,6 +28,8 @@ export function ProfileScreen() {
   const familyId = useStore((s) => s.familyId);
   const myUid = useStore((s) => s.myUid);
   const events = useStore((s) => s.events);
+  const runningSleep = useStore((s) => s.runningSleepSession);
+  const milestones = useStore((s) => s.milestonesAchieved);
   const leaveFamily = useStore((s) => s.leaveFamily);
   const removeCaregiver = useStore((s) => s.removeCaregiver);
   const measurements = useStore((s) => s.measurements).filter((m) => m.babyId === baby.id);
@@ -57,7 +59,7 @@ export function ProfileScreen() {
 
   const exportPdf = async () => {
     try {
-      await exportPediatricianPdf({ baby, measurements, vaccines, sickness, medications });
+      await exportPediatricianPdf({ baby, measurements, vaccines, sickness, medications, events, milestones, runningSleep });
     } catch {
       pushToast({ message: "Couldn't create the PDF — try again" });
     }

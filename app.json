@@ -10,7 +10,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.denbaby.app",
-      "buildNumber": "24",
+      "buildNumber": "25",
       "infoPlist": {
         "NSMicrophoneUsageDescription": "DenBaby uses the microphone so you can log events hands-free by speaking.",
         "NSSpeechRecognitionUsageDescription": "DenBaby turns your speech into a logged event.",
