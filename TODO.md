@@ -10,7 +10,7 @@ Summary only. Detail lives in `FEEDBACK.md` (build-15 items) and
 | | Build | State |
 | --- | --- | --- |
 | **LIVE on the App Store** | 1.0.1 **build 21** | Approved and released 3 Aug |
-| **Ready to build** | 1.0.3 **build 23** | Build 22's fixes plus the Health redesign — §6b, §7 |
+| **SUBMITTED FOR REVIEW** | 1.0.3 **build 25** | Quick-log defaults, Health redesign, all three reminders rebuilt, PDF carries daily data |
 
 **Version must be 1.0.3 for build 23.** 1.0.1 is released, and a released
 version cannot take another build. Build 22 was never built, so its changes
@@ -199,11 +199,8 @@ whose logic changed this much in the same build.
 - **Order: 1.0.2 (build 22) → Health redesign → Family Sync (1.1)**
 
 ## 10 · Loose ends
-- **Sickness date range reads "30 Jun – 1" across a month boundary.**
-  `HealthScreen` prints the end date as `{ day: 'numeric' }` only, which is
-  fine inside one month ("12 Jul – 18") and nonsense across two. Found while
-  re-rendering the store screenshots for build 21 — the sample had to be moved
-  inside a single month to avoid showcasing it. Fix with the Health redesign.
+- ~~Sickness date range read "30 Jun – 1" across a month boundary~~ — fixed in
+  1.0.3 by `dateRange()` in `time.ts`.
 - Night-feeding screen: hidden in v1.0, needs its own honest control if it
   returns (`FEATURES.nightFeedingView`)
 - ~~`SleepEvent.wokeCount` — modelled, never used~~ — deleted in build 20,
