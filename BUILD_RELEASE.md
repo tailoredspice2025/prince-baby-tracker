@@ -66,8 +66,9 @@ review button.
       (log → open → edit every field → save → reopen → check the Trends number)
 - [ ] If a new **native module** was added since last build (e.g. a picker,
       a Firebase package), that's expected — EAS rebuilds native from scratch
-- [ ] For a **Family Sync (v1.1)** build only: EAS Firebase env vars are set
-      (`bash scripts/setup-eas-env.sh`, once). Skip for the v1.0 line.
+- [ ] From 1.1 on: EAS Firebase env vars are set (`bash scripts/setup-eas-env.sh`,
+      once), **and** if `firestore.rules` changed, `cd tools/rules-test && npm test`
+      passes and the rules are republished in the Firebase console.
 
 ## During the build — expected prompts (all already handled)
 
@@ -97,7 +98,7 @@ Improvements → Analytics Data → newest `DenBaby-*.ips`) and fix before resub
 
 | # | What bit us | Permanent fix (in place) |
 |---|---|---|
-| 1 | Build number collisions (autoIncrement + remote source BOTH kept producing duplicate numbers across `git reset --hard`) | **Explicit, committed build number.** `autoIncrement` is OFF and `appVersionSource` is `local`; the build number is exactly `ios.buildNumber` in app.json. Before each production build, bump that number in the repo and push — deterministic and visible in git, no magic. Current: **25** for v1.0.3 (1.0.1 build 21 is live). Build 17 was bumped but superseded before submission — nothing shipped from it. |
+| 1 | Build number collisions (autoIncrement + remote source BOTH kept producing duplicate numbers across `git reset --hard`) | **Explicit, committed build number.** `autoIncrement` is OFF and `appVersionSource` is `local`; the build number is exactly `ios.buildNumber` in app.json. Before each production build, bump that number in the repo and push — deterministic and visible in git, no magic. Current: **26** for v1.1.0 (1.0.1 build 21 is live). Build 17 was bumped but superseded before submission — nothing shipped from it. |
 | 2 | — | (see #1) |
 | 3 | `git reset --hard` discarded local auto-bumps → duplicate numbers | committed explicit number survives reset — it IS the repo value |
 | 4 | Stale local `app.json`/`eas.json` → repeated merge conflicts | always `git reset --hard origin/<branch>` before building (golden rule 1) |
@@ -111,6 +112,7 @@ Improvements → Analytics Data → newest `DenBaby-*.ips`) and fix before resub
 | 12 | A feed logged at 11:53 with a three-hour reminder produced a notification seven minutes later. The trigger was written `{ date, channelId } as Notifications.DateTriggerInput`, and that type *requires* `type: SchedulableTriggerInputTypes.DATE` — so the assertion was claiming a shape the object did not have. Vaccine reminders had it too; the medicine reminders did not, which is why those verified correctly on a device and this did not | One `dateTrigger()` builder, returning a properly typed value with **no assertion**, used by all three. Verified by removing the discriminator: with the cast `tsc` passes silently, without it `TS2741: Property 'type' is missing`. **Rule: a type assertion in this codebase is a check switched off.** Prefer a helper whose return type the compiler must satisfy |
 | 13 | Two builds lost because CDSE was applied to the *fields being added* rather than the *system being changed*. Three reminder kinds sit in one file; the medicine one was rewritten and tested while feed and vaccine kept their timing inline where no test reaches, and both were wrong | All three now produce a `PlannedNotification` from a pure, tested planner, and `notifications.ts` has exactly **one** `scheduleNotificationAsync` call site and **zero** type assertions. **Rule: when two things do the same job in two different ways, the difference is where the next bug is** |
 | 14 | "Export for pediatrician" was never handed `events` at all, so feeds, sleep and nappies — everything the six Home tiles log — reached Home and Trends and stopped. Milestones were missing too, and the Health redesign's own temperature readings and dose links never reached it either, one commit after being built | The export now takes every record type the store holds, and `rhythmSummary()` in `pdfSummary.ts` derives feeds/milk/sleep/nappies per day from the already-tested `computeDailyStats`. **Rule: the PDF is a surface. When a field is added, the CDSE surface check includes the document that leaves the app** |
+| 15 | The Firestore rules shipped with Family Sync let any signed-in user — anyone with the app — list every invite code (a list of every familyId) and add themselves to any family without a code, then read it all. Any member could also make themselves owner or delete the family. They had been published to the live project, and had only ever been *read*, never attacked | `tools/rules-test/` attacks the rules in the Firestore emulator: 11/21 fail on the old rules, 21/21 pass on the new. **Rule: a security rule that has only been read is a guess. Every change to `firestore.rules` gets an attack test that fails first, and the file must be republished in the Firebase console — editing the repo changes nothing live** |
 | 10 | Sleep stored start+end but showed one timestamp and edited only the start, silently rewriting the duration behind the daily total and trend chart | `RELEASE_QA.md` §1b round-trip completeness matrix: every stored field visible and editable, and any edit touching one input of a derived value must touch all of them |
 
 ---

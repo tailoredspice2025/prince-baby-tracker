@@ -5,6 +5,7 @@ import { resolveSleepRange } from '../sleepEdit';
 import { dateRange, durationLabel } from '../time';
 import { feedReminderPlan, lastFeedTime, vaccineReminderPlan } from '../reminderPlan';
 import { hoursMinutes, rhythmSummary } from '../pdfSummary';
+import { restoreLocalOnly, stripLocalOnly } from '../syncFields';
 import { SEEDED_RECORD_IDS, demoEvents, demoMeasurements, demoVaccines, demoMedications, demoMilestonesUpcoming } from '../demoData';
 import { remindersToArm } from '../bootReminders';
 import { defaultMedicine, medicineOptions } from '../medicinePick';
@@ -587,5 +588,32 @@ describe('the pediatrician PDF carries the daily data (build 25)', () => {
     expect(hoursMinutes(608)).toBe('10 h 8 m');
     expect(hoursMinutes(120)).toBe('2 h');
     expect(hoursMinutes(45)).toBe('45 m');
+  });
+});
+
+describe('Family Sync never ships a path to a file on this phone (1.1)', () => {
+  it('strips the photo path before anything is uploaded', () => {
+    // A file:// path is meaningless on the other parent's phone. It used to
+    // sync, and the avatar there tried to load it and showed a broken image.
+    const out = stripLocalOnly({ id: 'b1', name: 'Prince', photoUri: 'file:///var/mobile/x.jpg' });
+    expect(out).toEqual({ id: 'b1', name: 'Prince' });
+    expect('photoUri' in out).toBe(false);
+  });
+
+  it('keeps this phone\'s own photo when the other parent\'s edit arrives', () => {
+    // The incoming doc carries no photo, and must not wipe the one set here.
+    const local = [{ id: 'b1', name: 'Prince', photoUri: 'file:///mine.jpg' }];
+    const remote = [{ id: 'b1', name: 'Prince Jr' }];
+    expect(restoreLocalOnly(local, remote)).toEqual([{ id: 'b1', name: 'Prince Jr', photoUri: 'file:///mine.jpg' }]);
+  });
+
+  it('does not invent a photo for something new to this phone', () => {
+    expect(restoreLocalOnly([], [{ id: 'b2', name: 'Twin' }])).toEqual([{ id: 'b2', name: 'Twin' }]);
+  });
+
+  it('takes every other field from the remote copy', () => {
+    const local = [{ id: 's1', title: 'Fever', notes: 'old', photoUri: 'file:///rash.jpg' }];
+    const remote = [{ id: 's1', title: 'Fever', notes: 'new' }];
+    expect(restoreLocalOnly(local, remote)[0].notes).toBe('new');
   });
 });

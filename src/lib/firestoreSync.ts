@@ -13,6 +13,7 @@ import {
   where,
 } from 'firebase/firestore';
 import { db, ensureSignedIn, isFirebaseConfigured } from './firebase';
+import { stripLocalOnly } from './syncFields';
 import {
   Baby,
   Caregiver,
@@ -108,7 +109,8 @@ export async function writeDoc(familyId: string, col: SyncedCollection, docObj: 
   if (!isFirebaseConfigured() || !db) return;
   await ensureSignedIn();
   await setDoc(doc(db, 'families', familyId, col, docObj.id), {
-    ...withoutUndefined(docObj as Record<string, unknown>),
+    // photoUri is a path on this phone — meaningless on any other. syncFields.ts
+    ...withoutUndefined(stripLocalOnly(docObj as Record<string, unknown>)),
     updatedAt: serverTimestamp(),
   });
 }

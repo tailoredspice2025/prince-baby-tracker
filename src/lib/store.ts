@@ -55,6 +55,7 @@ import { eventTime } from './eventRow';
 import { QuickLogType, repeatLast } from './quickLogDefaults';
 import { lastFeedTime } from './reminderPlan';
 import { remindersToArm } from './bootReminders';
+import { restoreLocalOnly } from './syncFields';
 import { defaultMedicine } from './medicinePick';
 import { medicationFor, openEpisode, tempFromTitle } from './healthModel';
 import {
@@ -311,9 +312,11 @@ export const useStore = create<AppState>()(
     set((s) => ({
       babies: s.babies.map((b) => (b.id === s.activeBabyId ? { ...b, photoUri: uri } : b)),
     }));
-    // Note: the photo URI is a device-local file path — it labels the baby on
-    // this phone but doesn't transfer the image itself. Cloud photo storage
-    // is a later enhancement; other caregivers see the initial-letter avatar.
+    // The photo is a file on this phone and is stripped before upload
+    // (syncFields.ts), so this syncs the rest of the baby and other caregivers
+    // keep their own photo or the initial-letter avatar. The old comment here
+    // claimed that already happened; the path was in fact uploaded and broke
+    // the avatar on every other phone.
     syncWrite('babies', get().activeBaby());
   },
 
@@ -802,7 +805,9 @@ export const useStore = create<AppState>()(
     const merge = <T extends { id: string }>(local: T[], remote: T[]): T[] => {
       const kept = keepLocal(local);
       const keptIds = new Set(kept.map((d) => d.id));
-      return [...kept, ...remote.filter((d) => !keptIds.has(d.id))];
+      // Each phone keeps its own photo: the path never syncs (syncFields.ts),
+      // so an incoming doc must not wipe the one this phone set.
+      return [...kept, ...restoreLocalOnly(local, remote).filter((d) => !keptIds.has(d.id))];
     };
     if (col === 'events') {
       // Events sync a rolling recent window (see firestoreSync), so a remote

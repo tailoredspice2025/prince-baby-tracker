@@ -99,7 +99,7 @@
 <div class="wrap">
   <div class="badge">D</div>
   <h1>DenBaby — Privacy Policy</h1>
-  <div class="updated">Last updated: July 2026</div>
+  <div class="updated">Last updated: September 2026</div>
 
   <div class="lede">
     DenBaby ("the app") is a baby activity and growth tracker for parents.
@@ -123,11 +123,8 @@
   and we cannot see your data.</p>
 
   <h2>Family Sync (optional)</h2>
-  <p><strong>Not available in the current App Store version.</strong> Version
-  1.0 stores everything on your device only — nothing is uploaded anywhere.
-  The description below applies to a future update that adds Family Sync, and
-  is published in advance so you can see what it will involve before you
-  choose to turn it on.</p>
+  <p><strong>Available from version 1.1.</strong> Earlier versions store
+  everything on your device only and upload nothing.</p>
   <p>Family Sync lets two or more caregivers — for example both parents — log
   to the same baby profile from their own phones. It is <strong>off by
   default</strong> and only activates when you tap "Invite caregiver" or join
@@ -140,7 +137,12 @@
     <a href="https://firebase.google.com/support/privacy">Google's privacy
     commitments</a>.</li>
     <li>Access is limited to the caregivers in your family. Joining requires
-    an invite code that you generate and share; codes expire after 24 hours.</li>
+    an invite code that a member of your family generates and shares. The code
+    is checked by our database's security rules — not only by the app — and
+    expires 24 hours after it is created. Invite codes cannot be listed or
+    searched; someone must already know one to use it.</li>
+    <li>The person who creates the family is its owner. Only the owner can
+    remove another caregiver or delete the family's shared data.</li>
     <li>No account is created — devices are identified by an anonymous ID,
     not by your name, email, or phone number. The only personal detail stored
     is the display name each caregiver chooses (for example "Dad").</li>
@@ -197,7 +199,10 @@
   local copy; the shared cloud copy remains for the rest of the family until
   the family owner deletes it (Profile → Leave family → Leave &amp; delete
   cloud data). You can also delete individual entries inside the app at any
-  time, which removes them for the whole family.</p>
+  time, which removes them from the shared cloud copy. Other caregivers' phones
+  keep up with changes to the last two weeks of activity; an older entry you
+  delete is removed from the cloud but may remain on another caregiver's phone
+  until they reinstall the app.</p>
 
   <h2>Children's privacy</h2>
   <p>The app is a tool for parents and caregivers, and is not directed at

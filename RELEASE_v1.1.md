@@ -1,112 +1,123 @@
-# v1.1 release runbook — Family Sync + new icon
+# v1.1 release runbook — Family Sync
 
-Everything is pre-staged on this branch. When v1.0 is approved and released,
-the whole v1.1 release is the steps below, in order.
-
-## ✅ Blocker cleared in build 18
-
-**Seeded demo data would sync to both parents.** `familySync.ts:132`
-(`uploadLocalData`) pushes every document in each collection with no filtering,
-and `completeOnboarding` never clears the ~12 weeks of demo feeds, sleeps,
-nappies, measurements and vaccines. So the moment someone creates a family, all
-of it uploads to Firestore and lands on the other parent's phone. Both would be
-looking at fabricated history for their own baby, in the cloud.
-
-Locally this is an annoyance; shared, it's wrong data on two devices.
-**Fix: clear the seeded records when onboarding completes** — that solves it
-everywhere at once, rather than filtering at the upload boundary.
-
-## Scope
+Version **1.1.0**, build **26**. Already set in `app.json` — no hand edits.
 
 **1.1 is Family Sync only.** Voice logging stays hidden behind
-`FEATURES.voiceLogging` and is **not scheduled** — its capture doesn't work on
-device and it is not a priority until raised. Don't let it ride along.
+`FEATURES.voiceLogging` and is not scheduled.
 
-## Already done (no action)
+---
 
-- [x] Family Sync code complete and Firebase-verified end to end
-- [x] Firebase project live: anonymous auth on, Firestore created, rules published
-- [x] Baby-face app icon in `assets/` (rides along with the build)
-- [x] EAS env script ready: `scripts/setup-eas-env.sh`
+## ⛔ Step 0 — publish the new security rules NOW, before anything else
 
-## ⚠️ Corrected — this runbook was written before the v1.0 release cycle
+This does not wait for the release. The rules currently live on the `denbaby`
+Firebase project are the old ones, and they let **any stranger** list every
+invite code (= every familyId), add themselves to any family without a code,
+and read everything in it. A member could also promote themselves to owner or
+delete the family.
 
-Four lines here were stale and two of them were dangerous. Current facts:
+The Firebase config ships in every copy of the app and is committed in
+`scripts/setup-eas-env.sh`. That is normal for Firebase — the config is not a
+secret — which is exactly why the rules are the only lock, and the old ones do
+not lock.
 
-- **`app.json` version is `1.0.0`, not `1.1.0`.** Bump it to `1.1.0` by hand as
-  step 0, or you'll ship Family Sync labelled 1.0.
-- **`autoIncrement` is OFF.** `appVersionSource` is `local` and the build number
-  is the explicit `ios.buildNumber` in `app.json` (currently **17**). Bump it by
-  hand. Following the old "autoIncrement handles it" line recreates exactly the
-  collisions that caused four failed submissions — see `BUILD_RELEASE.md`
-  landmine #1.
-- **The privacy policy no longer covers Family Sync as shipping.**
-  `docs/index.html` now says Family Sync is "Not available in the current App
-  Store version". Remove that paragraph when 1.1 goes out.
-- **1.1 sits on top of builds 16 and 17**, not on the pre-staged branch as it
-  was. Pull first.
+1. Firebase console → **denbaby** → Firestore Database → **Rules**
+2. Replace everything with the contents of `firestore.rules` in this repo
+3. **Publish**
+
+The new rules were attacked in the real Firestore emulator before this was
+written: against the old rules 11 of 21 tests fail, against these 21 of 21
+pass. See `tools/rules-test/README.md`.
+
+**Also check:** Firestore → Data. If anything is in there from earlier
+testing, and it was your real baby's data, delete it — it has been readable by
+anyone with the config while the old rules were live.
+
+The new rules need the **new app** — build 26 creates families and joins with
+the invite code in a shape the old client does not send. Nothing in the App
+Store uses sync yet (the live app has no Firebase config), so publishing now
+breaks nothing for anyone.
+
+---
 
 ## Release day — terminal (Mac, repo root)
 
 ```bash
-git pull origin claude/unzip-commit-push-t4m8ez   # 1. get everything
-# 1b. EDIT app.json BY HAND: version -> "1.1.0", ios.buildNumber -> next number
-bash scripts/setup-eas-env.sh                     # 2. one-time: Firebase env for EAS builds
-npx eas-cli build --profile production --platform ios   # 3. build (~15 min)
-npx eas-cli submit --platform ios --latest        # 4. upload to App Store Connect
+git fetch origin && git reset --hard origin/claude/unzip-commit-push-t4m8ez
+npm install
+npm run verify                                    # must be 0 errors
+npm run cdse                                      # must be clean
+bash scripts/setup-eas-env.sh                     # ONE-TIME: Firebase env for EAS builds
+npx eas-cli build --profile production --platform ios
+npx eas-cli submit --platform ios --latest
 ```
 
-Step 2 only ever needs to run once — skip it on later releases.
+`setup-eas-env.sh` is what turns Family Sync **on** in a production build —
+without it `isFirebaseConfigured()` is false and every sync screen stays
+hidden. Run it once; confirm with `npx eas-cli env:list --environment production`.
 
-### ⛔ Then the hard gate — TEST THE BUILD BEFORE RESUBMITTING
-Wait ~15 min for processing, install the build from **TestFlight** on a real
-device, and **confirm it launches to the Home screen**. Only then select the
-build in App Store Connect and Add for Review. "Build finished" ≠ "app runs"
-— skipping this is what got build 3 rejected (crash on launch). See
-RELEASE_QA.md §0.
+Build page must read **1.1.0 (26)**.
 
-## Release day — App Store Connect (browser)
+---
 
-1. **Apps → DenBaby → + Version** → enter `1.1`.
-2. **What's New** — paste:
+## ⛔ TestFlight — two phones, not one
+
+Sync cannot be tested on one device. Add your partner as an internal tester
+in App Store Connect → TestFlight so the build installs on their phone too.
+**Phone A** = the one with your existing data. **Phone B** = the second phone.
+
+1. **Join.** A: Baby → Invite caregiver → note the code. B: fresh install →
+   "Join your family" → code. A's history appears on B.
+2. **Live logging.** B logs a bottle. It appears on A within seconds, marked
+   as logged by B's name.
+3. **Reminder silenced across phones** — the bug from 1.0.1, now across two
+   devices. On A, set a medicine reminder a few minutes ahead (it syncs to B
+   and arms there). On **A**, log that dose. **B must not buzz.**
+4. **Feed reminder slides across phones.** Turn the feed reminder on on B.
+   Log a feed on A. B's reminder should move to 3 hours after A's feed.
+5. **Photos stay on each phone.** Set a baby photo on A. B shows the
+   initial-letter avatar — **not a broken image**. Set a different photo on B;
+   A's photo is unaffected.
+6. **A wrong code is refused.** On a third install (or after B leaves), enter
+   `ZZZZZZ` → "invalid code".
+7. **Leaving.** B: Leave family. B keeps its data and stops receiving A's
+   changes.
+
+Points 3 and 5 are the ones most likely to be wrong — both were bugs in the
+sync code found while auditing it for this release.
+
+---
+
+## App Store Connect
+
+1. **+ Version or Platform → `1.1.0`**
+2. **Build** → 1.1.0 (26)
+3. **What's New** — paste:
 
    ```
-   NEW: Family Sync — track together
-   • Both parents (or any caregiver) can now log to the same baby from their own phones
-   • Share a 6-character invite code — no accounts, no sign-up, ever
-   • Feeds, sleep, nappies, growth and health records appear on every phone within seconds
-   • See who logged what, at a glance
-   • Off by default: your data stays on your device until you choose to invite someone
+   Family Sync — track together.
 
-   Plus a fresh new app icon.
+   Both parents, or any caregiver, can now log to the same baby from their own phones. Share a 6-character invite code — no accounts and no sign-up. Feeds, sleep, nappies, growth and health records appear on every phone within seconds, marked with who logged them.
+
+   Off by default: nothing leaves your phone until you invite someone. Photos always stay on the phone that took them.
    ```
 
-3. **Build** section → select the new build (wait ~15 min after submit for processing).
-4. **App Privacy** (left sidebar) → Edit. Family Sync stores baby data in the
-   cloud, so the label changes from "Data Not Collected" to:
-   - **Health & Fitness** → collected, **linked to the user's identity? NO**
-     (anonymous IDs only), used for **App Functionality** only, **not** for
-     tracking.
-   - **User Content** (photos stay local — do NOT add; only add "Other User
-     Content" if asked about logged entries: same answers as above).
-   - Everything else stays "not collected".
-5. **Add for Review**.
+4. **App Privacy** → Edit. This is the change from "Data Not Collected", and
+   it is **your** legal declaration — below is the conservative reading:
 
-## Optional pre-flight (recommended once, before step 3)
+   | Data type | Collected | Linked to identity | Tracking | Purpose |
+   | --- | --- | --- | --- | --- |
+   | Health & Fitness → **Health** (temperatures, medicines, vaccines, illnesses) | Yes | No | No | App Functionality |
+   | Contact Info → **Name** (baby's name, caregivers' display names) | Yes | No | No | App Functionality |
+   | Identifiers → **User ID** (anonymous Firebase ID) | Yes | No | No | App Functionality |
+   | User Content → **Other User Content** (feeds, sleep, nappies, notes) | Yes | No | No | App Functionality |
+   | Photos or Videos | **No** — they never leave the device | | | |
 
-Two-simulator join test — see the recipe in FIREBASE_SETUP.md §6, or:
-phone A: Profile → Invite caregiver → code; phone B (fresh simulator):
-"Join your family" → code → history appears → log on B, watch it land on A.
+   "Not linked" is defensible because there are no accounts: the only
+   identifier is an anonymous ID with no email, phone or real name attached.
+   If you would rather over-declare, "linked" is never a rejection reason;
+   under-declaring can be.
 
-## Sequencing
-
-**1.0 approved → 1.0.1 (build 17) → then 1.1.** Let the app prove stable with
-real users before adding a cloud dependency, and don't tangle the privacy-label
-change (from "Data Not Collected" to actual collection) with a launch that is
-still settling.
-
-## If v1.0 gets rejected instead
-
-Don't use this runbook. A metadata rejection needs no rebuild (fix the text
-in App Store Connect and resubmit). A binary rejection means we fix, then
-decide together whether the fix ships as 1.0.0 or folds into 1.1.0.
+5. **Privacy Policy** — `docs/index.html` is already updated for 1.1 and
+   deploys with the push to GitHub Pages. Confirm the live page says
+   "Available from version 1.1".
+6. **Add for Review** — only after all seven TestFlight checks pass.

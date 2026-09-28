@@ -11,6 +11,7 @@ Summary only. Detail lives in `FEEDBACK.md` (build-15 items) and
 | --- | --- | --- |
 | **LIVE on the App Store** | 1.0.1 **build 21** | Approved and released 3 Aug |
 | **SUBMITTED FOR REVIEW** | 1.0.3 **build 25** | Quick-log defaults, Health redesign, all three reminders rebuilt, PDF carries daily data |
+| **Ready to build** | 1.1.0 **build 26** | Family Sync — `RELEASE_v1.1.md`. **Publish the new `firestore.rules` first, today** |
 
 **Version must be 1.0.3 for build 23.** 1.0.1 is released, and a released
 version cannot take another build. Build 22 was never built, so its changes
@@ -190,13 +191,28 @@ whose logic changed this much in the same build.
 - Then: open-ended sleep poisons Trends · time parsing wrong · spoken values
   dropped · "Edit" button dead · no undo · silent permission failures
 
-## 9 · Family Sync
-*Detail: `RELEASE_v1.1.md`. Order: 1.0.2 → Health redesign → Family Sync (1.1)*
+## 9 · Family Sync — ✅ done, ready to build (1.1.0, build 26)
+*Runbook: `RELEASE_v1.1.md`.*
 
-- Code complete and Firebase-verified; runbook corrected for the v1.0 cycle
-- ✅ **Blocker cleared in build 18** — seeded data is stripped at onboarding,
-  so there is nothing fabricated to upload
-- **Order: 1.0.2 (build 22) → Health redesign → Family Sync (1.1)**
+Audited against today's model before shipping, rather than trusting code
+written months ago. Four defects, one of them serious:
+
+1. **The security rules let a stranger into any family.** Invite codes were
+   listable (a list of every familyId) and caregiver docs accepted from anyone
+   with no code. Rewritten and **attacked in the Firestore emulator** —
+   `tools/rules-test/`, 11/21 failing before, 21/21 after. The old rules are
+   still live on the Firebase project until republished.
+2. **A partner's dose didn't silence your alarm.** Inbound sync re-armed
+   vaccine reminders only. Launch and inbound now share `rearmReminders()`.
+3. **A partner's deleted appointment kept nudging you.** Vaccines now
+   cancel-all-then-plan like medicines.
+4. **A photo broke the avatar on the other phone.** The local file path synced
+   and pointed at nothing there. Now stripped on upload, kept locally on
+   download — `syncFields.ts`.
+
+**Known and accepted:** deleting an entry older than 14 days removes it from
+the cloud but not from other phones, which only listen to the last two weeks
+(the price of a flat Firestore bill). Stated plainly in the privacy policy.
 
 ## 10 · Loose ends
 - ~~Sickness date range read "30 Jun – 1" across a month boundary~~ — fixed in
