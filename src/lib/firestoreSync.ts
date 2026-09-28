@@ -167,20 +167,25 @@ export async function getUid(): Promise<string | null> {
 }
 
 /**
- * Bootstraps a brand-new family: caregiver doc first (the rules' entry
- * point — only a doc whose id matches your uid may be created in an empty
- * family), then the family root doc.  Returns the new familyId.
+ * Bootstraps a brand-new family: the root doc FIRST, naming this device's uid
+ * as owner, then this device's own caregiver doc as owner. Returns familyId.
+ *
+ * The order is what the security rules check. The rules used to let anyone
+ * create a caregiver doc in any family, which is how a stranger could join
+ * without an invite; now an owner caregiver doc is only accepted when the
+ * family root already names you as its owner. Reversing these two writes
+ * would make family creation fail outright.
  */
 export async function createFamily(caregiver: Caregiver): Promise<string> {
   if (!isFirebaseConfigured() || !db) throw new Error('Firebase not configured');
   const uid = await getUid();
   if (!uid) throw new Error('Sign-in failed');
   const familyId = `fam-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  await setDoc(doc(db, 'families', familyId), { ownerUid: uid, createdAtMs: Date.now(), updatedAt: serverTimestamp() });
   await setDoc(doc(db, 'families', familyId, 'caregivers', uid), {
-    ...withoutUndefined({ ...caregiver, id: uid, familyId } as unknown as Record<string, unknown>),
+    ...withoutUndefined({ ...caregiver, id: uid, familyId, role: 'owner' } as unknown as Record<string, unknown>),
     updatedAt: serverTimestamp(),
   });
-  await setDoc(doc(db, 'families', familyId), { createdAtMs: Date.now(), updatedAt: serverTimestamp() });
   return familyId;
 }
 
@@ -212,13 +217,23 @@ export async function resolveInviteCode(code: string): Promise<string | null> {
   return data.familyId as string;
 }
 
-/** Adds the current device to a family as a new caregiver (the join flow). */
-export async function joinFamily(familyId: string, caregiver: Omit<Caregiver, 'id' | 'familyId'>): Promise<string> {
+/** Adds the current device to a family as an editor (the join flow).
+ *
+ * The invite code travels WITH the write so the security rules can check it
+ * on the server — live, unexpired, and minted for this family. The code used
+ * to be checked only here in the client, which a stranger simply skips; the
+ * rules accepted any caregiver doc from anyone. */
+export async function joinFamily(
+  familyId: string,
+  inviteCode: string,
+  caregiver: Omit<Caregiver, 'id' | 'familyId' | 'role'>
+): Promise<string> {
   if (!isFirebaseConfigured() || !db) throw new Error('Firebase not configured');
   const uid = await getUid();
   if (!uid) throw new Error('Sign-in failed');
   await setDoc(doc(db, 'families', familyId, 'caregivers', uid), {
-    ...withoutUndefined({ ...caregiver, id: uid, familyId } as unknown as Record<string, unknown>),
+    ...withoutUndefined({ ...caregiver, id: uid, familyId, role: 'editor' } as unknown as Record<string, unknown>),
+    inviteCode: inviteCode.trim().toUpperCase(),
     updatedAt: serverTimestamp(),
   });
   return uid;

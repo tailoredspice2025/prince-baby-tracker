@@ -50,10 +50,11 @@ const ALLOWED = {
   online: 'derived from sync presence',
   emoji: 'presentation, assigned not entered',
   typicalAgeRange: 'catalogue metadata on the upcoming-milestone suggestions, not user data',
-  // Family Sync (v1.1) writes both of these; they are dead in the v1.0 line
-  // and must not be surfaced until they carry a real value.
-  loggedCount: 'Family Sync v1.1 — see RELEASE_v1.1.md',
-  lastActive: 'Family Sync v1.1 — see RELEASE_v1.1.md',
+  // Written 0 at join and never updated. The Profile screen DERIVES the real
+  // count from events (`events.filter(e => e.loggedBy === c.id)`), so the
+  // stored value is never what a parent sees. Delete if nothing starts reading it.
+  loggedCount: 'stored placeholder; Profile derives the real count from events',
+  lastActive: 'modelled for presence, never written or shown — no presence in 1.1',
 };
 
 function grep(pattern) {

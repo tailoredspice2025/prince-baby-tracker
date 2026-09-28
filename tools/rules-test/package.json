@@ -1,0 +1,15 @@
+{
+  "name": "denbaby-rules-test",
+  "private": true,
+  "type": "module",
+  "description": "Attacks firestore.rules in the Firestore emulator. Separate from the app so none of this reaches the app bundle or the Mac's npm install.",
+  "scripts": {
+    "test": "firebase emulators:exec --only firestore --project denbaby-rules-test \"vitest run rules.test.js --reporter=verbose\""
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^4.0.0",
+    "firebase": "^11.0.0",
+    "firebase-tools": "^13.0.0",
+    "vitest": "^2.0.0"
+  }
+}

@@ -127,6 +127,22 @@ export async function scheduleVaccineReminders(vaccine: Vaccine, now: Date = new
   await schedule(vaccineReminderPlan(vaccine, now));
 }
 
+/** Brings every pending vaccine nudge in line with the vaccines this phone
+ * holds — the same cancel-everything-then-plan shape as the medicine sync.
+ *
+ * Scheduling per vaccine only ever cancelled appointments that still exist,
+ * so one the other parent DELETED kept nudging this phone 48h, 24h and 2h
+ * before an appointment that was no longer happening. */
+export async function syncVaccineReminders(vaccines: Vaccine[], now: Date = new Date()) {
+  const pending = await Notifications.getAllScheduledNotificationsAsync().catch(() => []);
+  await Promise.all(
+    pending
+      .filter((n) => n.identifier.startsWith('vax-'))
+      .map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier).catch(() => {}))
+  );
+  await schedule(vaccines.flatMap((v) => vaccineReminderPlan(v, now)));
+}
+
 export async function setupNotificationChannel() {
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('reminders', {

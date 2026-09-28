@@ -1,10 +1,17 @@
 rules_version = '2';
 
-// Security rules for the Prince Baby Tracker multi-caregiver data model.
-// Every authenticated user (anonymous auth is fine) who is listed as a
-// caregiver on a family may read/write that family's subtree. Invite codes
-// are write-once-by-owner, readable by anyone (so "join by code" works
-// before the joining user has a caregiver doc yet).
+// Security rules for DenBaby's multi-caregiver data.
+//
+// Threat model: the Firebase config ships inside every copy of the app, and
+// anonymous sign-in is on, so assume ANY stranger can authenticate and make
+// arbitrary requests. The only things standing between them and a baby's
+// health records are these rules. The previous version let a stranger list
+// every invite code (revealing every familyId) and then add themselves as a
+// caregiver with no code at all — verified against the emulator, see
+// tools/rules-test/. Every rule below has an attack test that fails without it.
+//
+// Families are joined ONLY with a live invite code, checked here on the
+// server, not in the client.
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -12,32 +19,83 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function familyPath(familyId) {
+      return /databases/$(database)/documents/families/$(familyId);
+    }
+
     function isCaregiverOf(familyId) {
       return isSignedIn() &&
         exists(/databases/$(database)/documents/families/$(familyId)/caregivers/$(request.auth.uid));
     }
 
-    match /families/{familyId} {
-      allow read, write: if isCaregiverOf(familyId);
+    function isOwnerOf(familyId) {
+      return isSignedIn() &&
+        exists(familyPath(familyId)) &&
+        get(familyPath(familyId)).data.ownerUid == request.auth.uid;
+    }
 
+    // A code is live for 24 hours from the server time it was minted. The TTL
+    // used to be checked only by the client, which a stranger simply skips.
+    function isLiveInviteFor(code, familyId) {
+      let path = /databases/$(database)/documents/inviteCodes/$(code);
+      return code is string &&
+        exists(path) &&
+        get(path).data.familyId == familyId &&
+        request.time < get(path).data.createdAt + duration.value(24, 'h');
+    }
+
+    match /families/{familyId} {
+      // The creator writes the root FIRST, naming themselves owner. Creating a
+      // root that already exists is an update, so this cannot hijack a family.
+      allow create: if isSignedIn() && request.resource.data.ownerUid == request.auth.uid;
+      allow read: if isCaregiverOf(familyId);
+      allow update: if isCaregiverOf(familyId) &&
+        request.resource.data.ownerUid == resource.data.ownerUid;
+      allow delete: if isOwnerOf(familyId);
+
+      // Family data: babies, events, measurements, vaccines, sickness,
+      // medications, milestones. `caregivers` is excluded on purpose — a
+      // wildcard that also matched it let any member rewrite or delete any
+      // other member, overriding the stricter rules below.
       match /{subcollection}/{docId} {
-        allow read, write: if isCaregiverOf(familyId);
+        allow read, write: if subcollection != 'caregivers' && isCaregiverOf(familyId);
       }
 
-      // a brand-new family has no caregiver docs yet; allow the creator
-      // (matched client-side right after sign-in) to bootstrap it once.
       match /caregivers/{caregiverId} {
-        allow create: if isSignedIn() && request.auth.uid == caregiverId;
-        allow read, update, delete: if isCaregiverOf(familyId);
+        allow read: if isCaregiverOf(familyId);
+
+        // You may only ever create your own caregiver doc, and only as:
+        //   - the owner of a family whose root names you as owner, or
+        //   - an editor holding a live invite code for THIS family.
+        allow create: if isSignedIn() &&
+          request.auth.uid == caregiverId &&
+          (
+            (request.resource.data.role == 'owner' && isOwnerOf(familyId)) ||
+            (request.resource.data.role == 'editor' &&
+              isLiveInviteFor(request.resource.data.inviteCode, familyId))
+          );
+
+        // Your own doc only, and your role cannot change — otherwise any
+        // editor could promote themselves to owner.
+        allow update: if isCaregiverOf(familyId) &&
+          request.auth.uid == caregiverId &&
+          request.resource.data.role == resource.data.role;
+
+        // Leave (yourself) or remove (the owner removing someone else).
+        allow delete: if isCaregiverOf(familyId) &&
+          (request.auth.uid == caregiverId || isOwnerOf(familyId));
       }
     }
 
     match /inviteCodes/{code} {
-      allow read: if isSignedIn();
-      // only a caregiver of the target family may mint codes for it
-      // (request.resource is the doc being created; resource would be the
-      // pre-existing doc, which doesn't exist yet on create)
-      allow create: if isCaregiverOf(request.resource.data.familyId);
+      // Look up ONE code you already know. Listing was allowed before, and a
+      // list of codes is a list of every family on the service.
+      allow get: if isSignedIn();
+      allow list: if false;
+      // Only a member mints a code, and its timestamp must be the server's —
+      // a client-chosen date could make a code live for years.
+      allow create: if isCaregiverOf(request.resource.data.familyId) &&
+        request.resource.data.createdAt == request.time;
       allow update, delete: if false;
     }
   }

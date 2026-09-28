@@ -25,9 +25,7 @@ import { ErrorBoundary } from './src/components/ErrorBoundary';
 import { VoiceListeningSheet } from './src/screens/voice/VoiceListeningSheet';
 import { AppLockScreen } from './src/components/AppLockScreen';
 import { useStore } from './src/lib/store';
-import { remindersToArm } from './src/lib/bootReminders';
-import { ensureNotificationPermissions, rescheduleFeedReminder, syncMedicationReminders, scheduleVaccineReminders, setupNotificationChannel } from './src/lib/notifications';
-import { lastFeedTime } from './src/lib/reminderPlan';
+import { ensureNotificationPermissions, setupNotificationChannel } from './src/lib/notifications';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -43,26 +41,13 @@ function AppInner() {
     // and left a linked device unable to reconnect family sync because
     // familyId was still null.
     const onReady = () => {
-      const { medications, vaccines, initFamilySync } = useStore.getState();
+      const { initFamilySync } = useStore.getState();
       initFamilySync();
       ensureNotificationPermissions().then((granted) => {
         if (!granted) return;
-        const arm = remindersToArm(true, medications, vaccines);
-        // Re-arms the rolling window every launch. Each medicine reminder is a
-        // dated one-shot rather than a repeating alarm — that is what lets a
-        // logged dose remove a single day — so the window needs topping up.
-        syncMedicationReminders(arm.medications).catch(() => {});
-        arm.vaccines.forEach((v) => scheduleVaccineReminders(v).catch(() => {}));
-        // Medicine and vaccine were both re-armed at launch and feed was not,
-        // which is the kind of asymmetry that hides a bug for months.
-        const { events, activeBabyId, settings, activeBaby } = useStore.getState();
-        if (settings.feedReminderEnabled) {
-          rescheduleFeedReminder(
-            lastFeedTime(events, activeBabyId),
-            settings.feedReminderHours ?? 3,
-            activeBaby().name
-          ).catch(() => {});
-        }
+        // The same function inbound sync uses, so launch and "the other parent
+        // just logged something" re-arm reminders identically.
+        useStore.getState().rearmReminders();
       });
     };
 

@@ -54,6 +54,7 @@ import { pendingIds, startFamilySync, stopFamilySync, syncDelete, syncWrite, upl
 import { eventTime } from './eventRow';
 import { QuickLogType, repeatLast } from './quickLogDefaults';
 import { lastFeedTime } from './reminderPlan';
+import { remindersToArm } from './bootReminders';
 import { defaultMedicine } from './medicinePick';
 import { medicationFor, openEpisode, tempFromTitle } from './healthModel';
 import {
@@ -64,6 +65,7 @@ import {
   rescheduleFeedReminder,
   syncMedicationReminders,
   scheduleVaccineReminders,
+  syncVaccineReminders,
 } from './notifications';
 
 /** Drops every seeded sample record, keeping anything the user logged.
@@ -99,6 +101,24 @@ function refreshFeedReminder(get: () => AppState) {
   if (!s.settings.feedReminderEnabled) return;
   const last = lastFeedTime(s.events, s.activeBabyId);
   rescheduleFeedReminder(last, s.settings.feedReminderHours ?? 3, s.activeBaby().name).catch(() => {});
+}
+
+export type ReminderKind = 'medicine' | 'vaccine' | 'feed';
+
+/** Re-arms THIS phone's reminders from the current state.
+ *
+ * Notifications live on each device, not in the cloud, so every change that
+ * reaches this phone — from this parent or the other — has to re-arm them
+ * here. Launch did all three. Inbound sync did only vaccines: a dose the other
+ * parent logged never silenced this phone's alarm, and a feed they logged never
+ * moved this phone's feed reminder. One function, called from both places, so
+ * the two paths cannot drift apart again. */
+function rearmReminders(get: () => AppState, which: ReminderKind[] = ['medicine', 'vaccine', 'feed']) {
+  const s = get();
+  const arm = remindersToArm(true, s.medications, s.vaccines);
+  if (which.includes('medicine')) syncMedicationReminders(arm.medications).catch(() => {});
+  if (which.includes('vaccine')) syncVaccineReminders(arm.vaccines).catch(() => {});
+  if (which.includes('feed')) refreshFeedReminder(get);
 }
 
 function uid(prefix: string) {
@@ -194,6 +214,9 @@ interface AppState {
   /** The name shown next to everything this device logs. */
   myName: () => string;
   setMyName: (name: string) => void;
+  /** Re-arms this device's reminders from current state — at launch and
+   * whenever the other parent's changes arrive. */
+  rearmReminders: (which?: ReminderKind[]) => void;
   // Family sync lifecycle
   initFamilySync: () => void;
   createFamilyAndLink: (myName: string) => Promise<void>;
@@ -649,6 +672,8 @@ export const useStore = create<AppState>()(
     if (updated && get().familyId) syncWrite('caregivers', updated);
   },
 
+  rearmReminders: (which) => rearmReminders(get, which),
+
   // ——— Family sync lifecycle ———————————————————————————————————————————
 
   /** Reconnects live sync on app start when this device is already linked. */
@@ -707,9 +732,10 @@ export const useStore = create<AppState>()(
     try {
       const familyId = await resolveInviteCode(code.trim());
       if (!familyId) return 'invalid-code';
-      const uidNow = await joinFamily(familyId, {
+      // The code goes with the join write; the rules reject a join without a
+      // live code for this family, whatever the client believes.
+      const uidNow = await joinFamily(familyId, code, {
         name: myName || 'Parent',
-        role: 'editor',
         colorKey: 'sky',
         loggedCount: 0,
         online: true,
@@ -795,6 +821,8 @@ export const useStore = create<AppState>()(
           events: [...remote, ...keptLocal].sort((a, b) => eventTime(b).localeCompare(eventTime(a))),
         };
       });
+      // The other parent's feed moves this phone's "time to feed" reminder.
+      rearmReminders(get, ['feed']);
     } else if (col === 'measurements') {
       set((s) => ({
         measurements: merge(s.measurements, docs as unknown as Measurement[]).sort((a, b) =>
@@ -804,14 +832,15 @@ export const useStore = create<AppState>()(
     } else if (col === 'vaccines') {
       const remote = docs as unknown as Vaccine[];
       set((s) => ({ vaccines: merge(s.vaccines, remote) }));
-      // Reminders are per-device, so arm this phone's copy for every synced
-      // appointment — this is what makes both parents get nudged when one of
-      // them books it. Idempotent (stable ids); clears any that became done.
-      remote.forEach((v) => scheduleVaccineReminders(v).catch(() => {}));
+      // Both parents get nudged when either books an appointment.
+      rearmReminders(get, ['vaccine']);
     } else if (col === 'sickness') {
       set((s) => ({ sickness: merge(s.sickness, docs as unknown as SicknessEpisode[]) }));
     } else if (col === 'medications') {
       set((s) => ({ medications: merge(s.medications, docs as unknown as Medication[]) }));
+      // A dose the other parent logged stamps lastGiven on this medication, and
+      // must silence today's alarm on THIS phone too.
+      rearmReminders(get, ['medicine']);
     } else if (col === 'milestones') {
       set((s) => ({ milestonesAchieved: merge(s.milestonesAchieved, docs as unknown as Milestone[]) }));
     } else if (col === 'babies') {
