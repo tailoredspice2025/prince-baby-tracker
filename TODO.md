@@ -191,13 +191,13 @@ whose logic changed this much in the same build.
 - Then: open-ended sleep poisons Trends · time parsing wrong · spoken values
   dropped · "Edit" button dead · no undo · silent permission failures
 
-## 9 · Family Sync — ✅ built (1.1.0, build 26), awaiting two-phone TestFlight
+## 9 · Family Sync — ✅ ready to build (1.1.0, build 27), then two-phone TestFlight
 *Runbook: `RELEASE_v1.1.md`.* Rules republished 7 Oct 2026, July test family
-deleted, Anonymous auth confirmed, EAS production env set; build 26 built on
-the `production` environment from 6bec56b.
+deleted, Anonymous auth confirmed, EAS production env set. Build 26 was built
+the same day and is **not to be released** — defect 5 below.
 
 Audited against today's model before shipping, rather than trusting code
-written months ago. Four defects, one of them serious:
+written months ago. Five defects, two of them serious:
 
 1. **The security rules let a stranger into any family.** Invite codes were
    listable (a list of every familyId) and caregiver docs accepted from anyone
@@ -211,6 +211,11 @@ written months ago. Four defects, one of them serious:
 4. **A photo broke the avatar on the other phone.** The local file path synced
    and pointed at nothing there. Now stripped on upload, kept locally on
    download — `syncFields.ts`.
+5. **The phone forgot who it was on every relaunch.** `getAuth()` keeps the
+   anonymous sign-in in memory on React Native, so after closing the app the
+   phone was a stranger to its own family and the rules locked it out —
+   silently. A comment claimed the SDK persisted it. Found after build 26 was
+   built; fixed in 27 with explicit AsyncStorage persistence and a test.
 
 **Known and accepted:** deleting an entry older than 14 days removes it from
 the cloud but not from other phones, which only listen to the last two weeks
@@ -232,6 +237,10 @@ the cloud but not from other phones, which only listen to the last two weeks
   expo ≥ 57.0.9, RN ≥ 0.86.2). Every live build already ships these versions,
   so it is not new in 26 — but do it as its own build with a full re-test
   (`npx expo install expo@^57.0.9 --fix`), not mixed into a feature release.
+  The same doctor run flags 19 packages off SDK 57's expected versions, three
+  of them a major ahead (async-storage 3 vs 2, gesture-handler 3 vs 2,
+  eslint-config-expo). All have shipped unchanged since build 12, so they are
+  proven on device, but aligning them is part of that same upgrade build.
 
 ## 11 · Yours, outside the repo
 - ~~App Store description: "coming soon" line for voice~~ — dropped by

@@ -1,9 +1,23 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
-import { getAuth, signInAnonymously, onAuthStateChanged, Auth, User } from 'firebase/auth';
+import {
+  getAuth,
+  getReactNativePersistence,
+  initializeAuth,
+  signInAnonymously,
+  onAuthStateChanged,
+  Auth,
+  User,
+} from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
-// Firebase JS SDK >= 11.3 auto-persists RN auth state to AsyncStorage when
-// @react-native-async-storage/async-storage is installed (it is — see
-// package.json) — no explicit getReactNativePersistence() wiring needed.
+
+// The anonymous sign-in IS this phone's identity in the family: its uid is
+// the caregiver doc id, and the rules let only that uid read or write. So it
+// must survive a relaunch. A comment here used to claim the SDK persisted it
+// automatically; it does not — `getAuth()` on React Native falls back to
+// memory, so every cold start signed in as a brand-new stranger and the rules
+// (correctly) locked them out of their own family. Persistence must be passed
+// to initializeAuth explicitly.
 
 // Firebase project config. In development this reads from EXPO_PUBLIC_*
 // env vars (see .env.example) so no real secrets live in source. Until
@@ -28,7 +42,12 @@ let db: Firestore | undefined;
 
 if (isFirebaseConfigured()) {
   app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
-  auth = getAuth(app);
+  try {
+    auth = initializeAuth(app, { persistence: getReactNativePersistence(AsyncStorage) });
+  } catch {
+    // Already initialised (a fast refresh re-ran this module) — reuse it.
+    auth = getAuth(app);
+  }
   db = getFirestore(app);
 }
 

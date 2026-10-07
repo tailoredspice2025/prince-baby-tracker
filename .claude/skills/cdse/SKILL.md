@@ -153,6 +153,21 @@ strips the seed, so every field in this state turns blank on real installs.
 This is why the sweep excludes `demoData.ts` when looking for writes, and why
 **"I saw it working" is not evidence of capture** — check what wrote it.
 
+## Pattern 5 — a comment is a claim, not a check
+
+Two Family Sync defects sat under comments that described code that did not
+exist. "Other caregivers see the initial-letter avatar" — the photo path
+synced and they saw a broken image. "Firebase auto-persists RN auth state to
+AsyncStorage" — `getAuth()` on React Native keeps it in memory, so every
+relaunch made the phone a stranger to its own family. Build 26 was built on
+that comment.
+
+When a comment says a library or another module "does it automatically",
+open the library's code (it is in `node_modules`) and find the line that does
+it. If you cannot find it, the comment is wrong until a test proves otherwise.
+Identity and storage are where this costs most: anything that must survive a
+relaunch gets a test that fails if it is held only in memory.
+
 ## Writing the regression test
 
 One test per bug that reached a build. Two things make these tests fail on

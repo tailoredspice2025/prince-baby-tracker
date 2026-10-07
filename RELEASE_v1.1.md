@@ -1,6 +1,10 @@
 # v1.1 release runbook — Family Sync
 
-Version **1.1.0**, build **26**. Already set in `app.json` — no hand edits.
+Version **1.1.0**, build **27**. Already set in `app.json` — no hand edits.
+
+> Build 26 (7 Oct 2026) must not be released or used for sync testing: its
+> sign-in did not survive a relaunch, so a phone lost its family the first
+> time the app was closed. Fixed in 27 — see BUILD_RELEASE landmine #16.
 
 **1.1 is Family Sync only.** Voice logging stays hidden behind
 `FEATURES.voiceLogging` and is not scheduled.
@@ -32,7 +36,7 @@ pass. See `tools/rules-test/README.md`.
 testing, and it was your real baby's data, delete it — it has been readable by
 anyone with the config while the old rules were live.
 
-The new rules need the **new app** — build 26 creates families and joins with
+The new rules need the **new app** — build 27 creates families and joins with
 the invite code in a shape the old client does not send. Nothing in the App
 Store uses sync yet (the live app has no Firebase config), so publishing now
 breaks nothing for anyone.
@@ -55,7 +59,7 @@ npx eas-cli submit --platform ios --latest
 without it `isFirebaseConfigured()` is false and every sync screen stays
 hidden. Run it once; confirm with `npx eas-cli env:list --environment production`.
 
-Build page must read **1.1.0 (26)**.
+Build page must read **1.1.0 (27)**.
 
 ---
 
@@ -67,8 +71,10 @@ in App Store Connect → TestFlight so the build installs on their phone too.
 
 1. **Join.** A: Baby → Invite caregiver → note the code. B: fresh install →
    "Join your family" → code. A's history appears on B.
-2. **Live logging.** B logs a bottle. It appears on A within seconds, marked
-   as logged by B's name.
+2. **Survives a relaunch — the build-26 bug.** Force-quit the app on BOTH
+   phones (swipe it away), reopen both. Then B logs a bottle: it appears on A
+   within seconds, marked as logged by B's name. Then A logs a nappy: it
+   appears on B. If either direction stops after the relaunch, stop testing.
 3. **Reminder silenced across phones** — the bug from 1.0.1, now across two
    devices. On A, set a medicine reminder a few minutes ahead (it syncs to B
    and arms there). On **A**, log that dose. **B must not buzz.**
@@ -82,15 +88,15 @@ in App Store Connect → TestFlight so the build installs on their phone too.
 7. **Leaving.** B: Leave family. B keeps its data and stops receiving A's
    changes.
 
-Points 3 and 5 are the ones most likely to be wrong — both were bugs in the
-sync code found while auditing it for this release.
+Points 2, 3 and 5 are the ones most likely to be wrong — all three were bugs
+in the sync code found while preparing this release.
 
 ---
 
 ## App Store Connect
 
 1. **+ Version or Platform → `1.1.0`**
-2. **Build** → 1.1.0 (26)
+2. **Build** → 1.1.0 (27)
 3. **What's New** — paste:
 
    ```
