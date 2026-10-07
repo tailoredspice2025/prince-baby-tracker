@@ -191,7 +191,7 @@ whose logic changed this much in the same build.
 - Then: open-ended sleep poisons Trends · time parsing wrong · spoken values
   dropped · "Edit" button dead · no undo · silent permission failures
 
-## 9 · Family Sync — ✅ ready to build (1.1.0, build 27), then two-phone TestFlight
+## 9 · Family Sync — 1.1.0 (27) uploaded to TestFlight 7 Oct 2026; two-phone checks pending
 *Runbook: `RELEASE_v1.1.md`.* Rules republished 7 Oct 2026, July test family
 deleted, Anonymous auth confirmed, EAS production env set. Build 26 was built
 the same day and is **not to be released** — defect 5 below.
