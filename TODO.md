@@ -191,8 +191,10 @@ whose logic changed this much in the same build.
 - Then: open-ended sleep poisons Trends · time parsing wrong · spoken values
   dropped · "Edit" button dead · no undo · silent permission failures
 
-## 9 · Family Sync — ✅ done, ready to build (1.1.0, build 26)
-*Runbook: `RELEASE_v1.1.md`.*
+## 9 · Family Sync — ✅ built (1.1.0, build 26), awaiting two-phone TestFlight
+*Runbook: `RELEASE_v1.1.md`.* Rules republished 7 Oct 2026, July test family
+deleted, Anonymous auth confirmed, EAS production env set; build 26 built on
+the `production` environment from 6bec56b.
 
 Audited against today's model before shipping, rather than trusting code
 written months ago. Four defects, one of them serious:
@@ -200,8 +202,8 @@ written months ago. Four defects, one of them serious:
 1. **The security rules let a stranger into any family.** Invite codes were
    listable (a list of every familyId) and caregiver docs accepted from anyone
    with no code. Rewritten and **attacked in the Firestore emulator** —
-   `tools/rules-test/`, 11/21 failing before, 21/21 after. The old rules are
-   still live on the Firebase project until republished.
+   `tools/rules-test/`, 11/21 failing before, 21/21 after. New rules live on
+   the Firebase project since 7 Oct 2026.
 2. **A partner's dose didn't silence your alarm.** Inbound sync re-armed
    vaccine reminders only. Launch and inbound now share `rearmReminders()`.
 3. **A partner's deleted appointment kept nudging you.** Vaccines now
@@ -225,6 +227,11 @@ the cloud but not from other phones, which only listen to the last two weeks
 - Sleep sessions count on the start day while minutes split across midnight —
   document the choice
 - At v1.1: update the App Store privacy label (Family Sync collects data)
+- **Expo patch upgrade, next build after 1.1:** `expo-doctor` flags a known
+  Hermes V1 memory regression in expo 57.0.4 / RN 0.86.0 (fixed in
+  expo ≥ 57.0.9, RN ≥ 0.86.2). Every live build already ships these versions,
+  so it is not new in 26 — but do it as its own build with a full re-test
+  (`npx expo install expo@^57.0.9 --fix`), not mixed into a feature release.
 
 ## 11 · Yours, outside the repo
 - ~~App Store description: "coming soon" line for voice~~ — dropped by
